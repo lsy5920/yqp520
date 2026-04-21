@@ -90,6 +90,81 @@ npm run build
 npm run preview
 ```
 
+## GitHub 部署教程
+如果你已经把项目推送到了 GitHub 仓库，可以直接按下面步骤部署到 GitHub Pages。
+
+### 当前仓库信息
+- GitHub 仓库：`https://github.com/lsy5920/yqp520`
+- 预期访问地址：`https://lsy5920.github.io/yqp520/`
+
+### 第一步：把最新代码推送到 `main` 分支
+当前自动部署工作流监听的是 `main` 分支，所以先确认最新代码已经推上去：
+
+```powershell
+git add .
+git commit -m "配置 GitHub Pages 部署"
+git push origin main
+```
+
+如果你前面已经提交过，这里直接执行最后一条 `git push origin main` 也可以。
+
+### 第二步：在 GitHub 仓库里开启 Pages
+进入仓库网页后，按下面顺序操作：
+
+1. 点击仓库顶部的 `Settings`
+2. 点击左侧的 `Pages`
+3. 找到 `Build and deployment`
+4. 把来源切换成 `GitHub Actions`
+
+这一步很关键，不切到 `GitHub Actions`，仓库里的自动部署工作流不会正式接管发布。
+
+### 第三步：等待自动部署完成
+项目里已经新增了自动部署文件：
+
+`/.github/workflows/deploy-pages.yml`
+
+当你推送到 `main` 分支后，GitHub 会自动完成：
+
+1. 安装依赖
+2. 执行 `npm run build:pages`
+3. 生成 `dist` 产物
+4. 自动发布到 GitHub Pages
+
+你可以在仓库顶部的 `Actions` 页面里查看运行进度。
+
+### 第四步：打开站点
+工作流成功后，访问下面这个地址即可：
+
+`https://lsy5920.github.io/yqp520/`
+
+如果第一次打开还没刷新出来，等几十秒再刷新一次通常就好了。
+
+### 第五步：为什么这次配置能兼容 GitHub Pages
+这次部署一共做了三层处理：
+
+- Vite 构建时会自动使用仓库子路径 `/yqp520/`
+- Vue Router 会读取这个基础路径，避免资源路径和路由路径错位
+- 打包后会自动生成 `dist/404.html`，解决 GitHub Pages 直接刷新内页时的单页应用兜底问题
+
+### 第六步：如果以后仓库名改了怎么办
+如果你的仓库名以后不是 `yqp520` 了，要同步改下面这个文件：
+
+`/.github/workflows/deploy-pages.yml`
+
+把里面的：
+
+```yaml
+VITE_BASE_PATH: /yqp520/
+```
+
+改成新的仓库路径。比如仓库名改成 `yunqi-site`，这里就要改成：
+
+```yaml
+VITE_BASE_PATH: /yunqi-site/
+```
+
+不改的话，页面虽然能部署成功，但静态资源路径会错，页面会出现样式丢失或脚本 404。
+
 ## 使用教程
 
 ### 场景一：正常浏览官网
@@ -241,6 +316,11 @@ yqp520/
 │  ├─ env.d.ts                       # Vue 单文件组件类型声明
 │  ├─ main.ts                        # 应用启动入口
 │  └─ style.css                      # 全站公共样式
+├─ .github/
+│  └─ workflows/
+│     └─ deploy-pages.yml            # GitHub Pages 自动部署工作流
+├─ scripts/
+│  └─ copy-github-pages-404.mjs      # 复制 404 页面，解决 Pages 刷新子路由问题
 ├─ index.html                        # 页面入口模板
 ├─ package.json                      # 依赖与脚本
 ├─ package-lock.json                 # 依赖锁定文件
@@ -276,6 +356,16 @@ yqp520/
 ### 8. 我改了文案、音乐配置或样式，页面没变化怎么办？
 如果你改的是源码文件，请刷新页面，必要时重启 `npm run dev`。如果你改的是部署文件，还要重新执行一次 `npm run build`。
 
+### 9. 为什么 GitHub Pages 打开后资源 404 或页面样式丢失？
+最常见原因是仓库子路径不对。当前仓库名是 `yqp520`，所以 GitHub Pages 构建时必须使用：
+
+`/yqp520/`
+
+如果你以后改了仓库名，要同步修改 `/.github/workflows/deploy-pages.yml` 里的 `VITE_BASE_PATH`。
+
+### 10. 为什么 GitHub Pages 直接刷新某个内页会报 404？
+当前项目已经在构建时自动生成 `dist/404.html` 做单页应用兜底。只要工作流正常执行并且 GitHub Pages 来源设置成 `GitHub Actions`，这个问题一般不会再出现。如果仍然出现，优先检查 Pages 来源是不是还停留在旧的分支发布模式。
+
 ## 更新日志
 2026-04-21 23:14 【初次发布】完成云栖派官网首版开发，落地六个核心页面、统一青金云海视觉风格、滚动动效与移动端适配。  
 2026-04-21 23:15 【新增】新增海报分享生成器、背景音乐播放器与首页启播引导，并补齐完整中文 README、安装教程、使用说明与排错文档。  
@@ -286,3 +376,4 @@ yqp520/
 2026-04-22 00:18 【优化】将播放器自动贴边时间从 5 秒缩短为 2 秒，并把手机端播放器改为与 PC 端一致，支持手动收起与自动贴边；同步更新 README 中的交互说明。  
 2026-04-22 00:22 【优化】重新设计海报中的二维码链接区域，将网页链接从二维码旁移到独立网址栏，并支持长链接自动换行完整展示，避免链接过长时显示不全。  
 2026-04-22 00:22 【修复】修复导出海报底部被额外撑出大块空白的问题，调整海报主内容区布局方式，保证导出成图与页面预览节奏一致。  
+2026-04-22 00:36 【新增】新增 GitHub Pages 自动部署能力，补充仓库子路径构建、路由刷新 404 兜底脚本与 Actions 工作流，并同步更新 README 中的 GitHub 部署教程。  
