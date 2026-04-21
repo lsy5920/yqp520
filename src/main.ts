@@ -6,7 +6,8 @@ import './style.css'
 
 // 这里创建路由实例，负责管理整站页面切换。
 const router = createRouter({
-  history: createWebHistory(),
+  // 这里使用 Vite 的基础路径，保证部署到 GitHub Pages 子目录后路由仍然正确。
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior(to) {
     // 如果跳转到了锚点，就平滑滚动到对应章节。
