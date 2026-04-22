@@ -111,7 +111,7 @@ export const memberCardCopy = {
     eyebrow: '云栖派 · 江湖名帖',
     title: '立一纸江湖名帖',
     lead: '把名号、来处、身份一句与缘起写下，系统便会排成一张更像正式门籍的江湖正帖。',
-    note: '新版以成图为主，草稿会自动保存在本机，文字版可随时复制。',
+    note: '新版以成图为主，草稿会自动保存在本机，成图自带改帖二维码，文字版可随时复制。',
   },
   studio: {
     previewEyebrow: '江湖正帖',
@@ -133,6 +133,8 @@ export const memberCardCopy = {
     sealText: '江湖正帖',
     signaturePrefix: '云栖门下',
     yearText: '立派纪年 · 丙午年',
+    qrLabel: '扫码改帖',
+    qrHint: '直达江湖名帖页',
     fallbackJianghuName: '未题名号',
     fallbackFormerName: '旧名未留',
     fallbackFromPlace: '来处未落',

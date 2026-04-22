@@ -28,6 +28,12 @@ interface MemberCardCardProps {
   signaturePrefix?: string
   /** 用途：卡片底部纪年文本。 */
   yearText?: string
+  /** 用途：卡片里的二维码图片地址。 */
+  qrCodeUrl?: string
+  /** 用途：二维码面板标题。 */
+  qrLabel?: string
+  /** 用途：二维码面板提示语。 */
+  qrHint?: string
   /** 用途：是否关闭卡片里的动效。 */
   reduceMotion?: boolean
 }
@@ -37,6 +43,9 @@ const props = withDefaults(defineProps<MemberCardCardProps>(), {
   cardSubtitle: memberCardCopy.generated.subtitle,
   signaturePrefix: memberCardCopy.generated.signaturePrefix,
   yearText: memberCardCopy.generated.yearText,
+  qrCodeUrl: '',
+  qrLabel: memberCardCopy.generated.qrLabel,
+  qrHint: memberCardCopy.generated.qrHint,
   reduceMotion: false,
 })
 
@@ -93,6 +102,16 @@ const createdAtLabel = computed<string>(() => {
   const safeText = props.createdAtText.trim()
   return safeText || '待立帖'
 })
+
+// 这里整理二维码标题，方便卡片底部始终给出一致的扫码动作提示。
+const displayQrLabel = computed<string>(() => (
+  props.qrLabel?.trim() || memberCardCopy.generated.qrLabel
+))
+
+// 这里整理二维码提示语，方便明确说明扫码后会进入改帖页面。
+const displayQrHint = computed<string>(() => (
+  props.qrHint?.trim() || memberCardCopy.generated.qrHint
+))
 
 // 这里整理顶部芯片信息，方便在标题下补一条正式门籍感信息带。
 const headerChipList = computed<string[]>(() => [
@@ -246,9 +265,30 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
           <p class="member-card-card__stamp">{{ yearText }}</p>
         </div>
 
-        <div class="member-card-card__footer-mark">
-          <span>{{ memberCardCopy.generated.sideMark }}</span>
-          <strong>{{ createdAtLabel }}</strong>
+        <div class="member-card-card__footer-side">
+          <div class="member-card-card__qr-panel">
+            <div class="member-card-card__qr-shell">
+              <img
+                v-if="qrCodeUrl"
+                class="member-card-card__qr-image"
+                :src="qrCodeUrl"
+                alt="江湖名帖二维码"
+              />
+              <div v-else class="member-card-card__qr-placeholder" aria-hidden="true">
+                帖
+              </div>
+            </div>
+
+            <div class="member-card-card__qr-copy">
+              <span>{{ displayQrLabel }}</span>
+              <strong>{{ displayQrHint }}</strong>
+            </div>
+          </div>
+
+          <div class="member-card-card__footer-mark">
+            <span>{{ memberCardCopy.generated.sideMark }}</span>
+            <strong>{{ createdAtLabel }}</strong>
+          </div>
         </div>
       </footer>
     </div>
@@ -794,6 +834,15 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   gap: 8px;
 }
 
+.member-card-card__footer-side {
+  display: grid;
+  gap: 10px;
+  align-content: end;
+  justify-items: end;
+  justify-self: end;
+  width: min(238px, 100%);
+}
+
 .member-card-card__signature {
   color: #f0dfb0;
   font-size: 0.9rem;
@@ -810,6 +859,66 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   color: rgba(244, 239, 226, 0.56);
   font-size: 0.8rem;
   letter-spacing: 0.16em;
+}
+
+.member-card-card__qr-panel {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(216, 185, 114, 0.16);
+  background:
+    linear-gradient(180deg, rgba(16, 42, 57, 0.64), rgba(7, 27, 37, 0.92)),
+    rgba(7, 27, 37, 0.52);
+}
+
+.member-card-card__qr-shell {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(244, 239, 226, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(216, 185, 114, 0.18);
+}
+
+.member-card-card__qr-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.member-card-card__qr-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #102734;
+  font-size: 1.4rem;
+  letter-spacing: 0.2em;
+}
+
+.member-card-card__qr-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.member-card-card__qr-copy span {
+  color: rgba(139, 208, 203, 0.9);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+
+.member-card-card__qr-copy strong {
+  color: #f0dfb0;
+  font-size: 0.82rem;
+  line-height: 1.62;
+  overflow-wrap: anywhere;
 }
 
 .member-card-card__footer-mark {
@@ -863,7 +972,9 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
     justify-items: start;
   }
 
+  .member-card-card__footer-side,
   .member-card-card__footer-mark {
+    justify-self: start;
     justify-items: start;
     text-align: left;
   }
@@ -961,6 +1072,28 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   .member-card-card__identity-value {
     font-size: 0.86rem;
     line-height: 1.66;
+  }
+
+  .member-card-card__qr-panel {
+    grid-template-columns: 62px minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .member-card-card__qr-shell {
+    width: 62px;
+    height: 62px;
+    border-radius: 14px;
+  }
+
+  .member-card-card__qr-copy span,
+  .member-card-card__footer-mark span,
+  .member-card-card__footer-mark strong {
+    font-size: 10px;
+  }
+
+  .member-card-card__qr-copy strong {
+    font-size: 0.76rem;
+    line-height: 1.58;
   }
 }
 </style>

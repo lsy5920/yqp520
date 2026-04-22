@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toPng } from 'html-to-image'
+import { toDataURL } from 'qrcode'
 import MemberCardCard from './MemberCardCard.vue'
 import {
   createDefaultMemberCardForm,
@@ -83,6 +84,15 @@ const avatarInputElement = ref<HTMLInputElement | null>(null)
 
 // 这里记录当前是否正在导出，防止用户重复点击保存按钮。
 const isExporting = ref<boolean>(false)
+
+// 这里保存二维码真实跳转地址，方便扫码后直接回到江湖名帖生成页继续调整。
+const qrTargetUrl = ref<string>('')
+
+// 这里保存二维码图片地址，确保预览和导出复用同一张二维码。
+const qrCodeUrl = ref<string>('')
+
+// 这里记录二维码是否已经准备完成，避免导出时缺少关键内容。
+const isQrReady = ref<boolean>(false)
 
 // 这里记录预览缩放比例，让页面里看到的成品和导出结果保持一致。
 const previewScale = ref<number>(Math.min(1, 420 / props.exportWidth))
@@ -525,6 +535,69 @@ function clearPreviewObserver(): void {
 }
 
 /**
+ * 解析江湖名帖二维码目标地址
+ * 用途：让二维码始终跳到江湖名帖生成页，方便扫码后直接继续改帖
+ * 入参：无
+ * 返回值：返回二维码应指向的完整网址
+ */
+function resolveMemberCardQrTargetUrl(): string {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  const siteBaseUrl = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+  return new URL('member-card', siteBaseUrl).href
+}
+
+/**
+ * 生成江湖名帖二维码
+ * 用途：把江湖名帖生成页做成二维码，供预览和导出复用
+ * 入参：无
+ * 返回值：无返回值
+ */
+async function generateMemberCardQr(): Promise<void> {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  qrTargetUrl.value = resolveMemberCardQrTargetUrl()
+  isQrReady.value = false
+
+  if (!qrTargetUrl.value) {
+    qrCodeUrl.value = ''
+    return
+  }
+
+  try {
+    qrCodeUrl.value = await toDataURL(qrTargetUrl.value, {
+      errorCorrectionLevel: 'H',
+      margin: 1,
+      width: 180,
+      color: {
+        dark: '#102734',
+        light: '#f4efe2',
+      },
+    })
+    isQrReady.value = true
+
+    if (lastError.value === '江湖名帖二维码生成失败，请稍后重试') {
+      lastError.value = ''
+    }
+
+    if (actionMessage.value === '江湖名帖二维码生成失败，请稍后重试') {
+      actionMessage.value = memberCardCopy.page.lead
+    }
+  } catch (error) {
+    // 这里兜底二维码生成失败，避免页面直接报错，同时给用户明确提示。
+    console.warn('生成江湖名帖二维码失败：', error)
+    qrCodeUrl.value = ''
+    isQrReady.value = false
+    lastError.value = '江湖名帖二维码生成失败，请稍后重试'
+    actionMessage.value = lastError.value
+  }
+}
+
+/**
  * 等待字体加载完成
  * 用途：避免导出图片时字体尚未准备好，导致导出与页面不一致
  * 入参：无
@@ -547,7 +620,7 @@ async function waitForFontsReady(): Promise<void> {
 
 /**
  * 等待图片加载完成
- * 用途：确保人像已经真正进入节点后再开始截图
+ * 用途：确保人像和二维码都已经真正进入节点后再开始截图
  * 入参：target 为准备导出的真实节点
  * 返回值：无返回值
  */
@@ -646,6 +719,18 @@ async function exportCardImage(): Promise<{ dataUrl: string; fileName: string } 
   const sourceElement = cardSourceElement.value
 
   if (!sourceElement || typeof document === 'undefined') {
+    return null
+  }
+
+  if (!isQrReady.value) {
+    await generateMemberCardQr()
+  }
+
+  if (!isQrReady.value) {
+    if (!lastError.value) {
+      lastError.value = '江湖名帖二维码还在准备中，请稍后再试'
+      actionMessage.value = lastError.value
+    }
     return null
   }
 
@@ -793,7 +878,10 @@ async function hydrateStudio(): Promise<void> {
 }
 
 onMounted(async () => {
-  await hydrateStudio()
+  await Promise.all([
+    hydrateStudio(),
+    generateMemberCardQr(),
+  ])
   await nextTick()
   bindPreviewObserver()
 })
@@ -882,6 +970,9 @@ watch(
                   :created-at-text="generatedAtLabel"
                   :form="formValue"
                   :number="previewNumber"
+                  :qr-code-url="qrCodeUrl"
+                  :qr-hint="memberCardCopy.generated.qrHint"
+                  :qr-label="memberCardCopy.generated.qrLabel"
                   :reduce-motion="false"
                   :signature-prefix="memberCardCopy.generated.signaturePrefix"
                   :year-text="memberCardCopy.generated.yearText"
