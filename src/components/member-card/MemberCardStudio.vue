@@ -904,8 +904,8 @@ watch(
       <article class="member-card-studio__form content-card" data-reveal>
         <div class="section-heading section-heading--compact">
           <p class="eyebrow">基础信息</p>
-          <h2>轻量填写，七项足够</h2>
-          <p>这些内容会自动排成古风名片，写白话一点也没关系，系统会帮你收一收。</p>
+          <h2>轻量填写，先从道号开始</h2>
+          <p>第一项就是道号（宗门称谓），其余六项按顺序补齐，名片会自动帮你排好。</p>
         </div>
 
         <div class="member-card-studio__avatar">
@@ -1547,22 +1547,22 @@ watch(
 
 @media (max-width: 720px) {
   .member-card-studio {
-    gap: 16px;
-    padding-bottom: calc(248px + env(safe-area-inset-bottom));
+    gap: 14px;
+    padding-bottom: calc(246px + env(safe-area-inset-bottom));
   }
 
   .member-card-studio__intro,
   .member-card-studio__form,
   .member-card-studio__preview,
   .member-card-studio__archive {
-    gap: 14px;
+    gap: 12px;
   }
 
   .member-card-studio__intro-copy h2,
   .member-card-studio__preview-head h2,
   .member-card-studio__archive h2 {
-    font-size: clamp(1.38rem, 5.8vw, 1.9rem);
-    line-height: 1.28;
+    font-size: clamp(1.32rem, 5.6vw, 1.82rem);
+    line-height: 1.26;
   }
 
   .member-card-studio__intro-line,
@@ -1570,37 +1570,76 @@ watch(
   .member-card-studio__archive-item,
   .member-card-studio__archive-empty,
   .member-card-studio__action-bar {
-    border-radius: 20px;
+    border-radius: 18px;
   }
 
   .member-card-studio__template-button,
   .member-card-studio__field,
   .member-card-studio__archive-item {
-    padding: 14px 14px;
+    padding: 12px 12px;
   }
 
   .member-card-studio__avatar-preview {
-    width: 100%;
-    max-width: 190px;
+    width: min(100%, 160px);
   }
 
   .member-card-studio__preview-viewport {
-    min-height: 440px;
-    padding: 8px;
+    width: min(100%, 324px);
+    margin-inline: auto;
+    padding: 6px;
   }
 
   .member-card-studio__action-bar {
-    width: calc(100vw - 20px);
-    padding: 14px 14px 16px;
+    width: calc(100vw - 16px);
+    padding: 12px 12px 14px;
     bottom: calc(86px + env(safe-area-inset-bottom));
   }
 
-  .member-card-studio__action-buttons .ink-button {
-    flex-basis: 100%;
+  .member-card-studio__preview-badges {
+    gap: 8px;
+  }
+
+  .member-card-studio__text-box {
+    padding: 14px;
+    font-size: 0.92rem;
+    line-height: 1.72;
+  }
+
+  .member-card-studio__archive-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-card-studio__archive-actions .ink-button {
+    width: 100%;
+    min-width: 0;
   }
 
   .member-card-studio__action-copy {
-    gap: 6px;
+    gap: 4px;
+  }
+
+  .member-card-studio__action-message,
+  .member-card-studio__field-help,
+  .member-card-studio__archive-copy,
+  .member-card-studio__archive-summary,
+  .member-card-studio__template-button span,
+  .member-card-studio__intro-line p {
+    line-height: 1.68;
+  }
+
+  .member-card-studio__action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .member-card-studio__action-buttons .ink-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 0.92rem;
   }
 }
 </style>

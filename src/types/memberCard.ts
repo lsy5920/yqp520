@@ -34,7 +34,7 @@ export interface MemberCardTemplateConfig {
 
 // 这里定义名片表单数据，保存新同门填写的全部基础信息。
 export interface MemberCardFormValue {
-  // 这里保存宗门称谓，也就是名片上的主道号。
+  // 这里保存道号（宗门称谓），也就是名片上的主称呼。
   title: string
   // 这里保存俗世名号，真实姓名可不填。
   secularName: string

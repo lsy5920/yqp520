@@ -27,9 +27,9 @@ export const memberCardDefaultForm: MemberCardFormValue = {
 export const memberCardFields: MemberCardFieldConfig[] = [
   {
     key: 'title',
-    label: '宗门称谓',
+    label: '道号（宗门称谓）',
     placeholder: '例如：云泽、栖月、听雨',
-    help: '写你在云栖派想用的道号或昵称，这一项会放在名片最显眼的位置。',
+    help: '先写你在云栖派想用的道号，这一项会放在名片最显眼的位置。',
     maxLength: 18,
   },
   {
@@ -93,11 +93,11 @@ export const memberCardCopy = {
   banner: {
     eyebrow: '同门入山',
     title: '制我栖名名片',
-    lead: '新入门同门只需填七项基础信息，系统便会自动排版成一张云栖专属古风名片。文字版可直接发群，图片版可长期留存。',
+    lead: '新入门同门只需先填道号，再补七项基础信息，系统便会自动排版成一张云栖专属古风名片。文字版可直接发群，图片版可长期留存。',
     note: '本机同门录会自动保存草稿与已生成记录，刷新页面也能继续查看。',
   },
   introLines: [
-    '填完就能出卡，不用写复杂资料。',
+    '先填道号，再补其他信息，主称呼会最先落到名片上。',
     '先出文字版，再出高清图，适合微信群直接发。',
     '已生成名片会自动归档到本机同门录。',
   ],

@@ -81,7 +81,7 @@ function normalizeLongText(rawValue: string, fallback: string): string {
 const avatarInitial = computed<string>(() => normalizeShortText(props.form.title, '云').slice(0, 1))
 
 /**
- * 宗门称谓
+ * 道号
  * 用途：展示在名片最显眼的位置
  */
 const displayTitle = computed<string>(() => normalizeShortText(props.form.title, memberCardCopy.generated.fallbackTitle))
@@ -631,8 +631,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   }
 
   .member-card-card__content {
-    padding: 20px 16px 18px;
-    gap: 12px;
+    padding: 18px 14px 16px;
+    gap: 10px;
   }
 
   .member-card-card__header {
@@ -640,22 +640,23 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   }
 
   .member-card-card__stamp {
-    width: 100px;
-    min-height: 100px;
+    width: 88px;
+    min-height: 88px;
   }
 
   .member-card-card__stamp-copy strong {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .member-card-card__title {
-    font-size: clamp(2rem, 9vw, 2.9rem);
-    line-height: 1.1;
+    font-size: clamp(1.75rem, 8vw, 2.45rem);
+    line-height: 1.08;
   }
 
   .member-card-card__subtitle {
-    font-size: 12px;
-    line-height: 1.7;
+    font-size: 11px;
+    line-height: 1.66;
+    letter-spacing: 0.08em;
   }
 
   .member-card-card__info-grid,
@@ -667,21 +668,25 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   .member-card-card__info-item,
   .member-card-card__summary,
   .member-card-card__section {
-    padding: 14px 14px;
-    border-radius: 18px;
+    padding: 12px 12px;
+    border-radius: 16px;
   }
 
   .member-card-card__chip {
-    min-height: 30px;
+    min-height: 28px;
     padding: 0 10px;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
   }
 
   .member-card-card__summary-copy,
   .member-card-card__section-copy,
   .member-card-card__signature {
-    font-size: 0.92rem;
-    line-height: 1.72;
+    font-size: 0.88rem;
+    line-height: 1.68;
+  }
+
+  .member-card-card__avatar-shell {
+    width: min(100%, 180px);
   }
 
   .member-card-card__year-block {
