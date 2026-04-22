@@ -67,6 +67,23 @@ function clampVolume(rawVolume: number): number {
   return Math.min(1, Math.max(0, rawVolume))
 }
 
+// 这里把曲目路径统一转换成当前站点可访问的真实地址，兼容本地开发和 GitHub Pages 子路径部署。
+function resolveTrackFileUrl(filePath: string): string {
+  if (typeof window === 'undefined') {
+    return filePath
+  }
+
+  // 这里保留完整外链地址，避免错误拼接成站内路径。
+  if (/^(https?:|data:|blob:)/.test(filePath)) {
+    return filePath
+  }
+
+  // 这里去掉开头的斜杠，让 public 目录资源能自动跟随站点基础路径。
+  const normalizedFilePath = filePath.replace(/^\/+/, '')
+  const siteBaseUrl = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+  return new URL(normalizedFilePath, siteBaseUrl).href
+}
+
 // 这里根据当前 id 找到真正要播放的曲目。
 function findCurrentTrack(): MusicTrack | null {
   if (trackList.value.length === 0) {
@@ -117,10 +134,10 @@ function syncAudioElement(): void {
     return
   }
 
-  const resolvedUrl = new URL(track.filePath, window.location.href).href
+  const resolvedUrl = resolveTrackFileUrl(track.filePath)
 
   if (audioElement.value.src !== resolvedUrl) {
-    audioElement.value.src = track.filePath
+    audioElement.value.src = resolvedUrl
   }
 
   audioElement.value.loop = true

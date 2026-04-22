@@ -325,7 +325,7 @@ const musicTracks: MusicTrack[] = [
   {
     id: 'yunqi-theme',
     name: '云栖之缘',
-    filePath: '/media/云栖之缘.mp3',
+    filePath: 'media/云栖之缘.mp3',
     coverText: '山门清音 · 云栖之缘',
     enabled: true,
     defaultVolume: 0.56,
@@ -380,7 +380,7 @@ export const siteContent = {
     introLines: [
       '这是一张为云栖派量身定制的门面海报。',
       '你可以填写自己的同门称呼与一句寄语，生成一张带着门派气质的专属分享图。',
-      '海报会自动嵌入当前页面二维码，方便扫码直达当前山门页面。',
+      '海报会默认嵌入云栖首页二维码，方便扫码后直接回到山门首页。',
       '若当前环境支持原生分享，会优先唤起系统分享；否则会自动保存图片到本地。',
     ],
   },

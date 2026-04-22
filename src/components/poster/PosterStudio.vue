@@ -40,6 +40,8 @@ interface PosterStudioProps {
   exportHeight?: number
   /** 用途：二维码标题 */
   qrLabel?: string
+  /** 用途：二维码默认指向位置，首版默认回到首页，后续也可扩展为当前页 */
+  qrTargetMode?: 'home' | 'current'
   /** 用途：是否减少动态效果 */
   reduceMotion?: boolean
 }
@@ -68,6 +70,7 @@ const props = withDefaults(defineProps<PosterStudioProps>(), {
   exportWidth: 1080,
   exportHeight: 1920,
   qrLabel: '扫码入云栖',
+  qrTargetMode: 'home',
   reduceMotion: false,
 })
 
@@ -88,8 +91,8 @@ const isExporting = ref<boolean>(false)
 const actionMessage = ref<string>('请填写海报内容，右侧会实时预览')
 /** 用途：记录最近一次失败，方便重试 */
 const lastError = ref<string>('')
-/** 用途：当前页面地址，用来生成海报二维码 */
-const currentPageUrl = ref<string>('')
+/** 用途：二维码实际指向的网址，用来生成海报二维码 */
+const qrTargetUrl = ref<string>('')
 /** 用途：二维码图片地址，导出和预览都会复用 */
 const qrCodeUrl = ref<string>('')
 /** 用途：二维码是否已准备好，避免导出时缺少关键内容 */
@@ -201,15 +204,21 @@ const previewSourceStyle = computed<Record<string, string>>(() => ({
 }))
 
 /**
+ * 二维码目标名称
+ * 用途：统一页面提示文案，避免首页模式和当前页模式描述混乱
+ */
+const qrTargetLabel = computed<string>(() => (props.qrTargetMode === 'current' ? '当前页二维码' : '首页二维码'))
+
+/**
  * 二维码说明文案
  * 用途：让海报上的二维码不只是一个码块，而是一段看得懂的引导
  */
 const qrHint = computed<string>(() => {
-  if (!currentPageUrl.value) {
-    return '山门页面二维码'
+  if (!qrTargetUrl.value) {
+    return '云栖首页网址'
   }
 
-  return currentPageUrl.value.replace(/^https?:\/\//, '')
+  return qrTargetUrl.value.replace(/^https?:\/\//, '')
 })
 
 /**
@@ -240,7 +249,7 @@ function validateForm(): boolean {
   }
 
   if (!isQrReady.value) {
-    actionMessage.value = '当前页二维码还在准备中，请稍候再导出'
+    actionMessage.value = `${qrTargetLabel.value}还在准备中，请稍候再导出`
     return false
   }
 
@@ -433,6 +442,24 @@ function clonePosterElement(source: HTMLElement): HTMLElement {
 }
 
 /**
+ * 获取海报二维码目标地址
+ * 用途：默认让海报扫码回到首页，也为后续扩展当前页二维码预留接口
+ * 入参：无
+ * 返回值：返回二维码应指向的完整网址
+ */
+function resolveQrTargetUrl(): string {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  if (props.qrTargetMode === 'current') {
+    return window.location.href
+  }
+
+  return new URL(import.meta.env.BASE_URL || '/', window.location.origin).href
+}
+
+/**
  * 等待海报导出前状态稳定
  * 用途：确保最新输入、字体、二维码图片都已经就绪，再开始截图
  * 入参：target 为准备导出的海报节点
@@ -445,21 +472,21 @@ async function waitForPosterReady(target: HTMLElement): Promise<void> {
 }
 
 /**
- * 生成当前页面二维码
- * 用途：把海报与当前页面关联起来，用户扫码后能回到当前页面
+ * 生成海报二维码
+ * 用途：把海报二维码和目标页面绑定起来，默认扫码回到首页
  * 入参：无
  * 返回值：无返回值
  */
-async function generateCurrentPageQr(): Promise<void> {
+async function generatePosterQr(): Promise<void> {
   if (typeof window === 'undefined') {
     return
   }
 
-  currentPageUrl.value = window.location.href
+  qrTargetUrl.value = resolveQrTargetUrl()
   isQrReady.value = false
 
   try {
-    qrCodeUrl.value = await toDataURL(currentPageUrl.value, {
+    qrCodeUrl.value = await toDataURL(qrTargetUrl.value, {
       errorCorrectionLevel: 'H',
       margin: 1,
       width: 240,
@@ -471,10 +498,10 @@ async function generateCurrentPageQr(): Promise<void> {
     isQrReady.value = true
   } catch (error) {
     // 这里兜底二维码生成失败，避免页面直接报错。
-    console.warn('生成当前页二维码失败：', error)
+    console.warn('生成海报二维码失败：', error)
     qrCodeUrl.value = ''
     isQrReady.value = false
-    lastError.value = '当前页二维码生成失败，请稍后重试'
+    lastError.value = `${qrTargetLabel.value}生成失败，请稍后重试`
     actionMessage.value = lastError.value
   }
 }
@@ -487,7 +514,7 @@ async function generateCurrentPageQr(): Promise<void> {
  */
 async function exportPosterImage(): Promise<{ dataUrl: string; fileName: string } | null> {
   if (!isQrReady.value) {
-    await generateCurrentPageQr()
+    await generatePosterQr()
   }
 
   if (!validateForm()) {
@@ -633,7 +660,7 @@ async function handleShare(): Promise<void> {
  * 返回值：无返回值
  */
 async function handleRetry(): Promise<void> {
-  await generateCurrentPageQr()
+  await generatePosterQr()
   await handleSave()
 }
 
@@ -647,7 +674,7 @@ watch(
 )
 
 onMounted(async () => {
-  await generateCurrentPageQr()
+  await generatePosterQr()
   await nextTick()
   bindPreviewObserver()
 })
@@ -713,8 +740,8 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="poster-studio__meta">
-        <p>当前页二维码：{{ isQrReady ? '已就绪' : '生成中' }}</p>
-        <p>扫码后可直达当前云栖页面，方便海报传播与回流。</p>
+        <p>{{ qrTargetLabel }}：{{ isQrReady ? '已就绪' : '生成中' }}</p>
+        <p>当前默认使用云栖首页作为海报落点，扫码后可直接回到山门首页。</p>
       </div>
     </div>
 
