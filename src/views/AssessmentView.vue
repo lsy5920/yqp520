@@ -391,25 +391,27 @@ onBeforeUnmount(() => {
                 </article>
               </div>
 
-              <article v-if="currentSection" class="content-card assessment-exam__chapter-card">
-                <p class="eyebrow">{{ currentSection.eyebrow }}</p>
-                <h2>{{ currentSection.title }}</h2>
-                <p>{{ currentSection.description }}</p>
-                <div class="assessment-exam__chapter-meta">
-                  <span>本章题数：{{ currentSection.questions.length }}</span>
-                  <span>本章已答：{{ currentSectionAnsweredCount }}</span>
-                </div>
-              </article>
+              <div class="assessment-exam__body">
+                <article v-if="currentSection" class="content-card assessment-exam__chapter-card">
+                  <p class="eyebrow">{{ currentSection.eyebrow }}</p>
+                  <h2>{{ currentSection.title }}</h2>
+                  <p>{{ currentSection.description }}</p>
+                  <div class="assessment-exam__chapter-meta">
+                    <span>本章题数：{{ currentSection.questions.length }}</span>
+                    <span>本章已答：{{ currentSectionAnsweredCount }}</span>
+                  </div>
+                </article>
 
-              <div ref="examQuestionListRef" class="assessment-exam__question-list">
-                <AssessmentQuestionCard
-                  v-for="question in currentSectionQuestions"
-                  :key="question.id"
-                  :question="question"
-                  :selected-option-ids="getSelectedOptionIds(question.id)"
-                  @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
-                  @update-single="setSingleAnswer($event.questionId, $event.optionId)"
-                />
+                <div ref="examQuestionListRef" class="assessment-exam__question-list">
+                  <AssessmentQuestionCard
+                    v-for="question in currentSectionQuestions"
+                    :key="question.id"
+                    :question="question"
+                    :selected-option-ids="getSelectedOptionIds(question.id)"
+                    @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
+                    @update-single="setSingleAnswer($event.questionId, $event.optionId)"
+                  />
+                </div>
               </div>
 
               <div class="assessment-exam__actions assessment-exam__actions--dialog">
@@ -899,9 +901,9 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 1;
   width: min(1120px, 100%);
-  max-height: calc(100dvh - 36px - env(safe-area-inset-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  height: calc(100vh - 36px - env(safe-area-inset-bottom));
+  max-height: calc(100vh - 36px - env(safe-area-inset-bottom));
+  overflow: hidden;
   padding: 18px;
   border: 1px solid rgba(147, 203, 198, 0.22);
   border-radius: 32px;
@@ -912,22 +914,31 @@ onBeforeUnmount(() => {
 }
 
 .assessment-exam--dialog {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   gap: 18px;
 }
 
 .assessment-exam--dialog .assessment-exam__sticky {
-  top: 0;
+  flex: 0 0 auto;
+  position: static;
+  top: auto;
 }
 
-.assessment-exam--dialog .assessment-exam__question-list {
-  padding-bottom: 4px;
+.assessment-exam__body {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
 }
 
 .assessment-exam__actions--dialog {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  margin-top: 4px;
+  flex: 0 0 auto;
+  margin-top: 0;
   padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
   border: 1px solid rgba(147, 203, 198, 0.18);
   border-radius: 26px;
@@ -1270,20 +1281,20 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam-dialog {
-    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   }
 
   .assessment-exam-dialog__panel {
     width: 100%;
-    padding: 14px 12px;
-    border-radius: 24px;
-    max-height: calc(100dvh - 20px - env(safe-area-inset-bottom));
+    height: calc(86vh - env(safe-area-inset-bottom));
+    max-height: calc(86vh - env(safe-area-inset-bottom));
+    padding: 12px 10px;
+    border-radius: 22px;
   }
 
   .assessment-exam__actions--dialog {
-    margin-top: 0;
     padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-    border-radius: 22px;
+    border-radius: 20px;
   }
 
   .assessment-exam__question-list {
