@@ -74,8 +74,8 @@ function normalizeLongText(rawValue: string, fallback: string): string {
 }
 
 /**
- * 拆出标签文本
- * 用途：把兴趣爱好拆成几枚短标签，减少空白并增强名片层次
+ * 拆出兴趣标签
+ * 用途：把平生所好拆成几枚短签，减少空白并增强门派味道
  * 入参：rawValue 为原始文本，fallback 为兜底文本
  * 返回值：返回适合以标签形式展示的短句数组
  */
@@ -92,7 +92,14 @@ function splitTextToTags(rawValue: string, fallback: string): string[] {
  * 用途：没有上传头像时，让占位块也有门派感
  * 返回值：返回适合展示的单字
  */
-const avatarInitial = computed<string>(() => normalizeShortText(props.form.title, '云').slice(0, 1))
+const avatarInitial = computed<string>(() => normalizeShortText(props.form.title, '栖').slice(0, 1))
+
+/**
+ * 获取水印字
+ * 用途：把道号首字做成半透明底纹，增加古卷感
+ * 返回值：返回适合展示的单字
+ */
+const watermarkGlyph = computed<string>(() => normalizeShortText(props.form.title, '栖').slice(0, 1) || '栖')
 
 /**
  * 道号
@@ -120,7 +127,7 @@ const displayHobbies = computed<string>(() => normalizeLongText(props.form.hobbi
 
 /**
  * 兴趣标签
- * 用途：把平生所好拆成几枚短标签，减少大段空白
+ * 用途：把平生所好拆成几枚短签，减少大段空白
  */
 const hobbyTags = computed<string[]>(() => splitTextToTags(props.form.hobbies, memberCardCopy.generated.fallbackHobbies))
 
@@ -147,6 +154,17 @@ const numberText = computed<string>(() => `第 ${String(props.number).padStart(2
  * 用途：让名片里也保留一份生成时刻
  */
 const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '刚刚生成'))
+
+/**
+ * 顶部信息行
+ * 用途：把编号、地域、时间和模板名压成一条更像门派落款的带子
+ */
+const ribbonItems = computed<string[]>(() => [
+  numberText.value,
+  displayRegion.value,
+  createdAtLabel.value,
+  props.template.name,
+])
 </script>
 
 <template>
@@ -158,9 +176,17 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
     ]"
     aria-label="云栖同门名片预览"
   >
-    <div class="member-card-card__veil" aria-hidden="true"></div>
-    <div class="member-card-card__ornament member-card-card__ornament--left" aria-hidden="true"></div>
-    <div class="member-card-card__ornament member-card-card__ornament--right" aria-hidden="true"></div>
+    <div class="member-card-card__backdrop" aria-hidden="true"></div>
+    <div class="member-card-card__paper" aria-hidden="true"></div>
+    <div class="member-card-card__frame" aria-hidden="true"></div>
+    <div class="member-card-card__watermark" aria-hidden="true">{{ watermarkGlyph }}</div>
+
+    <div class="member-card-card__spine" aria-hidden="true">
+      <span class="member-card-card__spine-line"></span>
+      <span class="member-card-card__spine-text">云栖同门录</span>
+      <span class="member-card-card__spine-number">{{ numberText }}</span>
+    </div>
+
     <div class="member-card-card__content">
       <header class="member-card-card__masthead">
         <div class="member-card-card__masthead-copy">
@@ -169,24 +195,29 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
           <p class="member-card-card__subtitle">{{ cardSubtitle }}</p>
         </div>
 
-        <div class="member-card-card__seal" aria-hidden="true">
-          <span class="member-card-card__seal-ring"></span>
-          <div class="member-card-card__seal-copy">
-            <strong>流云抱月</strong>
-            <span>云栖派徽记</span>
+        <div class="member-card-card__badge-block">
+          <div class="member-card-card__seal" aria-hidden="true">
+            <span class="member-card-card__seal-top">同门</span>
+            <strong>在册</strong>
+            <span class="member-card-card__seal-bottom">云栖派</span>
           </div>
+          <p class="member-card-card__seal-note">流云抱月 · 山门留名</p>
         </div>
       </header>
 
       <div class="member-card-card__ribbon">
-        <span class="member-card-card__ribbon-item member-card-card__ribbon-item--strong">{{ numberText }}</span>
-        <span class="member-card-card__ribbon-item">{{ displayRegion }}</span>
-        <span class="member-card-card__ribbon-item">{{ createdAtLabel }}</span>
-        <span class="member-card-card__ribbon-item">{{ template.name }}</span>
+        <span
+          v-for="item in ribbonItems"
+          :key="item"
+          class="member-card-card__ribbon-item"
+          :class="{ 'member-card-card__ribbon-item--strong': item === numberText }"
+        >
+          {{ item }}
+        </span>
       </div>
 
-      <section class="member-card-card__identity">
-        <div class="member-card-card__avatar-panel">
+      <section class="member-card-card__body">
+        <div class="member-card-card__avatar-column">
           <div class="member-card-card__avatar-shell">
             <img
               v-if="form.avatarDataUrl"
@@ -198,10 +229,20 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
               <span>{{ avatarInitial }}</span>
             </div>
           </div>
-          <p class="member-card-card__avatar-note">自定义头像可选上传</p>
+
+          <article class="member-card-card__avatar-card">
+            <p class="member-card-card__info-label">门籍</p>
+            <p class="member-card-card__avatar-card-title">{{ numberText }}</p>
+            <p class="member-card-card__avatar-card-copy">{{ displayRegion }}</p>
+          </article>
+
+          <article class="member-card-card__avatar-card member-card-card__avatar-card--accent">
+            <p class="member-card-card__info-label">时记</p>
+            <p class="member-card-card__avatar-card-copy">{{ createdAtLabel }}</p>
+          </article>
         </div>
 
-        <div class="member-card-card__identity-body">
+        <div class="member-card-card__profile-column">
           <div class="member-card-card__identity-grid">
             <article class="member-card-card__info-card">
               <p class="member-card-card__info-label">道号</p>
@@ -239,7 +280,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
                 {{ tag }}
               </span>
             </div>
-            <p v-else class="member-card-card__hobby-text">{{ displayHobbies }}</p>
+            <p class="member-card-card__hobby-text">{{ displayHobbies }}</p>
           </article>
         </div>
       </section>
@@ -286,14 +327,14 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   overflow: hidden;
   width: 100%;
   height: 100%;
-  border-radius: 34px;
+  border-radius: 36px;
   background:
-    radial-gradient(circle at 14% 10%, rgba(241, 217, 160, 0.18), transparent 18%),
-    radial-gradient(circle at 84% 12%, rgba(139, 208, 203, 0.16), transparent 20%),
-    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.08), transparent 28%),
-    linear-gradient(180deg, #173b4f 0%, #0d2533 42%, #07131b 100%);
-  border: 1px solid rgba(216, 185, 114, 0.24);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.36);
+    radial-gradient(circle at 12% 10%, rgba(241, 217, 160, 0.18), transparent 18%),
+    radial-gradient(circle at 84% 12%, rgba(139, 208, 203, 0.18), transparent 20%),
+    radial-gradient(circle at 52% 34%, rgba(255, 255, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, #183e52 0%, #0d2533 44%, #06131b 100%);
+  border: 1px solid rgba(216, 185, 114, 0.26);
+  box-shadow: 0 30px 74px rgba(0, 0, 0, 0.38);
   color: #f5eddc;
 }
 
@@ -305,8 +346,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
     linear-gradient(115deg, rgba(255, 255, 255, 0.08), transparent 22%),
     repeating-linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.02) 0,
-      rgba(255, 255, 255, 0.02) 1px,
+      rgba(255, 255, 255, 0.018) 0,
+      rgba(255, 255, 255, 0.018) 1px,
       transparent 1px,
       transparent 12px
     ),
@@ -317,7 +358,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
       transparent 1px,
       transparent 18px
     );
-  opacity: 0.78;
+  opacity: 0.82;
   pointer-events: none;
 }
 
@@ -325,59 +366,92 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   content: '';
   position: absolute;
   inset: 16px;
-  border-radius: 28px;
-  border: 1px solid rgba(216, 185, 114, 0.14);
+  border-radius: 30px;
+  border: 1px solid rgba(216, 185, 114, 0.16);
   pointer-events: none;
 }
 
-.member-card-card__veil,
-.member-card-card__ornament {
+.member-card-card__backdrop,
+.member-card-card__paper,
+.member-card-card__frame,
+.member-card-card__watermark,
+.member-card-card__spine {
   position: absolute;
   pointer-events: none;
 }
 
-.member-card-card__veil {
+.member-card-card__backdrop {
   inset: 0;
   background:
-    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 28%),
-    radial-gradient(circle at 50% 88%, rgba(8, 31, 45, 0.54), transparent 40%);
-  opacity: 0.9;
+    radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.09), transparent 26%),
+    radial-gradient(circle at 50% 86%, rgba(6, 24, 34, 0.6), transparent 42%);
 }
 
-.member-card-card__ornament {
-  top: 28px;
-  bottom: 28px;
+.member-card-card__paper {
+  inset: 18px;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(18, 44, 60, 0.84), rgba(7, 22, 31, 0.92)),
+    rgba(7, 27, 37, 0.54);
+  border: 1px solid rgba(147, 203, 198, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+    inset 0 24px 52px rgba(255, 255, 255, 0.03);
+}
+
+.member-card-card__frame {
+  inset: 26px;
+  border-radius: 22px;
+  border: 1px solid rgba(216, 185, 114, 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(216, 185, 114, 0.04),
+    0 0 0 1px rgba(7, 27, 37, 0.18);
+}
+
+.member-card-card__watermark {
+  right: 56px;
+  top: 176px;
+  font-size: clamp(170px, 20vw, 320px);
+  line-height: 1;
+  color: rgba(240, 223, 176, 0.08);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 30px rgba(240, 223, 176, 0.08);
+  transform: rotate(-8deg);
+  user-select: none;
+}
+
+.member-card-card__spine {
+  left: 24px;
+  top: 26px;
+  bottom: 26px;
+  display: grid;
+  grid-template-rows: 1fr auto auto 1fr;
+  justify-items: center;
+  align-items: center;
+  width: 46px;
+}
+
+.member-card-card__spine-line {
+  grid-row: 1 / -1;
   width: 1px;
-  background: linear-gradient(180deg, rgba(216, 185, 114, 0), rgba(216, 185, 114, 0.62), rgba(216, 185, 114, 0));
-  opacity: 0.72;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(216, 185, 114, 0), rgba(216, 185, 114, 0.6), rgba(216, 185, 114, 0));
 }
 
-.member-card-card__ornament::before,
-.member-card-card__ornament::after {
-  content: '';
-  position: absolute;
-  left: -4px;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.4);
-  background: rgba(7, 27, 37, 0.92);
+.member-card-card__spine-text,
+.member-card-card__spine-number {
+  position: relative;
+  z-index: 1;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  color: rgba(241, 217, 160, 0.9);
+  letter-spacing: 0.24em;
+  font-size: 12px;
 }
 
-.member-card-card__ornament::before {
-  top: 0;
-}
-
-.member-card-card__ornament::after {
-  bottom: 0;
-}
-
-.member-card-card__ornament--left {
-  left: 36px;
-}
-
-.member-card-card__ornament--right {
-  right: 36px;
+.member-card-card__spine-number {
+  color: rgba(244, 239, 226, 0.6);
 }
 
 .member-card-card__content {
@@ -386,7 +460,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   display: grid;
   gap: 14px;
   height: 100%;
-  padding: 30px 30px 24px;
+  padding: 30px 28px 24px 88px;
 }
 
 .member-card-card__masthead {
@@ -406,7 +480,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
 .member-card-card__subtitle,
 .member-card-card__info-label,
 .member-card-card__section-hint,
-.member-card-card__avatar-note,
+.member-card-card__seal-note,
 .member-card-card__year-text,
 .member-card-card__divider {
   margin: 0;
@@ -421,57 +495,76 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
 
 .member-card-card__title {
   margin: 0;
-  font-size: clamp(52px, 6.5vw, 90px);
+  font-size: clamp(54px, 6.8vw, 94px);
   line-height: 0.98;
   letter-spacing: 0.06em;
   overflow-wrap: anywhere;
   word-break: break-word;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
 }
 
 .member-card-card__subtitle {
   color: rgba(244, 239, 226, 0.72);
-  line-height: 1.72;
+  line-height: 1.74;
   letter-spacing: 0.1em;
+}
+
+.member-card-card__badge-block {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
 }
 
 .member-card-card__seal {
   position: relative;
   display: grid;
   place-items: center;
-  width: 136px;
-  min-height: 136px;
-}
-
-.member-card-card__seal-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.36);
+  width: 130px;
+  min-height: 130px;
+  padding: 16px 10px 14px;
+  border-radius: 24px;
+  border: 1px solid rgba(241, 217, 160, 0.36);
   background:
-    radial-gradient(circle at 32% 30%, rgba(216, 185, 114, 0.32), transparent 32%),
-    linear-gradient(160deg, rgba(11, 39, 53, 0.98), rgba(6, 19, 27, 0.98));
+    linear-gradient(180deg, rgba(108, 25, 25, 0.96), rgba(56, 11, 15, 0.98)),
+    rgba(7, 27, 37, 0.94);
   box-shadow:
-    inset 0 0 0 10px rgba(216, 185, 114, 0.08),
-    0 16px 30px rgba(0, 0, 0, 0.2);
+    inset 0 0 0 8px rgba(241, 217, 160, 0.06),
+    0 16px 30px rgba(0, 0, 0, 0.24);
 }
 
-.member-card-card__seal-copy {
+.member-card-card__seal::before,
+.member-card-card__seal::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(241, 217, 160, 0.12);
+}
+
+.member-card-card__seal::after {
+  inset: 18px;
+}
+
+.member-card-card__seal-top,
+.member-card-card__seal-bottom {
   position: relative;
   z-index: 1;
-  display: grid;
-  gap: 6px;
-  justify-items: center;
-  text-align: center;
+  color: rgba(244, 239, 226, 0.9);
+  font-size: 12px;
+  letter-spacing: 0.18em;
 }
 
-.member-card-card__seal-copy strong {
-  font-size: 26px;
-  letter-spacing: 0.16em;
-  color: #f0dfb0;
+.member-card-card__seal strong {
+  position: relative;
+  z-index: 1;
+  margin: 6px 0;
+  font-size: 28px;
+  letter-spacing: 0.2em;
+  color: #f3e0aa;
 }
 
-.member-card-card__seal-copy span {
-  color: rgba(244, 239, 226, 0.76);
+.member-card-card__seal-note {
+  color: rgba(244, 239, 226, 0.64);
   font-size: 12px;
   letter-spacing: 0.14em;
 }
@@ -481,12 +574,12 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  padding: 11px 16px;
+  padding: 12px 14px;
   border-radius: 18px;
-  border: 1px solid rgba(216, 185, 114, 0.18);
+  border: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(7, 31, 43, 0.62), rgba(6, 22, 31, 0.86)),
-    rgba(7, 27, 37, 0.42);
+    linear-gradient(180deg, rgba(7, 31, 43, 0.56), rgba(6, 22, 31, 0.88)),
+    rgba(7, 27, 37, 0.38);
 }
 
 .member-card-card__ribbon-item {
@@ -496,8 +589,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(7, 27, 37, 0.34);
-  color: rgba(244, 239, 226, 0.88);
+  background: rgba(7, 27, 37, 0.32);
+  color: rgba(244, 239, 226, 0.9);
   font-size: 0.8rem;
   letter-spacing: 0.08em;
 }
@@ -507,14 +600,14 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   border-color: rgba(216, 185, 114, 0.24);
 }
 
-.member-card-card__identity {
+.member-card-card__body {
   display: grid;
-  grid-template-columns: minmax(210px, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(230px, 0.84fr) minmax(0, 1.16fr);
   gap: 16px;
   align-items: start;
 }
 
-.member-card-card__avatar-panel {
+.member-card-card__avatar-column {
   display: grid;
   gap: 12px;
   justify-items: center;
@@ -527,12 +620,30 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   aspect-ratio: 1 / 1;
   place-items: center;
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 30px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   background:
-    radial-gradient(circle at 32% 28%, rgba(139, 208, 203, 0.2), transparent 30%),
-    linear-gradient(180deg, rgba(8, 29, 40, 0.92), rgba(6, 19, 27, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    radial-gradient(circle at 32% 28%, rgba(139, 208, 203, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(11, 34, 46, 0.96), rgba(6, 19, 27, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 28px rgba(0, 0, 0, 0.16);
+}
+
+.member-card-card__avatar-shell::before {
+  content: '';
+  position: absolute;
+  width: 82%;
+  height: 82%;
+  border-radius: 26px;
+  border: 1px solid rgba(241, 217, 160, 0.14);
+  pointer-events: none;
+}
+
+.member-card-card__avatar-shell,
+.member-card-card__avatar-image,
+.member-card-card__avatar-fallback {
+  position: relative;
 }
 
 .member-card-card__avatar-image,
@@ -546,22 +657,57 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 34% 32%, rgba(216, 185, 114, 0.26), transparent 30%),
+    radial-gradient(circle at 34% 32%, rgba(216, 185, 114, 0.24), transparent 30%),
     linear-gradient(145deg, rgba(16, 49, 66, 0.96), rgba(6, 19, 27, 0.98));
 }
 
 .member-card-card__avatar-fallback span {
-  font-size: clamp(2.3rem, 4vw, 3.6rem);
+  font-size: clamp(2.4rem, 4vw, 3.8rem);
   letter-spacing: 0.18em;
   color: #f0dfb0;
 }
 
-.member-card-card__avatar-note {
-  color: rgba(244, 239, 226, 0.62);
-  letter-spacing: 0.12em;
+.member-card-card__avatar-card {
+  width: min(100%, 250px);
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(147, 203, 198, 0.14);
+  background:
+    linear-gradient(180deg, rgba(14, 38, 52, 0.78), rgba(7, 27, 37, 0.92)),
+    rgba(7, 27, 37, 0.52);
+  display: grid;
+  gap: 8px;
+  text-align: center;
 }
 
-.member-card-card__identity-body {
+.member-card-card__avatar-card--accent {
+  background:
+    linear-gradient(180deg, rgba(38, 26, 14, 0.2), rgba(7, 27, 37, 0.92)),
+    rgba(7, 27, 37, 0.52);
+}
+
+.member-card-card__avatar-card-title,
+.member-card-card__avatar-card-copy,
+.member-card-card__info-value,
+.member-card-card__hobby-text,
+.member-card-card__story-copy,
+.member-card-card__signature {
+  margin: 0;
+  color: rgba(244, 239, 226, 0.94);
+  line-height: 1.74;
+  word-break: break-word;
+}
+
+.member-card-card__avatar-card-title {
+  font-size: 1.02rem;
+  color: #f0dfb0;
+}
+
+.member-card-card__avatar-card-copy {
+  font-size: 0.9rem;
+}
+
+.member-card-card__profile-column {
   display: grid;
   gap: 12px;
   min-width: 0;
@@ -586,30 +732,19 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   min-width: 0;
 }
 
-.member-card-card__info-value,
-.member-card-card__hobby-text,
-.member-card-card__story-copy,
-.member-card-card__signature {
-  margin: 0;
-  color: rgba(244, 239, 226, 0.94);
-  line-height: 1.75;
-  word-break: break-word;
-}
-
 .member-card-card__info-value {
   margin-top: 6px;
   font-size: 1rem;
 }
 
 .member-card-card__info-value--title {
-  font-size: 1.08rem;
   color: #f0dfb0;
 }
 
 .member-card-card__hobby-card {
   display: grid;
   gap: 10px;
-  min-height: 154px;
+  min-height: 160px;
   background:
     linear-gradient(180deg, rgba(20, 52, 68, 0.24), rgba(7, 27, 37, 0.92)),
     rgba(7, 27, 37, 0.52);
@@ -623,7 +758,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
 .member-card-card__section-hint {
   color: rgba(244, 239, 226, 0.56);
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.58;
   letter-spacing: 0.08em;
 }
 
@@ -642,24 +777,25 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   border: 1px solid rgba(216, 185, 114, 0.18);
   background: rgba(8, 31, 43, 0.42);
   color: #f0dfb0;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   letter-spacing: 0.06em;
 }
 
 .member-card-card__hobby-text {
-  color: rgba(244, 239, 226, 0.9);
+  color: rgba(244, 239, 226, 0.92);
+  font-size: 0.95rem;
 }
 
 .member-card-card__story-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 12px;
 }
 
 .member-card-card__story-card {
   display: grid;
   gap: 10px;
-  min-height: 172px;
+  min-height: 174px;
 }
 
 .member-card-card__story-card--origin {
@@ -670,12 +806,12 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
 
 .member-card-card__story-card--motto {
   background:
-    linear-gradient(180deg, rgba(9, 34, 44, 0.56), rgba(7, 27, 37, 0.94)),
+    linear-gradient(180deg, rgba(9, 34, 44, 0.58), rgba(7, 27, 37, 0.94)),
     rgba(7, 27, 37, 0.52);
 }
 
 .member-card-card__story-copy {
-  font-size: 1rem;
+  font-size: 0.98rem;
 }
 
 .member-card-card__story-copy--quote {
@@ -724,6 +860,31 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   letter-spacing: 0.22em;
 }
 
+.member-card-card--simple {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(241, 217, 160, 0.12), transparent 16%),
+    radial-gradient(circle at 90% 8%, rgba(139, 208, 203, 0.14), transparent 18%),
+    linear-gradient(180deg, #17384b 0%, #0d2533 44%, #06131b 100%);
+}
+
+.member-card-card--ornate {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(241, 217, 160, 0.22), transparent 16%),
+    radial-gradient(circle at 84% 10%, rgba(139, 208, 203, 0.14), transparent 18%),
+    radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, #1b4457 0%, #0c2230 44%, #051018 100%);
+}
+
+.member-card-card--ornate .member-card-card__seal {
+  box-shadow:
+    inset 0 0 0 8px rgba(241, 217, 160, 0.08),
+    0 18px 32px rgba(0, 0, 0, 0.28);
+}
+
+.member-card-card--ornate .member-card-card__watermark {
+  opacity: 0.1;
+}
+
 .member-card-card--reduced,
 .member-card-card--reduced * {
   transition: none !important;
@@ -732,18 +893,18 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
 
 @media (max-width: 960px) {
   .member-card-card__content {
-    padding: 22px 18px 18px;
+    padding: 22px 18px 18px 70px;
     gap: 12px;
   }
 
   .member-card-card__masthead,
-  .member-card-card__identity,
+  .member-card-card__body,
   .member-card-card__story-grid,
   .member-card-card__footer {
     gap: 12px;
   }
 
-  .member-card-card__identity {
+  .member-card-card__body {
     grid-template-columns: 1fr;
   }
 
@@ -762,21 +923,35 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
     border-radius: 22px;
   }
 
-  .member-card-card__ornament {
-    top: 18px;
-    bottom: 18px;
+  .member-card-card__paper {
+    inset: 12px;
+    border-radius: 22px;
   }
 
-  .member-card-card__ornament--left {
-    left: 24px;
+  .member-card-card__frame {
+    inset: 18px;
+    border-radius: 18px;
   }
 
-  .member-card-card__ornament--right {
+  .member-card-card__watermark {
     right: 24px;
+    top: 200px;
+    font-size: clamp(120px, 30vw, 220px);
+  }
+
+  .member-card-card__spine {
+    left: 16px;
+    width: 30px;
+  }
+
+  .member-card-card__spine-text,
+  .member-card-card__spine-number {
+    font-size: 10px;
+    letter-spacing: 0.16em;
   }
 
   .member-card-card__content {
-    padding: 16px 12px 14px;
+    padding: 16px 12px 14px 56px;
     gap: 10px;
   }
 
@@ -785,16 +960,18 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   }
 
   .member-card-card__seal {
-    width: 94px;
-    min-height: 94px;
+    width: 96px;
+    min-height: 96px;
+    padding: 10px 8px;
+    border-radius: 18px;
   }
 
-  .member-card-card__seal-copy strong {
-    font-size: 18px;
+  .member-card-card__seal strong {
+    font-size: 20px;
   }
 
   .member-card-card__title {
-    font-size: clamp(2rem, 8vw, 2.8rem);
+    font-size: clamp(2rem, 8vw, 2.9rem);
     line-height: 1.04;
   }
 
@@ -823,7 +1000,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
 
   .member-card-card__info-card,
   .member-card-card__hobby-card,
-  .member-card-card__story-card {
+  .member-card-card__story-card,
+  .member-card-card__avatar-card {
     padding: 12px 12px;
     border-radius: 16px;
   }
@@ -834,9 +1012,10 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   }
 
   .member-card-card__avatar-shell {
-    width: min(100%, 178px);
+    width: min(100%, 180px);
   }
 
+  .member-card-card__avatar-card,
   .member-card-card__info-value,
   .member-card-card__hobby-text,
   .member-card-card__story-copy,
@@ -846,7 +1025,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || '�
   }
 
   .member-card-card__story-copy--quote {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
   }
 
   .member-card-card__footer {
