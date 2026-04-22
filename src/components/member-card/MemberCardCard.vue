@@ -302,9 +302,9 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
   z-index: 1;
   display: grid;
   grid-template-rows: auto auto auto auto;
-  gap: 22px;
+  gap: 18px;
   height: 100%;
-  padding: 40px 40px 36px;
+  padding: 34px 34px 30px;
 }
 
 .member-card-card__header,
@@ -312,7 +312,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 .member-card-card__sections,
 .member-card-card__footer {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .member-card-card__header {
@@ -403,20 +403,20 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 }
 
 .member-card-card__hero {
-  grid-template-columns: minmax(180px, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(210px, 0.78fr) minmax(0, 1.22fr);
   align-items: stretch;
 }
 
 .member-card-card__avatar-panel {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   justify-items: center;
   align-content: start;
 }
 
 .member-card-card__avatar-shell {
   display: grid;
-  width: min(100%, 240px);
+  width: min(100%, 260px);
   aspect-ratio: 1 / 1;
   place-items: center;
   overflow: hidden;
@@ -456,7 +456,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 
 .member-card-card__profile {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -485,17 +485,21 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 
 .member-card-card__info-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .member-card-card__info-item,
 .member-card-card__summary,
 .member-card-card__section {
-  padding: 16px 18px;
-  border-radius: 22px;
+  padding: 14px 16px;
+  border-radius: 20px;
   border: 1px solid rgba(147, 203, 198, 0.14);
   background: rgba(7, 27, 37, 0.52);
+}
+
+.member-card-card__summary {
+  min-height: 132px;
 }
 
 .member-card-card__info-value,
@@ -514,15 +518,17 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 }
 
 .member-card-card__summary-copy {
-  font-size: 1rem;
+  font-size: 0.98rem;
 }
 
 .member-card-card__sections {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .member-card-card__section {
   min-height: 100%;
+  min-height: 112px;
 }
 
 .member-card-card__section--origin {
@@ -538,12 +544,12 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 }
 
 .member-card-card__section-copy--quote {
-  font-size: 1.04rem;
+  font-size: 1rem;
 }
 
 .member-card-card__footer {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  grid-template-columns: 1fr;
+  align-items: start;
 }
 
 .member-card-card__signature-group {
@@ -566,8 +572,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 .member-card-card__year-block {
   display: grid;
   gap: 8px;
-  justify-items: end;
-  text-align: right;
+  justify-items: start;
+  text-align: left;
 }
 
 .member-card-card__year-text {
@@ -587,8 +593,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
 
 @media (max-width: 960px) {
   .member-card-card__content {
-    padding: 28px 24px 24px;
-    gap: 18px;
+    padding: 24px 20px 22px;
+    gap: 14px;
   }
 
   .member-card-card__header,
@@ -603,7 +609,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
   }
 
   .member-card-card__avatar-shell {
-    width: min(100%, 220px);
+    width: min(100%, 210px);
   }
 }
 
@@ -631,8 +637,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
   }
 
   .member-card-card__content {
-    padding: 18px 14px 16px;
-    gap: 10px;
+    padding: 16px 12px 14px;
+    gap: 8px;
   }
 
   .member-card-card__header {
@@ -640,8 +646,8 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
   }
 
   .member-card-card__stamp {
-    width: 88px;
-    min-height: 88px;
+    width: 86px;
+    min-height: 86px;
   }
 
   .member-card-card__stamp-copy strong {
@@ -682,7 +688,7 @@ const createdAtLabel = computed<string>(() => (props.createdAtText?.trim() || 'å
   .member-card-card__section-copy,
   .member-card-card__signature {
     font-size: 0.88rem;
-    line-height: 1.68;
+    line-height: 1.66;
   }
 
   .member-card-card__avatar-shell {

@@ -6,6 +6,7 @@ import { memberCardCopy, memberCardFields, memberCardTemplates, createDefaultMem
 import { useMemberCardStorage } from '@/composables/useMemberCardStorage'
 import type {
   MemberCardArchiveRecord,
+  MemberCardEditableFieldKey,
   MemberCardFormValue,
   MemberCardTemplateConfig,
   MemberCardTemplateKey,
@@ -219,6 +220,30 @@ function normalizeFormValue(rawForm: MemberCardFormValue): MemberCardFormValue {
     avatarDataUrl: rawForm.avatarDataUrl.trim(),
     templateKey: rawForm.templateKey,
   }
+}
+
+/**
+ * 更新单个表单项
+ * 用途：把输入框里的最新内容稳稳写回名片表单，避免动态绑定漏值
+ * 入参：fieldKey 为字段键名，fieldValue 为用户刚输入的内容
+ * 返回值：无返回值
+ */
+function handleFieldInput(fieldKey: MemberCardEditableFieldKey, fieldValue: string): void {
+  formValue.value = {
+    ...formValue.value,
+    [fieldKey]: fieldValue,
+  }
+}
+
+/**
+ * 读取输入框当前值
+ * 用途：把原生输入事件里的内容统一取出来，避免模板里写太多判断
+ * 入参：event 为输入事件
+ * 返回值：返回当前输入框的文本
+ */
+function readInputValue(event: Event): string {
+  const target = event.target as HTMLInputElement | HTMLTextAreaElement | null
+  return target?.value ?? ''
 }
 
 /**
@@ -680,8 +705,9 @@ async function copyTextToClipboard(text: string): Promise<boolean> {
  * 返回值：无返回值
  */
 async function handleGenerateCard(): Promise<void> {
+  await nextTick()
   isProgrammaticChange.value = true
-  const normalizedForm = normalizeFormValue(formValue.value)
+  const normalizedForm = normalizeFormValue({ ...formValue.value })
   formValue.value = normalizedForm
   memberCardStorage.saveDraft(normalizedForm)
 
@@ -956,15 +982,23 @@ watch(
             class="member-card-studio__field"
           >
             <span class="member-card-studio__field-label">{{ field.label }}</span>
-            <component
-              :is="field.rows ? 'textarea' : 'input'"
-              v-model="formValue[field.key]"
-              class="member-card-studio__input"
-              :class="{ 'member-card-studio__input--textarea': Boolean(field.rows) }"
+            <textarea
+              v-if="field.rows"
+              :value="formValue[field.key]"
+              class="member-card-studio__input member-card-studio__input--textarea"
               :maxlength="field.maxLength"
               :placeholder="field.placeholder"
               :rows="field.rows"
-              :type="field.rows ? undefined : 'text'"
+              @input="handleFieldInput(field.key, readInputValue($event))"
+            ></textarea>
+            <input
+              v-else
+              :value="formValue[field.key]"
+              class="member-card-studio__input"
+              :maxlength="field.maxLength"
+              :placeholder="field.placeholder"
+              type="text"
+              @input="handleFieldInput(field.key, readInputValue($event))"
             />
             <span class="member-card-studio__field-help">{{ field.help }}</span>
           </label>
