@@ -903,7 +903,10 @@ onBeforeUnmount(() => {
   width: min(1120px, 100%);
   height: calc(100vh - 36px - env(safe-area-inset-bottom));
   max-height: calc(100vh - 36px - env(safe-area-inset-bottom));
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 18px;
   border: 1px solid rgba(147, 203, 198, 0.22);
   border-radius: 32px;
@@ -928,12 +931,8 @@ onBeforeUnmount(() => {
 
 .assessment-exam__body {
   display: grid;
-  flex: 1 1 auto;
-  min-height: 0;
   gap: 14px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: 2px;
+  min-height: 0;
 }
 
 .assessment-exam__actions--dialog {
@@ -1286,8 +1285,8 @@ onBeforeUnmount(() => {
 
   .assessment-exam-dialog__panel {
     width: 100%;
-    height: calc(86vh - env(safe-area-inset-bottom));
-    max-height: calc(86vh - env(safe-area-inset-bottom));
+    height: calc(100dvh - 16px - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 16px - env(safe-area-inset-bottom));
     padding: 12px 10px;
     border-radius: 22px;
   }
