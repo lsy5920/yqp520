@@ -1,132 +1,149 @@
 import type {
   MemberCardFieldConfig,
+  MemberCardFieldGroupConfig,
   MemberCardFormValue,
-  MemberCardTemplateConfig,
-  MemberCardTemplateKey,
 } from '@/types/memberCard'
 
-// 这里定义名帖草稿和档案在浏览器里保存时要用的键名，避免和旧版本混在一起。
+// 这里定义江湖名帖本机存储要用到的键名，方便新旧版本分开管理与迁移。
 export const memberCardStorageKeys = {
-  state: 'yunqi-member-card-state-v2',
-  draft: 'yunqi-member-card-draft',
-  archives: 'yunqi-member-card-archives',
+  state: 'yunqi-jianghu-card-state-v3',
+  legacyState: 'yunqi-member-card-state-v2',
+  legacyDraft: 'yunqi-member-card-draft',
+  legacyArchives: 'yunqi-member-card-archives',
 } as const
 
-// 这里定义名帖表单的默认内容，所有新同门第一次打开页面都会从这里开始。
+// 这里定义江湖名帖的默认空白表单，方便首次进入页面时直接渲染。
 export const memberCardDefaultForm: MemberCardFormValue = {
-  daoName: '',
-  worldName: '',
-  residence: '',
-  shortTags: '',
-  origin: '',
-  motto: '',
-  avatarDataUrl: '',
-  templateKey: 'qingya',
+  jianghuName: '',
+  formerName: '',
+  fromPlace: '',
+  identityLine: '',
+  skillTags: '',
+  entryStory: '',
+  signatureLine: '',
+  portraitDataUrl: '',
 }
 
-// 这里定义名帖填写项，页面会按这个顺序渲染表单。
+// 这里定义江湖名帖全部字段配置，方便工作台统一渲染输入框。
 export const memberCardFields: MemberCardFieldConfig[] = [
   {
-    key: 'daoName',
-    label: '道号',
-    placeholder: '例如：云泽、栖月、听雨',
-    help: '先写你在云栖派想用的道号，这一项会放在名帖最显眼的位置。',
+    key: 'jianghuName',
+    label: '江湖名号',
+    placeholder: '例如：云泽、栖尘、听雪',
+    help: '这是整张名帖最醒目的主标题，建议短一点、稳一点。',
     maxLength: 18,
   },
   {
-    key: 'worldName',
-    label: '俗世名号',
+    key: 'formerName',
+    label: '旧名或本名',
     placeholder: '可留空，愿意再写',
-    help: '真实姓名不是必填项，想留就留，不留也完全没关系。',
+    help: '可写旧名、俗名或别人最常叫你的名字，不写也没关系。',
     maxLength: 18,
   },
   {
-    key: 'residence',
-    label: '所居地域',
-    placeholder: '例如：浙江台州',
-    help: '只写城市或常住地即可，方便同门知道你从哪里来。',
-    maxLength: 18,
+    key: 'fromPlace',
+    label: '来处',
+    placeholder: '例如：浙江台州、临安旧地',
+    help: '写城市、州府、常住地或一句来处都可以，点到为止更有味道。',
+    maxLength: 24,
   },
   {
-    key: 'shortTags',
-    label: '门中短签',
-    placeholder: '例如：闲观风月，喜读书，爱散步',
-    help: '可写兴趣、爱好、擅长之事，用顿号、逗号或换行隔开后，会自动排成几枚短签。',
+    key: 'identityLine',
+    label: '身份一句',
+    placeholder: '例如：云栖门下行脚客',
+    help: '用一句短话概括你的门中气质，像一枚安静的小题记。',
+    maxLength: 28,
+  },
+  {
+    key: 'skillTags',
+    label: '江湖短签',
+    placeholder: '例如：听风观云，喜读书，善夜谈',
+    help: '可写兴趣、习惯、擅长之事，用逗号、顿号或换行隔开后会自动拆成短签。',
     rows: 2,
     maxLength: 120,
   },
   {
-    key: 'origin',
-    label: '入栖初心',
-    placeholder: '例如：愿寻同道之人，心有归栖',
-    help: '说说你为什么愿意加入云栖派，越真诚越好。',
-    rows: 3,
-    maxLength: 120,
+    key: 'entryStory',
+    label: '入门缘起',
+    placeholder: '例如：愿在纷扰人间里，寻几位能放心说真话的同道。',
+    help: '写一段你为何想在云栖留名的话，越真诚越有江湖气。',
+    rows: 4,
+    maxLength: 160,
   },
   {
-    key: 'motto',
-    label: '心之所语',
-    placeholder: '例如：行止从容，本心自持',
-    help: '可以是一句座右铭，也可以是一句想对同门说的话。',
+    key: 'signatureLine',
+    label: '留名一句',
+    placeholder: '例如：既见同道，愿并肩而行',
+    help: '这一句会出现在名帖底部收束区，适合写成一句干净落款。',
     rows: 2,
     maxLength: 60,
   },
 ]
 
-// 这里定义名帖模板，用户可以在“清雅门帖”和“朱印典藏”之间切换。
-export const memberCardTemplates: MemberCardTemplateConfig[] = [
+// 这里定义工作台三段式分组，让填写顺序更像在正式立帖。
+export const memberCardFieldGroups: MemberCardFieldGroupConfig[] = [
   {
-    key: 'qingya',
-    name: '清雅门帖',
-    description: '留白更轻，适合日常群发，读起来更像一张清净门帖。',
-    cardClass: 'member-card-card--qingya',
+    key: 'naming',
+    label: '立名',
+    title: '先定名号与来处',
+    lead: '先把江湖名号、旧名和来处立稳，整张名帖的骨架就出来了。',
+    fieldKeys: ['jianghuName', 'formerName', 'fromPlace'],
   },
   {
-    key: 'zhuyin',
-    name: '朱印典藏',
-    description: '朱印更重，适合收藏留念，也更像一卷宗门典藏帖。',
-    cardClass: 'member-card-card--zhuyin',
+    key: 'identity',
+    label: '立身',
+    title: '再写身份与短签',
+    lead: '身份一句负责定气，江湖短签负责让人物更鲜活。',
+    fieldKeys: ['identityLine', 'skillTags'],
+  },
+  {
+    key: 'closing',
+    label: '留帖',
+    title: '最后写缘起与落款',
+    lead: '这一段会决定整张名帖最后留下来的温度。',
+    fieldKeys: ['entryStory', 'signatureLine'],
   },
 ]
 
-// 这里定义页面上的总标题和提示文案，保证名帖页一进来就知道要做什么。
+// 这里集中定义江湖名帖页要用到的全部文案，方便页面和卡片统一取值。
 export const memberCardCopy = {
-  banner: {
-    eyebrow: '同门入山',
-    title: '制我栖名门帖',
-    lead:
-      '先写道号、俗名与居处，再补几枚门中短签，系统便会自动排成一张云栖专属门帖。文字版可直发群聊，图片版可留在本机同门录里。',
-    note: '草稿、头像与已生成名帖都会保存在本机，刷新后也能继续接着写。',
+  page: {
+    eyebrow: '云栖派 · 江湖名帖',
+    title: '立一纸江湖名帖',
+    lead: '把名号、来处、身份一句与缘起写下，系统便会排成一张更像正式门籍的江湖正帖。',
+    note: '新版以成图为主，草稿会自动保存在本机，文字版可随时复制。',
+  },
+  studio: {
+    previewEyebrow: '江湖正帖',
+    previewLead: '左侧看到的就是最终成图，保存时不会再切换另一套版式。',
+    portraitTitle: '人像',
+    portraitLead: '人像是可选项，不传也会自动用名号首字占位。',
+    copyTitle: '文字版只作次要能力',
+    copyLead: '点击即可生成简洁文字版，适合直接发进群里，不再单独占一大块主界面。',
   },
   introLines: [
-    '先写道号与短签，名帖主位会先落在中间。',
-    '文字版和图片版共用同一张卡面，预览与下载会保持一致。',
-    '已生成名帖会自动归档到本机同门录，方便日后翻阅。',
+    '立帖时先定名号，再补来处与身份一句，画面会立刻稳下来。',
+    '江湖短签会自动拆成几枚小签，不用手动排版。',
+    '草稿会自动保存在本机，刷新后还能接着写。',
   ],
-  archive: {
-    title: '云栖同门录',
-    lead: '这里会保存本机已经生成过的名帖，方便后续沿用、翻看与删除。',
-    empty: '当前还没有同门名帖，先生成第一张吧。',
-  },
   generated: {
-    title: '『云栖派 · 同门名帖』',
-    subtitle: '云深栖心 · 同道同归',
-    sideMark: '云栖同门录',
+    title: '『云栖派 · 江湖名帖』',
+    subtitle: '云深栖心 · 门籍留名',
+    sideMark: '云栖门籍',
+    sealText: '江湖正帖',
     signaturePrefix: '云栖门下',
     yearText: '立派纪年 · 丙午年',
-    fallbackDaoName: '未题道号',
-    fallbackWorldName: '俗名未留',
-    fallbackResidence: '暂未留居处',
-    fallbackShortTags: '闲观风月，静享清欢',
-    fallbackOrigin: '愿寻同道之人，心有归栖',
-    fallbackMotto: '行止从容，本心自持',
+    fallbackJianghuName: '未题名号',
+    fallbackFormerName: '旧名未留',
+    fallbackFromPlace: '来处未落',
+    fallbackIdentityLine: '云栖门下未留身份一句',
+    fallbackSkillTags: '听风观云，闲行人间',
+    fallbackEntryStory: '愿在纷扰尘世里，留一纸清净门籍，与同道相见。',
+    fallbackSignatureLine: '既见同道，愿并肩而行',
   },
 } as const
 
-// 这里把默认模板单独导出，方便初始化和回填草稿时直接复用。
-export const memberCardDefaultTemplateKey: MemberCardTemplateKey = memberCardDefaultForm.templateKey
-
-// 这里提供一个生成空白草稿的函数，避免多个地方手写同样的默认值。
+// 这里提供生成空白草稿的函数，避免多个地方重复手写默认值。
 export function createDefaultMemberCardForm(): MemberCardFormValue {
   return {
     ...memberCardDefaultForm,

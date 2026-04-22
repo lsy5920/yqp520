@@ -93,10 +93,10 @@ useRevealMotion({
 
     <section class="content-section" data-reveal>
       <div class="section-heading">
-        <p class="eyebrow">同门入山门帖</p>
-        <h2>填七项，就能生成一张云栖专属古风门帖</h2>
+        <p class="eyebrow">江湖名帖</p>
+        <h2>填好名号与缘起，就能立成一张云栖江湖正帖</h2>
         <p>
-          新同门只要把道号（宗门称谓）、所处地域、门中短签与入栖初心写清楚，系统便会自动排版成可直接发群的文字版和高清图片版。
+          现在这套名帖已经重做成沉浸式单屏工作台。你只要写下江湖名号、来处、身份一句、江湖短签、入门缘起和留名一句，系统就会自动排成更正式的江湖名帖成图。
         </p>
       </div>
 
@@ -110,12 +110,12 @@ useRevealMotion({
         </article>
 
         <article class="content-card content-card--serif">
-          <p class="content-card__eyebrow">进入门帖页</p>
-          <h3>先生成门帖，再归档同门录</h3>
-          <p>生成完成后，文字版可以直接发进微信群，图片版会保存在本机同门录里，方便日后翻阅。</p>
+          <p class="content-card__eyebrow">进入名帖页</p>
+          <h3>以成图为主，草稿会自动续写</h3>
+          <p>新版以高清成图为主能力，同时保留自动存草稿和文字版复制。刷新页面后会优先恢复当前草稿，不再展示旧式归档列表。</p>
           <div class="page-banner__actions">
             <RouterLink class="ink-button ink-button--primary" to="/member-card">
-              制我栖名门帖
+              生成江湖帖
             </RouterLink>
             <RouterLink class="ink-button ink-button--ghost" to="/poster">
               顺手看云栖海报

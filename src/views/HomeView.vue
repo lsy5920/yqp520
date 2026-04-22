@@ -59,7 +59,7 @@ function handleMusicEntry(): void {
             {{ musicButtonLabel }}
           </button>
           <RouterLink to="/member-card" class="ink-button ink-button--ghost">
-            制我栖名门帖
+            生成江湖帖
           </RouterLink>
         </div>
       </div>
