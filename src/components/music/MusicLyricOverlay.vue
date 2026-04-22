@@ -250,7 +250,7 @@ function formatCharacter(character: string): string {
 
 @media (max-width: 720px) {
   .music-lyric-overlay {
-    bottom: calc(var(--site-lyric-bottom-mobile, 142px) + env(safe-area-inset-bottom));
+    bottom: calc(var(--site-lyric-bottom-mobile, var(--site-lyric-bottom, 34px)) + env(safe-area-inset-bottom));
     max-width: calc(100vw - 24px);
   }
 

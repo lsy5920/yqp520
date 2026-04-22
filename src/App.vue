@@ -37,7 +37,7 @@ const siteShellStyle = computed<Record<string, string>>(() => {
     '--site-backtop-bottom': '214px',
     '--site-backtop-bottom-mobile': '214px',
     '--site-lyric-bottom': '44px',
-    '--site-lyric-bottom-mobile': '286px',
+    '--site-lyric-bottom-mobile': '44px',
   }
 })
 
