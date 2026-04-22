@@ -16,6 +16,18 @@ const resultSummaryRef = ref<HTMLElement | null>(null)
 // 这里拿到题目列表节点，方便开考后自动滚到真正的作答区域。
 const examQuestionListRef = ref<HTMLElement | null>(null)
 
+// 这里拿到答题弹窗滚动面板，方便章节切换时只滚动弹窗内部，不误伤外层页面。
+const examDialogPanelRef = ref<HTMLElement | null>(null)
+
+// 这里拿到答题正文起点，方便切换章节后稳定回到当前章节的起始位置。
+const examBodyRef = ref<HTMLElement | null>(null)
+
+// 这里记录答题弹窗当前是否可见，支持临时退出后继续作答。
+const isExamDialogVisible = ref<boolean>(false)
+
+// 这里保存临时退出前的弹窗滚动位置，方便恢复时回到刚才看到的地方。
+const lastExamDialogScrollTop = ref<number>(0)
+
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
   rootRef: pageRef,
@@ -124,7 +136,7 @@ const shouldShowRetakeNotice = computed<boolean>(() => Boolean(latestResult.valu
  * 是否正在显示考核弹窗
  * 用途：给页面根节点统一加锁，避免答题时背景还能点到和滚动到
  */
-const isExamDialogOpen = computed<boolean>(() => phase.value === 'exam')
+const isExamDialogOpen = computed<boolean>(() => phase.value === 'exam' && isExamDialogVisible.value)
 
 /**
  * 格式化交卷时间
@@ -165,20 +177,115 @@ function scrollToTarget(target: HTMLElement | null, offset = 104): void {
 }
 
 /**
- * 滚到考题区域
- * 用途：弹窗打开后直接让用户看到题目和选项，而不是停在上方说明区
- * 入参：target 为题目列表节点
+ * 计算弹窗内目标滚动位置
+ * 用途：把目标节点换算成弹窗面板内部的准确滚动高度
+ * 入参：target 为要滚动到的节点，offset 为顶部预留距离
+ * 返回值：返回弹窗内部应滚动到的高度
+ */
+function resolveExamDialogScrollTop(target: HTMLElement, offset = 8): number {
+  const panel = examDialogPanelRef.value
+
+  if (!panel) {
+    return 0
+  }
+
+  const panelRect = panel.getBoundingClientRect()
+  const targetRect = target.getBoundingClientRect()
+  return Math.max(0, panel.scrollTop + targetRect.top - panelRect.top - offset)
+}
+
+/**
+ * 滚到当前章节起始位置
+ * 用途：进入答题弹窗或切换章节后，只在弹窗内部回到当前章开头
+ * 入参：behavior 为滚动方式
  * 返回值：无返回值
  */
-function scrollToExamQuestions(target: HTMLElement | null): void {
-  if (!target) {
+function scrollExamDialogToBodyStart(behavior: ScrollBehavior = 'auto'): void {
+  const panel = examDialogPanelRef.value
+  const target = examBodyRef.value ?? examQuestionListRef.value
+
+  if (!panel || !target) {
     return
   }
 
-  target.scrollIntoView({
-    block: 'start',
-    behavior: 'smooth',
+  panel.scrollTo({
+    top: resolveExamDialogScrollTop(target),
+    behavior,
   })
+}
+
+/**
+ * 记录弹窗滚动位置
+ * 用途：临时退出时记住当前进度位置，方便继续作答时无缝回到原处
+ * 入参：无
+ * 返回值：无返回值
+ */
+function captureExamDialogScrollTop(): void {
+  if (!examDialogPanelRef.value) {
+    return
+  }
+
+  lastExamDialogScrollTop.value = examDialogPanelRef.value.scrollTop
+}
+
+/**
+ * 恢复弹窗滚动位置
+ * 用途：继续作答时回到临时退出前看到的位置，不让用户重新寻找题目
+ * 入参：无
+ * 返回值：无返回值
+ */
+function restoreExamDialogScrollTop(): void {
+  if (!examDialogPanelRef.value) {
+    return
+  }
+
+  examDialogPanelRef.value.scrollTo({
+    top: Math.max(0, lastExamDialogScrollTop.value),
+    behavior: 'auto',
+  })
+}
+
+/**
+ * 打开答题弹窗
+ * 用途：统一处理首次开考和继续作答两种场景的弹窗恢复逻辑
+ * 入参：shouldRestoreScroll 为是否恢复上次退出前的滚动位置
+ * 返回值：无返回值
+ */
+async function openExamDialog(shouldRestoreScroll = false): Promise<void> {
+  isExamDialogVisible.value = true
+  await nextTick()
+
+  if (shouldRestoreScroll) {
+    restoreExamDialogScrollTop()
+    return
+  }
+
+  scrollExamDialogToBodyStart()
+}
+
+/**
+ * 临时退出答题弹窗
+ * 用途：先收起弹窗看页面其他区域，同时保留答题进度和当前滚动位置
+ * 入参：无
+ * 返回值：无返回值
+ */
+function temporarilyExitExamDialog(): void {
+  captureExamDialogScrollTop()
+  isExamDialogVisible.value = false
+}
+
+/**
+ * 继续作答
+ * 用途：把临时退出的答题弹窗重新打开，并回到刚才看到的位置
+ * 入参：无
+ * 返回值：无返回值
+ */
+async function resumeExamDialog(): Promise<void> {
+  if (phase.value !== 'exam') {
+    return
+  }
+
+  await openExamDialog(true)
 }
 
 /**
@@ -196,20 +303,47 @@ function syncExamDialogLock(isLocked: boolean): void {
   document.body.classList.toggle(EXAM_DIALOG_LOCK_CLASS, isLocked)
 }
 
-// 这里监听考核阶段变化，答题时打开弹窗锁，交卷后滚回结果摘要。
+// 这里监听考核弹窗显示状态，只有弹窗真正打开时才锁住背景页面滚动。
+watch(
+  isExamDialogOpen,
+  (isOpen) => {
+    syncExamDialogLock(isOpen)
+  },
+)
+
+// 这里监听考核阶段变化，进入答题时自动打开弹窗，交卷后滚回结果摘要。
 watch(
   phase,
   async (nextPhase) => {
-    syncExamDialogLock(nextPhase === 'exam')
-    await nextTick()
-
     if (nextPhase === 'exam') {
-      scrollToExamQuestions(examQuestionListRef.value)
+      await openExamDialog(false)
+      return
     }
+
+    isExamDialogVisible.value = false
+
+    await nextTick()
 
     if (nextPhase === 'result') {
       scrollToTarget(resultSummaryRef.value)
     }
+  },
+)
+
+// 这里监听章节切换，确保点击上一章或下一章后回到当前章节开头，而不是停在列表中段。
+watch(
+  currentSectionIndex,
+  async (nextSectionIndex, previousSectionIndex) => {
+    if (
+      phase.value !== 'exam'
+      || !isExamDialogVisible.value
+      || nextSectionIndex === previousSectionIndex
+    ) {
+      return
+    }
+
+    await nextTick()
+    scrollExamDialogToBodyStart()
   },
 )
 
@@ -245,15 +379,25 @@ onBeforeUnmount(() => {
         >
           开始考核
         </button>
-        <button
-          v-else-if="phase === 'exam'"
-          type="button"
-          class="ink-button ink-button--primary"
-          :disabled="isSubmitting"
-          @click="submitExam"
-        >
-          {{ isSubmitting ? '正在交卷...' : '立即交卷' }}
-        </button>
+        <template v-else-if="phase === 'exam'">
+          <button
+            v-if="!isExamDialogOpen"
+            type="button"
+            class="ink-button ink-button--primary"
+            @click="resumeExamDialog"
+          >
+            继续作答
+          </button>
+          <button
+            v-if="!isExamDialogOpen"
+            type="button"
+            class="ink-button ink-button--ghost"
+            :disabled="isSubmitting"
+            @click="submitExam"
+          >
+            {{ isSubmitting ? '正在交卷...' : '立即交卷' }}
+          </button>
+        </template>
         <button
           v-else
           type="button"
@@ -347,12 +491,43 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
+    <section v-if="phase === 'exam' && !isExamDialogOpen" class="content-section" data-reveal>
+      <article class="content-card content-card--soft assessment-exam__resume-card">
+        <p class="eyebrow">答题已临时退出</p>
+        <h2>{{ participantTitle }} · 本轮考核仍在进行中</h2>
+        <p class="assessment-exam__resume-lead">
+          你刚刚离开了答题弹窗，当前答题进度已经保留，倒计时也会继续走。准备好了就点“继续作答”回到刚才的位置。
+        </p>
+
+        <div class="assessment-exam__resume-meta">
+          <span>剩余时间：{{ remainingTimeText }}</span>
+          <span>当前章节：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
+          <span>本章：{{ currentSection?.title || '当前章节' }}</span>
+          <span>已答题数：{{ answeredCount }} / {{ totalQuestions }}</span>
+        </div>
+
+        <div class="assessment-exam__resume-actions">
+          <button type="button" class="ink-button ink-button--primary" @click="resumeExamDialog">
+            继续作答
+          </button>
+          <button
+            type="button"
+            class="ink-button ink-button--ghost"
+            :disabled="isSubmitting"
+            @click="submitExam"
+          >
+            {{ isSubmitting ? '正在交卷...' : '立即交卷' }}
+          </button>
+        </div>
+      </article>
+    </section>
+
     <Teleport to="body">
       <Transition name="exam-dialog-fade">
-        <div v-if="phase === 'exam'" class="assessment-exam-dialog" role="dialog" aria-modal="true" :aria-labelledby="'assessment-exam-dialog-title'">
+        <div v-if="isExamDialogOpen" class="assessment-exam-dialog" role="dialog" aria-modal="true" :aria-labelledby="'assessment-exam-dialog-title'">
           <div class="assessment-exam-dialog__backdrop" aria-hidden="true"></div>
 
-          <div class="assessment-exam-dialog__panel">
+          <div ref="examDialogPanelRef" class="assessment-exam-dialog__panel">
             <section class="assessment-exam assessment-exam--dialog">
               <div class="assessment-exam__sticky">
                 <article class="assessment-exam__overview content-card content-card--soft">
@@ -361,9 +536,20 @@ onBeforeUnmount(() => {
                       <p class="eyebrow">答题进行中</p>
                       <h2 :id="'assessment-exam-dialog-title'">{{ participantTitle }} · 正在问心</h2>
                     </div>
-                    <div class="assessment-exam__time-card">
-                      <span>剩余时间</span>
-                      <strong>{{ remainingTimeText }}</strong>
+
+                    <div class="assessment-exam__overview-side">
+                      <div class="assessment-exam__time-card">
+                        <span>剩余时间</span>
+                        <strong>{{ remainingTimeText }}</strong>
+                      </div>
+
+                      <button
+                        type="button"
+                        class="ink-button ink-button--ghost assessment-exam__temporary-exit"
+                        @click="temporarilyExitExamDialog"
+                      >
+                        临时退出
+                      </button>
                     </div>
                   </div>
 
@@ -391,7 +577,7 @@ onBeforeUnmount(() => {
                 </article>
               </div>
 
-              <div class="assessment-exam__body">
+              <div ref="examBodyRef" class="assessment-exam__body">
                 <article v-if="currentSection" class="content-card assessment-exam__chapter-card">
                   <p class="eyebrow">{{ currentSection.eyebrow }}</p>
                   <h2>{{ currentSection.title }}</h2>
@@ -783,6 +969,12 @@ onBeforeUnmount(() => {
   word-break: break-word;
 }
 
+.assessment-exam__overview-side {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
 .assessment-exam__time-card,
 .assessment-result__score-badge {
   display: grid;
@@ -812,6 +1004,10 @@ onBeforeUnmount(() => {
   background:
     linear-gradient(180deg, rgba(239, 245, 233, 0.96), rgba(214, 233, 205, 0.94)),
     rgba(239, 245, 233, 0.96);
+}
+
+.assessment-exam__temporary-exit {
+  min-width: 170px;
 }
 
 .assessment-exam__section-track {
@@ -873,6 +1069,44 @@ onBeforeUnmount(() => {
 .assessment-exam__question-list {
   display: grid;
   gap: 18px;
+}
+
+.assessment-exam__resume-card {
+  display: grid;
+  gap: 20px;
+}
+
+.assessment-exam__resume-card h2,
+.assessment-exam__resume-lead {
+  margin: 0;
+}
+
+.assessment-exam__resume-lead {
+  color: rgba(244, 239, 226, 0.76);
+  line-height: 1.82;
+}
+
+.assessment-exam__resume-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.assessment-exam__resume-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(216, 185, 114, 0.1);
+  color: rgba(241, 217, 160, 0.94);
+  font-size: 0.88rem;
+}
+
+.assessment-exam__resume-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .assessment-exam-dialog {
@@ -1143,11 +1377,20 @@ onBeforeUnmount(() => {
     padding: 20px 18px;
   }
 
+  .assessment-exam__overview-side {
+    justify-items: start;
+  }
+
   .assessment-exam__time-card {
     min-width: 0;
     width: 100%;
     justify-items: start;
     padding: 16px 18px;
+  }
+
+  .assessment-exam__temporary-exit {
+    min-width: 0;
+    width: 100%;
   }
 
   .assessment-result__score-badge {
@@ -1217,14 +1460,16 @@ onBeforeUnmount(() => {
 
   .assessment-ready__actions,
   .assessment-exam__actions,
-  .assessment-result__actions {
+  .assessment-result__actions,
+  .assessment-exam__resume-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
   .assessment-ready__actions .ink-button,
   .assessment-exam__actions .ink-button,
-  .assessment-result__actions .ink-button {
+  .assessment-result__actions .ink-button,
+  .assessment-exam__resume-actions .ink-button {
     width: 100%;
   }
 
@@ -1240,7 +1485,8 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__progress-meta span,
-  .assessment-exam__chapter-meta span {
+  .assessment-exam__chapter-meta span,
+  .assessment-exam__resume-meta span {
     flex: 1 1 100%;
     justify-content: center;
     min-height: 34px;
