@@ -1153,13 +1153,14 @@ watch(
 .member-card-studio__preview-head {
   display: grid;
   gap: 10px;
+  width: min(100%, 560px);
+  justify-self: center;
 }
 
 .member-card-studio__preview-viewport {
   display: grid;
   place-items: center;
-  width: 100%;
-  min-height: 680px;
+  width: min(100%, 560px);
   padding: 12px;
   border-radius: 28px;
   border: 1px solid rgba(216, 185, 114, 0.14);
@@ -1168,6 +1169,7 @@ watch(
     linear-gradient(180deg, rgba(8, 29, 40, 0.7), rgba(4, 18, 28, 0.94)),
     rgba(5, 18, 28, 0.78);
   overflow: hidden;
+  justify-self: center;
 }
 
 .member-card-studio__preview-source {
@@ -1188,6 +1190,8 @@ watch(
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  width: min(100%, 560px);
+  justify-self: center;
 }
 
 .member-card-studio__summary-item {
@@ -1227,6 +1231,8 @@ watch(
 .member-card-studio__copy-card {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  width: min(100%, 560px);
+  justify-self: center;
 }
 
 /* 这里放右侧人像卡，负责上传入口和简短填写提示。 */
@@ -1468,7 +1474,6 @@ watch(
   }
 
   .member-card-studio__preview-viewport {
-    min-height: 500px;
     padding: 6px;
   }
 
