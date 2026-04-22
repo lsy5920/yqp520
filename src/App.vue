@@ -18,7 +18,6 @@ const {
   initializeAudio,
   isPlaying,
   lastError,
-  nextLyricLine,
   shouldShowLyricOverlay,
   togglePlayback,
 } = useSiteAudio(siteContent.musicTracks)
@@ -73,8 +72,6 @@ onMounted(() => {
 
     <MusicLyricOverlay
       :current-line="currentLyricLine?.text ?? ''"
-      :next-line="nextLyricLine?.text ?? ''"
-      :track-name="currentTrack?.name ?? '云栖清音'"
       :visible="shouldShowLyricOverlay"
     />
 
