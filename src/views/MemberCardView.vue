@@ -9,9 +9,15 @@ import { memberCardCopy } from '@/data/memberCardContent'
 // 这里保存当前页面根节点，供页面显现动效统一使用。
 const pageRef = ref<HTMLElement | null>(null)
 
-// 这里启用云栖同门名片页的滚动显现动效。
+// 这里判断当前是不是手机小屏，小屏时直接展示内容，避免主内容先被动效藏起来。
+const shouldReduceRevealMotion = typeof window !== 'undefined'
+  ? window.matchMedia('(max-width: 720px)').matches
+  : false
+
+// 这里启用云栖同门名片页的滚动显现动效，手机端则改为直接展示。
 useRevealMotion({
   rootRef: pageRef,
+  reducedMotion: { value: shouldReduceRevealMotion },
 })
 </script>
 
