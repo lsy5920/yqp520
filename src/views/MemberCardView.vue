@@ -14,6 +14,9 @@ const shouldReduceRevealMotion = typeof window !== 'undefined'
   ? window.matchMedia('(max-width: 720px)').matches
   : false
 
+// 这里判断手机端是否要收起页头引导卡，给真正的名帖编辑区留出更多空间。
+const shouldHideHeroBanner = shouldReduceRevealMotion
+
 // 这里启用云栖同门名帖页的滚动显现动效，手机端则改为直接显示。
 useRevealMotion({
   rootRef: pageRef,
@@ -24,6 +27,7 @@ useRevealMotion({
 <template>
   <div ref="pageRef" class="page page--member-card">
     <PageBanner
+      v-if="!shouldHideHeroBanner"
       :eyebrow="memberCardCopy.banner.eyebrow"
       :title="memberCardCopy.banner.title"
       :lead="memberCardCopy.banner.lead"

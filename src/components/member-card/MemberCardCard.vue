@@ -153,6 +153,17 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
  * 用途：给短签区补一行提示，避免标签太少时显得空
  */
 const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.length} 枚短签`)
+
+/**
+ * 底部总记
+ * 用途：把门帖的关键信息再收一遍，顺手填满底部留白
+ */
+const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
+  { label: '门帖样式', value: props.template.name },
+  { label: '门帖编号', value: numberText.value },
+  { label: '门中印记', value: memberCardCopy.generated.sideMark },
+  { label: '立派纪年', value: props.yearText },
+]))
 </script>
 
 <template>
@@ -202,14 +213,16 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
       <section class="member-card-card__body">
         <div class="member-card-card__portrait">
-          <img
-            v-if="form.avatarDataUrl"
-            class="member-card-card__portrait-image"
-            :src="form.avatarDataUrl"
-            :alt="`${displayDaoName} 的头像`"
-          />
-          <div v-else class="member-card-card__portrait-fallback" aria-hidden="true">
-            <span>{{ avatarInitial }}</span>
+          <div class="member-card-card__portrait-frame">
+            <img
+              v-if="form.avatarDataUrl"
+              class="member-card-card__portrait-image"
+              :src="form.avatarDataUrl"
+              :alt="`${displayDaoName} 的头像`"
+            />
+            <div v-else class="member-card-card__portrait-fallback" aria-hidden="true">
+              <span>{{ avatarInitial }}</span>
+            </div>
           </div>
 
           <div class="member-card-card__portrait-caption">
@@ -261,6 +274,27 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
               <p class="member-card-card__section-label">心之所语</p>
               <p class="member-card-card__story-text member-card-card__story-text--quote">“{{ displayMotto }}”</p>
             </article>
+          </section>
+
+          <section class="member-card-card__closing">
+            <div class="member-card-card__closing-copy">
+              <p class="member-card-card__section-label">门帖总记</p>
+              <strong class="member-card-card__closing-title">{{ memberCardCopy.generated.subtitle }}</strong>
+              <p class="member-card-card__closing-text">
+                这张门帖会把你的道号、短签、初心和寄语一并收好，像一页真正的同门留档。
+              </p>
+            </div>
+
+            <div class="member-card-card__closing-grid">
+              <div
+                v-for="item in closingItems"
+                :key="item.label"
+                class="member-card-card__closing-item"
+              >
+                <span class="member-card-card__closing-label">{{ item.label }}</span>
+                <strong class="member-card-card__closing-value">{{ item.value }}</strong>
+              </div>
+            </div>
           </section>
         </div>
       </section>
@@ -559,10 +593,12 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__portrait {
   position: relative;
   grid-row: 1 / span 3;
-  overflow: hidden;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
   width: 100%;
-  height: 100%;
   min-height: 0;
+  padding: 12px;
   border-radius: 30px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   background:
@@ -582,6 +618,18 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   pointer-events: none;
 }
 
+.member-card-card__portrait-frame {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  min-height: 220px;
+  border-radius: 20px;
+  border: 1px solid rgba(241, 217, 160, 0.12);
+  background:
+    radial-gradient(circle at 34% 32%, rgba(216, 185, 114, 0.24), transparent 30%),
+    linear-gradient(145deg, rgba(16, 49, 66, 0.96), rgba(6, 19, 27, 0.98));
+}
+
 .member-card-card__portrait-image,
 .member-card-card__portrait-fallback {
   width: 100%;
@@ -592,9 +640,6 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__portrait-fallback {
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(circle at 34% 32%, rgba(216, 185, 114, 0.24), transparent 30%),
-    linear-gradient(145deg, rgba(16, 49, 66, 0.96), rgba(6, 19, 27, 0.98));
 }
 
 .member-card-card__portrait-fallback span {
@@ -604,17 +649,12 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 }
 
 .member-card-card__portrait-caption {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  left: 16px;
   display: grid;
   gap: 5px;
   padding: 12px 14px;
   border-radius: 18px;
   border: 1px solid rgba(241, 217, 160, 0.16);
-  background: linear-gradient(180deg, rgba(6, 19, 27, 0.28), rgba(6, 19, 27, 0.88));
-  backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, rgba(6, 19, 27, 0.52), rgba(6, 19, 27, 0.9));
 }
 
 .member-card-card__portrait-caption-top,
@@ -632,12 +672,12 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 }
 
 .member-card-card__stack {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   min-width: 0;
   min-height: 0;
   height: 100%;
-  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .member-card-card__panel {
@@ -776,6 +816,74 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   font-size: 1.02rem;
 }
 
+.member-card-card__closing {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr);
+  gap: 12px 14px;
+  min-height: 0;
+  padding: 16px 16px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(147, 203, 198, 0.14);
+  background:
+    linear-gradient(180deg, rgba(9, 33, 45, 0.72), rgba(7, 27, 37, 0.94)),
+    rgba(7, 27, 37, 0.5);
+}
+
+.member-card-card__closing-copy {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.member-card-card__closing-title {
+  color: #f0dfb0;
+  font-size: 1.04rem;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+}
+
+.member-card-card__closing-text {
+  margin: 0;
+  color: rgba(244, 239, 226, 0.84);
+  font-size: 0.9rem;
+  line-height: 1.8;
+  letter-spacing: 0.08em;
+}
+
+.member-card-card__closing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+.member-card-card__closing-item {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 13px;
+  border-radius: 16px;
+  border: 1px solid rgba(216, 185, 114, 0.12);
+  background: rgba(8, 31, 43, 0.36);
+}
+
+.member-card-card__closing-label {
+  color: rgba(139, 208, 203, 0.82);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+
+.member-card-card__closing-value {
+  color: rgba(244, 239, 226, 0.94);
+  font-size: 0.9rem;
+  line-height: 1.56;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .member-card-card__footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -873,7 +981,10 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
     grid-row: auto;
     width: min(100%, 240px);
     min-height: 0;
-    aspect-ratio: 1 / 1.08;
+  }
+
+  .member-card-card__portrait-frame {
+    min-height: 200px;
   }
 
   .member-card-card__stack {
@@ -891,6 +1002,15 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
   .member-card-card__story-grid {
     grid-template-columns: 1fr;
+  }
+
+  .member-card-card__closing {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .member-card-card__closing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -983,13 +1103,14 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
   .member-card-card__portrait {
     width: min(100%, 180px);
-    aspect-ratio: 1 / 1.08;
+    padding: 10px;
+  }
+
+  .member-card-card__portrait-frame {
+    min-height: 160px;
   }
 
   .member-card-card__portrait-caption {
-    right: 10px;
-    bottom: 10px;
-    left: 10px;
     padding: 10px 12px;
   }
 
@@ -1007,6 +1128,15 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
   .member-card-card__info-note {
     font-size: 11px;
+  }
+
+  .member-card-card__closing {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .member-card-card__closing-grid {
+    grid-template-columns: 1fr;
   }
 
   .member-card-card__info-value,
