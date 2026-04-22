@@ -266,10 +266,7 @@ const ribbonItems = computed<string[]>(() => [
           </div>
 
           <article class="member-card-card__hobby-card">
-            <div class="member-card-card__section-head">
-              <p class="member-card-card__info-label">平生所好</p>
-              <p class="member-card-card__section-hint">把兴趣、爱好、擅长之事拆成几枚短签，更像一张门派名帖。</p>
-            </div>
+            <p class="member-card-card__info-label">平生所好</p>
 
             <div v-if="hobbyTags.length" class="member-card-card__tag-list">
               <span
@@ -280,25 +277,19 @@ const ribbonItems = computed<string[]>(() => [
                 {{ tag }}
               </span>
             </div>
-            <p class="member-card-card__hobby-text">{{ displayHobbies }}</p>
+            <p v-else class="member-card-card__hobby-text">{{ displayHobbies }}</p>
           </article>
         </div>
       </section>
 
       <section class="member-card-card__story-grid">
         <article class="member-card-card__story-card member-card-card__story-card--origin">
-          <div class="member-card-card__section-head">
-            <p class="member-card-card__info-label">入栖初心</p>
-            <p class="member-card-card__section-hint">留一句真心话，让同门一眼知道你为何入山。</p>
-          </div>
+          <p class="member-card-card__info-label">入栖初心</p>
           <p class="member-card-card__story-copy">{{ displayOrigin }}</p>
         </article>
 
         <article class="member-card-card__story-card member-card-card__story-card--motto">
-          <div class="member-card-card__section-head">
-            <p class="member-card-card__info-label">心之所语</p>
-            <p class="member-card-card__section-hint">可以是座右铭，也可以是一句想悄悄说给同门的话。</p>
-          </div>
+          <p class="member-card-card__info-label">心之所语</p>
           <p class="member-card-card__story-copy member-card-card__story-copy--quote">“{{ displayMotto }}”</p>
         </article>
       </section>
@@ -479,7 +470,6 @@ const ribbonItems = computed<string[]>(() => [
 .member-card-card__eyebrow,
 .member-card-card__subtitle,
 .member-card-card__info-label,
-.member-card-card__section-hint,
 .member-card-card__seal-note,
 .member-card-card__year-text,
 .member-card-card__divider {
@@ -744,22 +734,10 @@ const ribbonItems = computed<string[]>(() => [
 .member-card-card__hobby-card {
   display: grid;
   gap: 10px;
-  min-height: 160px;
+  min-height: 144px;
   background:
     linear-gradient(180deg, rgba(20, 52, 68, 0.24), rgba(7, 27, 37, 0.92)),
     rgba(7, 27, 37, 0.52);
-}
-
-.member-card-card__section-head {
-  display: grid;
-  gap: 6px;
-}
-
-.member-card-card__section-hint {
-  color: rgba(244, 239, 226, 0.56);
-  font-size: 12px;
-  line-height: 1.58;
-  letter-spacing: 0.08em;
 }
 
 .member-card-card__tag-list {
@@ -795,7 +773,7 @@ const ribbonItems = computed<string[]>(() => [
 .member-card-card__story-card {
   display: grid;
   gap: 10px;
-  min-height: 174px;
+  min-height: 156px;
 }
 
 .member-card-card__story-card--origin {
