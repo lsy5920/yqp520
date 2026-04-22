@@ -32,7 +32,7 @@ interface MemberCardStudioProps {
 
 const props = withDefaults(defineProps<MemberCardStudioProps>(), {
   exportWidth: 1080,
-  exportHeight: 1500,
+  exportHeight: 1320,
 })
 
 // 这里接入同门名帖专用本机存储，负责草稿、档案和删除。

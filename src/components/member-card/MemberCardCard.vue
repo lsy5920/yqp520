@@ -112,6 +112,14 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 
 // 这里统计短签数量，方便在标签区里给出简短提示。
 const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.length} 枚短签`)
+
+// 这里整理底部总记区的条目，方便把关键资料集中收束。
+const closingItemList = computed<Array<{ label: string; value: string }>>(() => [
+  { label: '门帖样式', value: props.template.name },
+  { label: '门帖编号', value: numberText.value },
+  { label: '门中印记', value: memberCardCopy.generated.sideMark },
+  { label: '立派纪年', value: props.yearText },
+])
 </script>
 
 <template>
@@ -242,6 +250,25 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
           </div>
           <p class="member-card-card__story-text member-card-card__story-text--quote">“{{ displayMotto }}”</p>
         </article>
+      </section>
+
+      <section class="member-card-card__closing">
+        <div class="member-card-card__closing-copy">
+          <p class="member-card-card__section-label">门帖总记</p>
+          <strong class="member-card-card__closing-title">{{ cardSubtitle }}</strong>
+          <p class="member-card-card__closing-text">道号、短签、初心与寄语已一并收录成帖。</p>
+        </div>
+
+        <div class="member-card-card__closing-grid">
+          <div
+            v-for="item in closingItemList"
+            :key="item.label"
+            class="member-card-card__closing-item"
+          >
+            <span class="member-card-card__closing-label">{{ item.label }}</span>
+            <strong class="member-card-card__closing-value">{{ item.value }}</strong>
+          </div>
+        </div>
       </section>
 
       <footer class="member-card-card__footer">
@@ -392,23 +419,24 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   position: relative;
   z-index: 1;
   display: grid;
+  align-content: start;
   grid-template-rows: auto auto auto auto;
-  gap: 16px;
+  gap: 12px;
   height: 100%;
-  padding: 28px 28px 24px 84px;
+  padding: 24px 24px 20px 78px;
 }
 
 .member-card-card__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
+  gap: 14px;
   align-items: start;
 }
 
 .member-card-card__header-copy {
   min-width: 0;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .member-card-card__eyebrow,
@@ -433,7 +461,7 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
 .member-card-card__title {
   margin: 0;
-  font-size: clamp(58px, 6.6vw, 102px);
+  font-size: clamp(52px, 6.2vw, 94px);
   line-height: 0.98;
   letter-spacing: 0.08em;
   overflow-wrap: anywhere;
@@ -443,22 +471,22 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
 .member-card-card__subtitle {
   color: rgba(244, 239, 226, 0.74);
-  line-height: 1.74;
+  line-height: 1.62;
   letter-spacing: 0.1em;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .member-card-card__meta-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .member-card-card__meta-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.14);
   background: rgba(7, 27, 37, 0.34);
@@ -476,10 +504,10 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   position: relative;
   display: grid;
   place-items: center;
-  width: 124px;
-  min-height: 124px;
-  padding: 16px 10px;
-  border-radius: 26px;
+  width: 108px;
+  min-height: 108px;
+  padding: 12px 8px;
+  border-radius: 22px;
   border: 1px solid rgba(241, 217, 160, 0.34);
   background:
     linear-gradient(180deg, var(--member-card-seal-start, #6b1218), var(--member-card-seal-end, #33080b)),
@@ -514,9 +542,9 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__seal-center {
   position: relative;
   z-index: 1;
-  margin: 6px 0;
+  margin: 4px 0;
   color: #f3e0aa;
-  font-size: 28px;
+  font-size: 24px;
   letter-spacing: 0.18em;
 }
 
@@ -524,7 +552,7 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__hero {
   display: grid;
   grid-template-columns: minmax(240px, 0.86fr) minmax(0, 1.14fr);
-  gap: 14px;
+  gap: 12px;
   align-items: stretch;
   min-height: 0;
 }
@@ -533,11 +561,11 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   min-height: 0;
-  padding: 12px;
-  border-radius: 30px;
+  padding: 10px;
+  border-radius: 26px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   background:
     radial-gradient(circle at 32% 28%, rgba(139, 208, 203, 0.18), transparent 30%),
@@ -559,8 +587,8 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__portrait-frame {
   position: relative;
   overflow: hidden;
-  min-height: 224px;
-  border-radius: 22px;
+  min-height: 196px;
+  border-radius: 18px;
   border: 1px solid rgba(241, 217, 160, 0.12);
   background:
     radial-gradient(circle at 34% 32%, rgba(216, 185, 114, 0.24), transparent 30%),
@@ -588,8 +616,8 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__portrait-caption {
   display: grid;
   gap: 5px;
-  padding: 12px 14px;
-  border-radius: 18px;
+  padding: 10px 12px;
+  border-radius: 16px;
   border: 1px solid rgba(241, 217, 160, 0.16);
   background: linear-gradient(180deg, rgba(6, 19, 27, 0.52), rgba(6, 19, 27, 0.9));
 }
@@ -617,16 +645,16 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
 .member-card-card__summary {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   min-height: 0;
 }
 
 .member-card-card__panel {
   display: grid;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 22px;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 18px;
   border: 1px solid rgba(147, 203, 198, 0.14);
   background: rgba(7, 27, 37, 0.54);
 }
@@ -640,10 +668,10 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
 .member-card-card__panel-title {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: #f0dfb0;
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 0.96rem;
+  line-height: 1.42;
   letter-spacing: 0.12em;
 }
 
@@ -694,15 +722,15 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__identity-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 14px;
+  gap: 10px;
 }
 
 .member-card-card__identity-item {
   display: grid;
   gap: 6px;
   min-width: 0;
-  padding: 12px 13px;
-  border-radius: 16px;
+  padding: 10px 11px;
+  border-radius: 14px;
   border: 1px solid rgba(216, 185, 114, 0.12);
   background: rgba(8, 31, 43, 0.36);
 }
@@ -715,8 +743,8 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
 .member-card-card__identity-value {
   color: rgba(244, 239, 226, 0.94);
-  font-size: 0.95rem;
-  line-height: 1.58;
+  font-size: 0.9rem;
+  line-height: 1.52;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -725,17 +753,17 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__story {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
 }
 
 .member-card-card__story-card {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 8px;
   min-height: 100%;
-  padding: 14px 16px;
-  border-radius: 20px;
+  padding: 12px 14px;
+  border-radius: 18px;
   border: 1px solid rgba(147, 203, 198, 0.14);
   background: rgba(7, 27, 37, 0.54);
 }
@@ -769,33 +797,100 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 .member-card-card__story-text {
   margin: 0;
   color: rgba(244, 239, 226, 0.94);
-  font-size: 0.98rem;
-  line-height: 1.82;
+  font-size: 0.92rem;
+  line-height: 1.72;
   word-break: break-word;
   white-space: pre-wrap;
 }
 
 .member-card-card__story-text--quote {
-  font-size: 1.02rem;
+  font-size: 0.96rem;
+}
+
+/* 这里放总记区，负责把卡片下半部分收得更完整，减少空白感。 */
+.member-card-card__closing {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(280px, 0.94fr);
+  gap: 10px 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(147, 203, 198, 0.14);
+  background:
+    linear-gradient(180deg, rgba(9, 33, 45, 0.72), rgba(7, 27, 37, 0.94)),
+    rgba(7, 27, 37, 0.5);
+}
+
+.member-card-card__closing-copy {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.member-card-card__closing-title {
+  color: #f0dfb0;
+  font-size: 0.98rem;
+  line-height: 1.42;
+  letter-spacing: 0.12em;
+}
+
+.member-card-card__closing-text {
+  margin: 0;
+  color: rgba(244, 239, 226, 0.82);
+  font-size: 0.86rem;
+  line-height: 1.68;
+  letter-spacing: 0.06em;
+}
+
+.member-card-card__closing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+
+.member-card-card__closing-item {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 11px;
+  border-radius: 14px;
+  border: 1px solid rgba(216, 185, 114, 0.12);
+  background: rgba(8, 31, 43, 0.36);
+}
+
+.member-card-card__closing-label {
+  color: rgba(139, 208, 203, 0.82);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+
+.member-card-card__closing-value {
+  color: rgba(244, 239, 226, 0.94);
+  font-size: 0.88rem;
+  line-height: 1.52;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* 这里放最末尾的落款，方便把签名和纪年统一收住。 */
 .member-card-card__footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
+  gap: 14px;
   align-items: end;
   margin-top: auto;
 }
 
 .member-card-card__signature-block {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .member-card-card__signature {
   color: #f0dfb0;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   letter-spacing: 0.16em;
 }
 
@@ -807,7 +902,7 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
 .member-card-card__stamp {
   color: rgba(244, 239, 226, 0.56);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   letter-spacing: 0.16em;
 }
 
@@ -861,8 +956,8 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
 
 @media (max-width: 960px) {
   .member-card-card__sheet {
-    padding: 24px 20px 18px 68px;
-    gap: 12px;
+    padding: 20px 18px 16px 64px;
+    gap: 10px;
   }
 
   .member-card-card__header,
@@ -871,9 +966,9 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   }
 
   .member-card-card__seal {
-    width: 104px;
-    min-height: 104px;
-    padding: 12px 8px;
+    width: 96px;
+    min-height: 96px;
+    padding: 10px 8px;
     border-radius: 20px;
   }
 
@@ -883,18 +978,23 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   }
 
   .member-card-card__hero {
-    gap: 12px;
+    gap: 10px;
   }
 
   .member-card-card__portrait {
-    width: min(100%, 260px);
+    width: min(100%, 232px);
   }
 
   .member-card-card__portrait-frame {
-    min-height: 200px;
+    min-height: 180px;
   }
 
   .member-card-card__story {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .member-card-card__closing {
     grid-template-columns: 1fr;
   }
 
@@ -938,7 +1038,7 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   }
 
   .member-card-card__title {
-    font-size: clamp(2.1rem, 8vw, 3rem);
+    font-size: clamp(2rem, 7.2vw, 2.8rem);
     line-height: 1.02;
   }
 
@@ -975,12 +1075,12 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   }
 
   .member-card-card__portrait {
-    width: min(100%, 190px);
+    width: min(100%, 170px);
     padding: 10px;
   }
 
   .member-card-card__portrait-frame {
-    min-height: 160px;
+    min-height: 146px;
   }
 
   .member-card-card__portrait-caption {
@@ -1014,9 +1114,18 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
     gap: 10px;
   }
 
+  .member-card-card__closing {
+    padding: 12px;
+    gap: 10px;
+  }
+
   .member-card-card__story-head {
     align-items: start;
     flex-direction: column;
+  }
+
+  .member-card-card__closing-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
