@@ -3,6 +3,7 @@ import type {
   FaqItem,
   FlowStep,
   HighlightItem,
+  MusicLyricLine,
   MusicTrack,
   NavItem,
   PosterTemplate,
@@ -12,6 +13,42 @@ import type {
   RuleItem,
 } from '@/types/site'
 import { assessmentContent } from '@/data/assessmentContent'
+
+/**
+ * 解析歌词时间文本
+ * 用途：把“分:秒.毫秒”格式转换成播放器可用的秒数
+ * 入参：timestamp 为歌词时间文本
+ * 返回值：返回换算后的秒数，异常时回退为 0
+ */
+function parseLyricTimestamp(timestamp: string): number {
+  const matchedParts = timestamp.trim().match(/^(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/)
+
+  if (!matchedParts) {
+    return 0
+  }
+
+  const minutes = Number(matchedParts[1] || '0')
+  const seconds = Number(matchedParts[2] || '0')
+  const milliseconds = Number((matchedParts[3] || '0').padEnd(3, '0'))
+
+  return (minutes * 60) + seconds + (milliseconds / 1000)
+}
+
+/**
+ * 创建歌词时间轴
+ * 用途：把歌词时间和文案统一整理成可复用的数据结构
+ * 入参：items 为歌词时间和歌词内容数组
+ * 返回值：返回按时间顺序整理好的歌词时间轴
+ */
+function createMusicLyrics(items: Array<[string, string]>): MusicLyricLine[] {
+  return items
+    .map(([timestamp, text]) => ({
+      time: parseLyricTimestamp(timestamp),
+      text: text.trim(),
+    }))
+    .filter((item) => item.text.length > 0)
+    .sort((previousItem, nextItem) => previousItem.time - nextItem.time)
+}
 
 // 这里集中存放官网全部内容，页面只负责展示，方便后续统一维护。
 const navItems: NavItem[] = [
@@ -329,6 +366,30 @@ const musicTracks: MusicTrack[] = [
     name: '云栖之缘',
     filePath: 'media/云栖之缘.mp3',
     coverText: '山门清音 · 云栖之缘',
+    lyrics: createMusicLyrics([
+      ['00:34.020', '晨光洒落在拥挤地铁站台'],
+      ['00:37.740', '谁还留心看云影徘徊'],
+      ['00:41.070', '钢筋森林里真心被谁深埋'],
+      ['00:48.840', '直到那天你邀我入群来'],
+      ['00:52.470', '指尖轻点便推开山海'],
+      ['00:56.910', '从此有片天地不必设防'],
+      ['01:03.240', '云栖处你我心随风闲'],
+      ['01:10.590', '同道者何须万语千言'],
+      ['01:17.970', '纵使尘世喧嚣如浪卷'],
+      ['01:25.260', '这一隅清净永不变'],
+      ['02:02.730', '霓虹闪烁照不亮眼底霜'],
+      ['02:06.390', '名利场中面具层层妆'],
+      ['02:09.660', '你说不如共赏月色微凉'],
+      ['02:17.490', '没有道观不立山门墙'],
+      ['02:21.180', '微信群聊即修炼道场'],
+      ['02:25.680', '笑谈间已把浮名抛光'],
+      ['02:31.830', '云栖处你我心随风闲'],
+      ['02:39.210', '同道者何须万语千言'],
+      ['02:46.530', '纵使尘世喧嚣如浪卷'],
+      ['02:53.880', '这一隅清净永不变'],
+      ['03:01.800', '当万家灯火渐次暗'],
+      ['03:09.210', '我们仍守着这片云端'],
+    ]),
     enabled: true,
     defaultVolume: 0.56,
     onboarding: true,

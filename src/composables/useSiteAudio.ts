@@ -1,5 +1,5 @@
 import { computed, readonly, ref, shallowRef } from 'vue'
-import type { MusicTrack } from '@/types/site'
+import type { MusicLyricLine, MusicTrack } from '@/types/site'
 
 // 这里定义本地缓存键名，用于记住用户的音乐偏好。
 const TRACK_STORAGE_KEY = 'yunqi-site-audio-track'
@@ -19,6 +19,7 @@ const currentTrackId = ref<string>('')
 const isPlaying = ref(false)
 const desiredPlaying = ref(false)
 const volume = ref(0.56)
+const currentTimeSeconds = ref(0)
 const lastError = ref('')
 const statusText = ref('背景音乐待置入')
 const waitingForGestureRetry = ref(false)
@@ -65,6 +66,35 @@ function clampVolume(rawVolume: number): number {
   }
 
   return Math.min(1, Math.max(0, rawVolume))
+}
+
+/**
+ * 规范化歌词时间轴
+ * 用途：过滤掉异常歌词并按时间排序，保证播放时总能稳定取到当前句
+ * 入参：lyrics 为原始歌词时间轴
+ * 返回值：返回整理后的歌词时间轴
+ */
+function normalizeTrackLyrics(lyrics: readonly MusicLyricLine[] = []): MusicLyricLine[] {
+  return lyrics
+    .filter((item) => Number.isFinite(item.time) && item.time >= 0 && Boolean(item.text.trim()))
+    .map((item) => ({
+      time: item.time,
+      text: item.text.trim(),
+    }))
+    .sort((previousItem, nextItem) => previousItem.time - nextItem.time)
+}
+
+/**
+ * 规范化曲目数据
+ * 用途：统一清理歌词等附加字段，给后续播放器和歌词浮层提供稳定数据
+ * 入参：track 为原始曲目配置
+ * 返回值：返回整理后的曲目对象
+ */
+function normalizeTrack(track: MusicTrack): MusicTrack {
+  return {
+    ...track,
+    lyrics: normalizeTrackLyrics(track.lyrics ?? []),
+  }
 }
 
 // 这里把曲目路径统一转换成当前站点可访问的真实地址，兼容本地开发和 GitHub Pages 子路径部署。
@@ -130,6 +160,7 @@ function syncAudioElement(): void {
     audioElement.value.removeAttribute('src')
     audioElement.value.load()
     isPlaying.value = false
+    currentTimeSeconds.value = 0
     statusText.value = '背景音乐待置入'
     return
   }
@@ -138,6 +169,7 @@ function syncAudioElement(): void {
 
   if (audioElement.value.src !== resolvedUrl) {
     audioElement.value.src = resolvedUrl
+    currentTimeSeconds.value = 0
   }
 
   audioElement.value.loop = true
@@ -147,6 +179,16 @@ function syncAudioElement(): void {
   audioElement.value.muted = false
 }
 
+/**
+ * 同步当前播放时间
+ * 用途：把真实音频元素当前时间写回响应式状态，供歌词浮层实时取值
+ * 入参：target 为真实音频元素
+ * 返回值：无返回值
+ */
+function syncCurrentTime(target: HTMLAudioElement): void {
+  currentTimeSeconds.value = Number.isFinite(target.currentTime) ? target.currentTime : 0
+}
+
 // 这里绑定 audio 事件，让真实播放器状态回写到响应式数据。
 function bindAudioEvents(target: HTMLAudioElement): void {
   target.addEventListener('play', () => {
@@ -154,19 +196,38 @@ function bindAudioEvents(target: HTMLAudioElement): void {
     waitingForGestureRetry.value = false
     lastError.value = ''
     statusText.value = '背景音乐播放中'
+    syncCurrentTime(target)
   })
 
   target.addEventListener('pause', () => {
     isPlaying.value = false
     statusText.value = desiredPlaying.value ? '等待恢复背景音乐播放' : '背景音乐已暂停'
+    syncCurrentTime(target)
   })
 
   target.addEventListener('error', () => {
     // 这里兜底曲目资源失效或加载失败的情况。
     isPlaying.value = false
     waitingForGestureRetry.value = false
+    currentTimeSeconds.value = 0
     lastError.value = '音频资源加载失败，请稍后重试'
     statusText.value = lastError.value
+  })
+
+  target.addEventListener('loadedmetadata', () => {
+    syncCurrentTime(target)
+  })
+
+  target.addEventListener('timeupdate', () => {
+    syncCurrentTime(target)
+  })
+
+  target.addEventListener('seeking', () => {
+    syncCurrentTime(target)
+  })
+
+  target.addEventListener('seeked', () => {
+    syncCurrentTime(target)
   })
 }
 
@@ -234,7 +295,9 @@ function bindGestureRetry(): void {
 
 // 这里注入主线配置的曲目列表，只保留真正启用且有文件路径的曲目。
 function applyTracks(tracks: readonly MusicTrack[]): void {
-  trackList.value = tracks.filter((item) => item.enabled && Boolean(item.filePath.trim()))
+  trackList.value = tracks
+    .filter((item) => item.enabled && Boolean(item.filePath.trim()))
+    .map((item) => normalizeTrack(item))
 
   if (trackList.value.length === 0) {
     currentTrackId.value = ''
@@ -350,16 +413,74 @@ export function useSiteAudio(tracks: readonly MusicTrack[] = []) {
   const currentTrack = computed<MusicTrack | null>(() => findCurrentTrack())
   const hasAvailableTrack = computed<boolean>(() => trackList.value.length > 0)
 
+  /**
+   * 当前歌词下标
+   * 用途：根据播放时间定位当前应该显示哪一句歌词
+   */
+  const currentLyricIndex = computed<number>(() => {
+    const lyricList = currentTrack.value?.lyrics ?? []
+
+    if (!isPlaying.value || lyricList.length === 0) {
+      return -1
+    }
+
+    for (let lyricIndex = lyricList.length - 1; lyricIndex >= 0; lyricIndex -= 1) {
+      const currentLyricItem = lyricList[lyricIndex]
+
+      if (currentLyricItem && currentTimeSeconds.value >= currentLyricItem.time) {
+        return lyricIndex
+      }
+    }
+
+    return -1
+  })
+
+  /**
+   * 当前歌词
+   * 用途：给歌词浮层展示当前正在唱到的句子
+   */
+  const currentLyricLine = computed<MusicLyricLine | null>(() => {
+    const lyricList = currentTrack.value?.lyrics ?? []
+    return currentLyricIndex.value >= 0 ? lyricList[currentLyricIndex.value] ?? null : null
+  })
+
+  /**
+   * 下一句歌词
+   * 用途：给歌词浮层做轻提示，让过渡更自然
+   */
+  const nextLyricLine = computed<MusicLyricLine | null>(() => {
+    const lyricList = currentTrack.value?.lyrics ?? []
+    const nextLyricIndex = currentLyricIndex.value + 1
+
+    if (currentLyricIndex.value < 0 || nextLyricIndex >= lyricList.length) {
+      return null
+    }
+
+    return lyricList[nextLyricIndex] ?? null
+  })
+
+  /**
+   * 是否显示歌词浮层
+   * 用途：只有在真的播放到歌词区间时才显示歌词，减少界面干扰
+   */
+  const shouldShowLyricOverlay = computed<boolean>(() => (
+    isPlaying.value && Boolean(currentLyricLine.value?.text)
+  ))
+
   return {
     currentTrack,
+    currentLyricLine,
+    currentTimeSeconds: readonly(currentTimeSeconds),
     hasAvailableTrack,
     isPlaying: readonly(isPlaying),
     desiredPlaying: readonly(desiredPlaying),
     lastError: readonly(lastError),
     initializeAudio,
+    nextLyricLine,
     togglePlayback,
     pauseAudio,
     statusText: readonly(statusText),
+    shouldShowLyricOverlay,
     tracks: readonly(trackList),
     volume: readonly(volume),
     waitingForGestureRetry: readonly(waitingForGestureRetry),

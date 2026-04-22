@@ -72,12 +72,19 @@ export interface PosterTemplate {
   exportHeight: number
 }
 
+// 这里定义歌词时间轴条目类型，用于控制某一句歌词在什么时间显示。
+export interface MusicLyricLine {
+  time: number
+  text: string
+}
+
 // 这里定义背景音乐条目类型，用于控制音频播放器行为。
 export interface MusicTrack {
   id: string
   name: string
   filePath: string
   coverText: string
+  lyrics?: MusicLyricLine[]
   enabled: boolean
   defaultVolume: number
   onboarding: boolean

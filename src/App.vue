@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
+import MusicLyricOverlay from '@/components/music/MusicLyricOverlay.vue'
 import MusicPlayer from '@/components/music/MusicPlayer.vue'
 import BackTopButton from '@/components/layout/BackTopButton.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
@@ -11,11 +12,14 @@ import { siteContent } from '@/data/siteContent'
 // 这里接入全局音频控制，让页面和播放器共用一份播放状态。
 const {
   currentTrack,
+  currentLyricLine,
   desiredPlaying,
   hasAvailableTrack,
   initializeAudio,
   isPlaying,
   lastError,
+  nextLyricLine,
+  shouldShowLyricOverlay,
   togglePlayback,
 } = useSiteAudio(siteContent.musicTracks)
 
@@ -33,6 +37,8 @@ const siteShellStyle = computed<Record<string, string>>(() => {
     '--site-player-bottom-mobile': '118px',
     '--site-backtop-bottom': '214px',
     '--site-backtop-bottom-mobile': '214px',
+    '--site-lyric-bottom': '44px',
+    '--site-lyric-bottom-mobile': '286px',
   }
 })
 
@@ -64,6 +70,13 @@ onMounted(() => {
     <SiteFooter />
 
     <BackTopButton />
+
+    <MusicLyricOverlay
+      :current-line="currentLyricLine?.text ?? ''"
+      :next-line="nextLyricLine?.text ?? ''"
+      :track-name="currentTrack?.name ?? '云栖清音'"
+      :visible="shouldShowLyricOverlay"
+    />
 
     <MusicPlayer
       :cover-text="currentTrack?.coverText ?? '待置入曲目'"
