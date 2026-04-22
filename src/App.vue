@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import MusicPlayer from '@/components/music/MusicPlayer.vue'
 import BackTopButton from '@/components/layout/BackTopButton.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
@@ -19,6 +19,23 @@ const {
   togglePlayback,
 } = useSiteAudio(siteContent.musicTracks)
 
+// 这里读取当前路由，方便给特定页面单独抬高悬浮控件。
+const route = useRoute()
+
+// 这里给特定页面预留播放器和返回顶部按钮的位置，避免和底部操作条挤在一起。
+const siteShellStyle = computed<Record<string, string>>(() => {
+  if (route.name !== 'memberCard') {
+    return {} as Record<string, string>
+  }
+
+  return {
+    '--site-player-bottom': '118px',
+    '--site-player-bottom-mobile': '118px',
+    '--site-backtop-bottom': '214px',
+    '--site-backtop-bottom-mobile': '214px',
+  }
+})
+
 // 这里在应用挂载后初始化音频系统，恢复上次的用户选择。
 onMounted(() => {
   initializeAudio()
@@ -26,7 +43,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="site-shell">
+  <div class="site-shell" :style="siteShellStyle">
     <div class="site-background" aria-hidden="true">
       <div class="site-background__mist site-background__mist--near"></div>
       <div class="site-background__mist site-background__mist--far"></div>

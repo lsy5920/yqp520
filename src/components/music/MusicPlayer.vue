@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
 .music-player {
   position: fixed;
   right: 24px;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  bottom: calc(var(--site-player-bottom, 20px) + env(safe-area-inset-bottom));
   z-index: 11;
   display: grid;
   gap: 16px;
@@ -593,7 +593,7 @@ onBeforeUnmount(() => {
     right: 10px;
     left: 10px;
     width: auto;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    bottom: calc(var(--site-player-bottom-mobile, 10px) + env(safe-area-inset-bottom));
     gap: 12px;
     padding: 14px;
     border-radius: 22px;

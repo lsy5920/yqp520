@@ -19,6 +19,10 @@
   --radius-small: 14px;
   --content-width: min(1180px, calc(100vw - 48px));
   --transition-base: 320ms ease;
+  --site-player-bottom: 20px;
+  --site-player-bottom-mobile: 10px;
+  --site-backtop-bottom: 104px;
+  --site-backtop-bottom-mobile: 130px;
 }
 
 * {
@@ -726,7 +730,7 @@ img {
 .back-top-button {
   position: fixed;
   right: 26px;
-  bottom: calc(104px + env(safe-area-inset-bottom));
+  bottom: calc(var(--site-backtop-bottom, 104px) + env(safe-area-inset-bottom));
   z-index: 9;
   min-width: 110px;
   min-height: 48px;
@@ -1091,7 +1095,7 @@ img {
 
   .back-top-button {
     right: 12px;
-    bottom: calc(130px + env(safe-area-inset-bottom));
+    bottom: calc(var(--site-backtop-bottom-mobile, 130px) + env(safe-area-inset-bottom));
     min-width: 92px;
     padding: 10px 14px;
     font-size: 0.92rem;

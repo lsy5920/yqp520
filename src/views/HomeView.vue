@@ -58,6 +58,9 @@ function handleMusicEntry(): void {
           <button class="ink-button ink-button--ghost" type="button" @click="handleMusicEntry">
             {{ musicButtonLabel }}
           </button>
+          <RouterLink to="/member-card" class="ink-button ink-button--ghost">
+            制我栖名名片
+          </RouterLink>
         </div>
       </div>
 

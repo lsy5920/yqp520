@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
+import { memberCardCopy } from '@/data/memberCardContent'
 import { siteContent } from '@/data/siteContent'
 
 // 这里保存页面根节点，让入派流程按节奏显现。
@@ -88,6 +89,40 @@ useRevealMotion({
           </RouterLink>
         </div>
       </article>
+    </section>
+
+    <section class="content-section" data-reveal>
+      <div class="section-heading">
+        <p class="eyebrow">同门入山名片</p>
+        <h2>填七项，就能生成一张云栖专属古风名片</h2>
+        <p>
+          新同门只要把宗门称谓、所处地域、平生所好与入栖初心写清楚，系统便会自动排版成可直接发群的文字版和高清图片版。
+        </p>
+      </div>
+
+      <div class="split-showcase">
+        <article class="content-card content-card--soft">
+          <p class="content-card__eyebrow">填写提示</p>
+          <h3>轻量填写，不用复杂资料</h3>
+          <ul class="list-column">
+            <li v-for="line in memberCardCopy.introLines" :key="line">{{ line }}</li>
+          </ul>
+        </article>
+
+        <article class="content-card content-card--serif">
+          <p class="content-card__eyebrow">进入名片页</p>
+          <h3>先生成栖卡，再归档同门录</h3>
+          <p>生成完成后，文字版可以直接发进微信群，图片版会保存在本机同门录里，方便日后翻阅。</p>
+          <div class="page-banner__actions">
+            <RouterLink class="ink-button ink-button--primary" to="/member-card">
+              制我栖名名片
+            </RouterLink>
+            <RouterLink class="ink-button ink-button--ghost" to="/poster">
+              顺手看云栖海报
+            </RouterLink>
+          </div>
+        </article>
+      </div>
     </section>
 
     <section class="content-section" data-reveal>
