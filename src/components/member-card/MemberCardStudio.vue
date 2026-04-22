@@ -1581,8 +1581,8 @@ watch(
 
 @media (max-width: 720px) {
   .member-card-studio {
-    gap: 14px;
-    padding-bottom: calc(246px + env(safe-area-inset-bottom));
+    gap: 12px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
 
   .member-card-studio__intro,
@@ -1624,9 +1624,13 @@ watch(
   }
 
   .member-card-studio__action-bar {
-    width: calc(100vw - 16px);
+    position: static;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+    margin-top: 4px;
     padding: 12px 12px 14px;
-    bottom: calc(86px + env(safe-area-inset-bottom));
+    transform: none;
   }
 
   .member-card-studio__preview-badges {
