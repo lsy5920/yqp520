@@ -515,6 +515,12 @@ onMounted(() => {
   line-height: 1.85;
 }
 
+.assessment-ready__main,
+.assessment-exam__overview,
+.assessment-result__summary {
+  min-width: 0;
+}
+
 .assessment-ready__field {
   display: grid;
   gap: 8px;
@@ -667,6 +673,8 @@ onMounted(() => {
   margin: 0;
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .assessment-exam__time-card,
@@ -744,12 +752,16 @@ onMounted(() => {
 .assessment-exam__chapter-card h2,
 .assessment-result__wrong-card h3 {
   margin: 0 0 10px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .assessment-exam__chapter-card p {
   margin: 0;
   color: rgba(244, 239, 226, 0.76);
   line-height: 1.82;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .assessment-exam__question-list {

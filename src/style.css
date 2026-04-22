@@ -36,6 +36,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
   color: var(--color-text);
   font-family: 'Noto Serif SC', 'STKaiti', 'KaiTi', 'FangSong', serif;
   text-rendering: optimizeLegibility;
@@ -403,6 +404,9 @@ img {
   margin: 0 0 18px;
   font-size: clamp(2.2rem, 5vw, 4.5rem);
   line-height: 1.08;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .hero-panel {
@@ -475,6 +479,8 @@ img {
   margin: 0 0 12px;
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .section-heading p {
@@ -830,7 +836,7 @@ img {
 
   .site-main {
     padding-top: 116px;
-    padding-bottom: 98px;
+    padding-bottom: 156px;
   }
 
   .site-header {
@@ -866,6 +872,15 @@ img {
   .page-banner__actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .page-banner {
+    padding: 30px 18px;
+  }
+
+  .page-banner__title {
+    font-size: clamp(1.9rem, 8vw, 3rem);
+    line-height: 1.16;
   }
 
   .ink-button,
