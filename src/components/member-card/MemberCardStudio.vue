@@ -34,9 +34,15 @@ interface MemberCardStudioProps {
   exportHeight?: number
 }
 
+// 这里定义江湖名帖默认成图宽度，按 57 比 84 的成品比例换算成像素宽度。
+const memberCardDefaultExportWidth = 1140
+
+// 这里定义江湖名帖默认成图高度，和上面的宽度一起保持 57 比 84 的固定比例。
+const memberCardDefaultExportHeight = 1680
+
 const props = withDefaults(defineProps<MemberCardStudioProps>(), {
-  exportWidth: 1080,
-  exportHeight: 1350,
+  exportWidth: memberCardDefaultExportWidth,
+  exportHeight: memberCardDefaultExportHeight,
 })
 
 // 这里接入江湖名帖专用存储工具，统一处理草稿恢复与帖号顺延。
