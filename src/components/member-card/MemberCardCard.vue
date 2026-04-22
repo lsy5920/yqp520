@@ -214,12 +214,16 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
       </section>
 
       <section class="member-card-card__closing">
-        <article class="member-card-card__story-card">
+        <article class="member-card-card__story-card member-card-card__story-card--entry">
           <div class="member-card-card__story-head">
             <p class="member-card-card__section-label">入门缘起</p>
             <span class="member-card-card__story-mark">江湖留档</span>
           </div>
           <p class="member-card-card__story-text">{{ displayEntryStory }}</p>
+          <div class="member-card-card__story-note member-card-card__story-note--entry">
+            <span>{{ displayIdentityLine }}</span>
+            <strong>{{ displayFromPlace }} · {{ displayFormerName }}</strong>
+          </div>
         </article>
 
         <article class="member-card-card__story-card member-card-card__story-card--signature">
@@ -381,10 +385,11 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   position: relative;
   z-index: 1;
   display: grid;
-  align-content: start;
-  gap: 14px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: stretch;
+  gap: 12px;
   height: 100%;
-  padding: 24px 24px 20px 82px;
+  padding: 22px 22px 18px 82px;
 }
 
 .member-card-card__header {
@@ -509,8 +514,8 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 /* 这里放中段内容，左边做人像，右边做身份与短签，形成正式门籍骨架。 */
 .member-card-card__hero {
   display: grid;
-  grid-template-columns: minmax(250px, 0.84fr) minmax(0, 1.16fr);
-  gap: 12px;
+  grid-template-columns: minmax(236px, 0.8fr) minmax(0, 1.2fr);
+  gap: 10px;
   min-height: 0;
 }
 
@@ -591,14 +596,14 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 
 .member-card-card__hero-stack {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .member-card-card__panel {
   display: grid;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 9px;
+  padding: 11px 13px;
   border-radius: 18px;
   border: 1px solid rgba(147, 203, 198, 0.14);
   background: rgba(7, 27, 37, 0.52);
@@ -646,13 +651,13 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 .member-card-card__identity-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .member-card-card__identity-item {
   display: grid;
   gap: 5px;
-  padding: 10px 11px;
+  padding: 9px 10px;
   border-radius: 14px;
   border: 1px solid rgba(216, 185, 114, 0.12);
   background: rgba(8, 31, 43, 0.34);
@@ -694,14 +699,18 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 /* 这里放下段正文，负责把缘起和留名一句一起收束住。 */
 .member-card-card__closing {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+  grid-template-columns: minmax(0, 1.14fr) minmax(290px, 0.86fr);
   gap: 10px;
+  min-height: 0;
+  align-items: stretch;
 }
 
 .member-card-card__story-card {
   display: grid;
-  align-content: start;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: stretch;
   gap: 8px;
+  height: 100%;
   padding: 12px 14px;
   border-radius: 18px;
   border: 1px solid rgba(147, 203, 198, 0.14);
@@ -730,6 +739,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 
 .member-card-card__story-text {
   margin: 0;
+  align-self: stretch;
   color: rgba(244, 239, 226, 0.92);
   font-size: 0.92rem;
   line-height: 1.76;
@@ -744,21 +754,27 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 .member-card-card__story-note {
   display: grid;
   gap: 4px;
-  margin-top: 2px;
+  margin-top: 0;
   padding-top: 10px;
   border-top: 1px solid rgba(216, 185, 114, 0.12);
+}
+
+.member-card-card__story-note--entry {
+  border-top-color: rgba(139, 208, 203, 0.12);
 }
 
 .member-card-card__story-note span {
   color: rgba(241, 217, 160, 0.86);
   font-size: 11px;
   letter-spacing: 0.16em;
+  line-height: 1.56;
 }
 
 .member-card-card__story-note strong {
   color: rgba(244, 239, 226, 0.88);
   font-size: 0.88rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* 这里放最末尾落款，确保纪年与时记有一个稳定出口。 */
@@ -767,7 +783,9 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   align-items: end;
-  margin-top: auto;
+  margin-top: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(216, 185, 114, 0.1);
 }
 
 .member-card-card__signature-block {
@@ -822,6 +840,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   .member-card-card__sheet {
     padding: 20px 18px 16px 66px;
     gap: 10px;
+    grid-template-rows: auto auto auto auto;
   }
 
   .member-card-card__header,
@@ -875,6 +894,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   .member-card-card__sheet {
     padding: 16px 12px 14px 52px;
     gap: 10px;
+    grid-template-rows: auto auto auto auto;
   }
 
   .member-card-card__title {

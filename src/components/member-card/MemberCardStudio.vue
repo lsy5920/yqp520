@@ -183,6 +183,15 @@ const previewCardStyle = computed<Record<string, string>>(() => ({
 }))
 
 /**
+ * 预览画布样式
+ * 用途：让缩放后的外层尺寸和真实视觉尺寸保持一致，避免预览被裁切
+ */
+const previewCanvasStyle = computed<Record<string, string>>(() => ({
+  width: `${Math.round(props.exportWidth * previewScale.value)}px`,
+  height: `${Math.round(props.exportHeight * previewScale.value)}px`,
+}))
+
+/**
  * 预览源节点样式
  * 用途：把真实成品卡按缩放比例放进页面里展示
  */
@@ -456,8 +465,11 @@ function updatePreviewScale(): void {
     return
   }
 
-  const viewportWidth = viewport.clientWidth
-  const viewportHeight = viewport.clientHeight
+  const viewportStyle = window.getComputedStyle(viewport)
+  const paddingX = Number.parseFloat(viewportStyle.paddingLeft) + Number.parseFloat(viewportStyle.paddingRight)
+  const paddingY = Number.parseFloat(viewportStyle.paddingTop) + Number.parseFloat(viewportStyle.paddingBottom)
+  const viewportWidth = viewport.clientWidth - paddingX - 6
+  const viewportHeight = viewport.clientHeight - paddingY - 6
 
   if (!viewportWidth || !viewportHeight) {
     return
@@ -466,6 +478,7 @@ function updatePreviewScale(): void {
   const nextScale = Math.min(
     viewportWidth / props.exportWidth,
     viewportHeight / props.exportHeight,
+    1,
   )
 
   if (Number.isFinite(nextScale) && nextScale > 0) {
@@ -851,21 +864,23 @@ watch(
             class="member-card-studio__preview-viewport"
             :style="previewCardStyle"
           >
-            <div
-              ref="cardSourceElement"
-              class="member-card-studio__preview-source"
-              :style="previewSourceStyle"
-            >
-              <MemberCardCard
-                :card-subtitle="memberCardCopy.generated.subtitle"
-                :card-title="memberCardCopy.generated.title"
-                :created-at-text="generatedAtLabel"
-                :form="formValue"
-                :number="previewNumber"
-                :reduce-motion="false"
-                :signature-prefix="memberCardCopy.generated.signaturePrefix"
-                :year-text="memberCardCopy.generated.yearText"
-              />
+            <div class="member-card-studio__preview-canvas" :style="previewCanvasStyle">
+              <div
+                ref="cardSourceElement"
+                class="member-card-studio__preview-source"
+                :style="previewSourceStyle"
+              >
+                <MemberCardCard
+                  :card-subtitle="memberCardCopy.generated.subtitle"
+                  :card-title="memberCardCopy.generated.title"
+                  :created-at-text="generatedAtLabel"
+                  :form="formValue"
+                  :number="previewNumber"
+                  :reduce-motion="false"
+                  :signature-prefix="memberCardCopy.generated.signaturePrefix"
+                  :year-text="memberCardCopy.generated.yearText"
+                />
+              </div>
             </div>
           </div>
 
@@ -1150,7 +1165,17 @@ watch(
 }
 
 .member-card-studio__preview-source {
+  position: relative;
   transform-origin: top left;
+}
+
+.member-card-studio__preview-canvas {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .member-card-studio__preview-summary {
