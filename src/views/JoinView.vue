@@ -93,10 +93,10 @@ useRevealMotion({
 
     <section class="content-section" data-reveal>
       <div class="section-heading">
-        <p class="eyebrow">同门入山名片</p>
-        <h2>填七项，就能生成一张云栖专属古风名片</h2>
+        <p class="eyebrow">同门入山门帖</p>
+        <h2>填七项，就能生成一张云栖专属古风门帖</h2>
         <p>
-            新同门只要把道号（宗门称谓）、所处地域、平生所好与入栖初心写清楚，系统便会自动排版成可直接发群的文字版和高清图片版。
+          新同门只要把道号（宗门称谓）、所处地域、门中短签与入栖初心写清楚，系统便会自动排版成可直接发群的文字版和高清图片版。
         </p>
       </div>
 
@@ -110,12 +110,12 @@ useRevealMotion({
         </article>
 
         <article class="content-card content-card--serif">
-          <p class="content-card__eyebrow">进入名片页</p>
-          <h3>先生成栖卡，再归档同门录</h3>
+          <p class="content-card__eyebrow">进入门帖页</p>
+          <h3>先生成门帖，再归档同门录</h3>
           <p>生成完成后，文字版可以直接发进微信群，图片版会保存在本机同门录里，方便日后翻阅。</p>
           <div class="page-banner__actions">
             <RouterLink class="ink-button ink-button--primary" to="/member-card">
-              制我栖名名片
+              制我栖名门帖
             </RouterLink>
             <RouterLink class="ink-button ink-button--ghost" to="/poster">
               顺手看云栖海报

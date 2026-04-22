@@ -57,7 +57,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/member-card',
     name: 'memberCard',
     component: MemberCardView,
-    meta: { title: '同门入山名片' },
+    meta: { title: '同门入山名帖' },
   },
 ]
 
