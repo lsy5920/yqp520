@@ -45,6 +45,16 @@ body {
   background: transparent;
 }
 
+html.assessment-exam-open,
+body.assessment-exam-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.assessment-exam-open {
+  width: 100%;
+}
+
 button,
 a,
 input,

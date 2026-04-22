@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AssessmentQuestionCard from '@/components/assessment/AssessmentQuestionCard.vue'
 import AssessmentResultPosterStudio from '@/components/assessment/AssessmentResultPosterStudio.vue'
@@ -10,6 +10,8 @@ import { siteContent } from '@/data/siteContent'
 
 // 这里拿到页面根节点，供静态区块做统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
+
+const resultSummaryRef = ref<HTMLElement | null>(null)
 
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
@@ -116,6 +118,12 @@ const resultHeadline = computed<string>(() => {
 const shouldShowRetakeNotice = computed<boolean>(() => Boolean(latestResult.value && !latestResult.value.passed))
 
 /**
+ * 是否正在显示考核弹窗
+ * 用途：给页面根节点统一加锁，避免答题时背景还能点到和滚动到
+ */
+const isExamDialogOpen = computed<boolean>(() => phase.value === 'exam')
+
+/**
  * 格式化交卷时间
  * 用途：把时间戳转成中文日期时间，便于结果页与海报展示
  * 入参：timestamp 为时间戳
@@ -131,13 +139,73 @@ function formatDateTime(timestamp: number): string {
   }).format(timestamp)
 }
 
+/** 用途：给考核弹窗开关统一加一个页面锁，避免底下正文跟着滚动。 */
+const EXAM_DIALOG_LOCK_CLASS = 'assessment-exam-open'
+
+/**
+ * 滚动到指定区域
+ * 用途：交卷后把页面带到结果摘要，方便直接查看成绩
+ * 入参：target 为要滚动到的元素，顶部偏移量用于避开固定页头
+ * 返回值：无返回值
+ */
+function scrollToTarget(target: HTMLElement | null, offset = 104): void {
+  if (!target || typeof window === 'undefined') {
+    return
+  }
+
+  const targetTop = target.getBoundingClientRect().top + window.scrollY - offset
+
+  window.scrollTo({
+    top: Math.max(0, targetTop),
+    behavior: 'smooth',
+  })
+}
+
+/**
+ * 同步考核弹窗锁
+ * 用途：进入答题时锁住页面滚动，退出答题后恢复页面滚动
+ * 入参：isLocked 为是否要锁住页面
+ * 返回值：无返回值
+ */
+function syncExamDialogLock(isLocked: boolean): void {
+  if (typeof document === 'undefined') {
+    return
+  }
+
+  document.documentElement.classList.toggle(EXAM_DIALOG_LOCK_CLASS, isLocked)
+  document.body.classList.toggle(EXAM_DIALOG_LOCK_CLASS, isLocked)
+}
+
+// 这里监听考核阶段变化，答题时打开弹窗锁，交卷后滚回结果摘要。
+watch(
+  phase,
+  async (nextPhase) => {
+    syncExamDialogLock(nextPhase === 'exam')
+    await nextTick()
+
+    if (nextPhase === 'result') {
+      scrollToTarget(resultSummaryRef.value)
+    }
+  },
+)
+
 onMounted(() => {
   initializeAssessment()
+})
+
+onBeforeUnmount(() => {
+  syncExamDialogLock(false)
 })
 </script>
 
 <template>
-  <div ref="pageRef" class="page page--assessment">
+  <div
+    ref="pageRef"
+    class="page page--assessment"
+    :class="{ 'page--assessment-exam': isExamDialogOpen }"
+    :inert="isExamDialogOpen"
+    :aria-hidden="isExamDialogOpen ? 'true' : undefined"
+  >
     <PageBanner
       eyebrow="入派考核"
       title="问心而入，先明云栖门风"
@@ -255,239 +323,251 @@ onMounted(() => {
       </div>
     </section>
 
-    <section v-else-if="phase === 'exam'" class="assessment-exam">
-      <div class="assessment-exam__sticky">
-        <article class="assessment-exam__overview content-card content-card--soft">
-          <div class="assessment-exam__overview-head">
+    <Teleport to="body">
+      <Transition name="exam-dialog-fade">
+        <div v-if="phase === 'exam'" class="assessment-exam-dialog" role="dialog" aria-modal="true" :aria-labelledby="'assessment-exam-dialog-title'">
+          <div class="assessment-exam-dialog__backdrop" aria-hidden="true"></div>
+
+          <div class="assessment-exam-dialog__panel">
+            <section class="assessment-exam assessment-exam--dialog">
+              <div class="assessment-exam__sticky">
+                <article class="assessment-exam__overview content-card content-card--soft">
+                  <div class="assessment-exam__overview-head">
+                    <div>
+                      <p class="eyebrow">答题进行中</p>
+                      <h2 :id="'assessment-exam-dialog-title'">{{ participantTitle }} · 正在问心</h2>
+                    </div>
+                    <div class="assessment-exam__time-card">
+                      <span>剩余时间</span>
+                      <strong>{{ remainingTimeText }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="assessment-exam__progress-meta">
+                    <span>当前章节：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
+                    <span>已答题数：{{ answeredCount }} / {{ totalQuestions }}</span>
+                    <span>未答题数：{{ unansweredCount }}</span>
+                    <span>记录方式：{{ storageModeText }}</span>
+                  </div>
+
+                  <div class="assessment-exam__section-track">
+                    <article
+                      v-for="section in sectionProgressList"
+                      :key="section.id"
+                      class="assessment-exam__section-pill"
+                      :class="{
+                        'assessment-exam__section-pill--active': section.isActive,
+                        'assessment-exam__section-pill--completed': section.isCompleted,
+                      }"
+                    >
+                      <strong>{{ section.title }}</strong>
+                      <span>{{ section.answeredCount }} / {{ section.questionCount }} 题</span>
+                    </article>
+                  </div>
+                </article>
+              </div>
+
+              <article v-if="currentSection" class="content-card assessment-exam__chapter-card">
+                <p class="eyebrow">{{ currentSection.eyebrow }}</p>
+                <h2>{{ currentSection.title }}</h2>
+                <p>{{ currentSection.description }}</p>
+                <div class="assessment-exam__chapter-meta">
+                  <span>本章题数：{{ currentSection.questions.length }}</span>
+                  <span>本章已答：{{ currentSectionAnsweredCount }}</span>
+                </div>
+              </article>
+
+              <div class="assessment-exam__question-list">
+                <AssessmentQuestionCard
+                  v-for="question in currentSectionQuestions"
+                  :key="question.id"
+                  :question="question"
+                  :selected-option-ids="getSelectedOptionIds(question.id)"
+                  @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
+                  @update-single="setSingleAnswer($event.questionId, $event.optionId)"
+                />
+              </div>
+
+              <div class="assessment-exam__actions assessment-exam__actions--dialog">
+                <button
+                  type="button"
+                  class="ink-button ink-button--ghost"
+                  :disabled="currentSectionIndex <= 0"
+                  @click="goToPreviousSection"
+                >
+                  上一章
+                </button>
+
+                <button
+                  v-if="!isLastSection"
+                  type="button"
+                  class="ink-button ink-button--secondary"
+                  @click="goToNextSection"
+                >
+                  下一章
+                </button>
+
+                <button
+                  v-else
+                  type="button"
+                  class="ink-button ink-button--secondary"
+                  :disabled="isSubmitting"
+                  @click="submitExam"
+                >
+                  {{ isSubmitting ? '正在交卷...' : '完成本卷并交卷' }}
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <section v-if="phase === 'result'" class="assessment-result">
+      <template v-if="latestResult">
+        <article ref="resultSummaryRef" class="assessment-result__summary content-card content-card--soft">
+          <div class="assessment-result__summary-head">
             <div>
-              <p class="eyebrow">答题进行中</p>
-              <h2>{{ participantTitle }} · 正在问心</h2>
+              <p class="eyebrow">考核结果</p>
+              <h2>{{ participantTitle }} · {{ resultHeadline }}</h2>
+              <p class="assessment-result__lead">{{ resultLead }}</p>
             </div>
-            <div class="assessment-exam__time-card">
-              <span>剩余时间</span>
-              <strong>{{ remainingTimeText }}</strong>
+            <div
+              class="assessment-result__score-badge"
+              :class="{ 'assessment-result__score-badge--passed': latestResult.passed }"
+            >
+              <span>总分</span>
+              <strong>{{ latestResult.score }}</strong>
+              <small>/ {{ latestResult.totalScore }}</small>
             </div>
           </div>
 
-          <div class="assessment-exam__progress-meta">
-            <span>当前章节：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
-            <span>已答题数：{{ answeredCount }} / {{ totalQuestions }}</span>
-            <span>未答题数：{{ unansweredCount }}</span>
+          <div class="assessment-result__stats">
+            <article class="assessment-result__stat-card">
+              <strong>{{ latestResult.correctCount }}</strong>
+              <span>总答对题数</span>
+            </article>
+            <article class="assessment-result__stat-card">
+              <strong>{{ latestResult.singleCorrectCount }}</strong>
+              <span>单选答对</span>
+            </article>
+            <article class="assessment-result__stat-card">
+              <strong>{{ latestResult.multipleCorrectCount }}</strong>
+              <span>多选答对</span>
+            </article>
+            <article class="assessment-result__stat-card">
+              <strong>{{ durationText }}</strong>
+              <span>本次用时</span>
+            </article>
+          </div>
+
+          <div class="assessment-result__section-summary">
+            <article
+              v-for="section in latestResult.sectionResults"
+              :key="section.sectionId"
+              class="assessment-result__section-card"
+            >
+              <strong>{{ section.sectionTitle }}</strong>
+              <span>{{ section.correctCount }} / {{ section.questionCount }} 题</span>
+            </article>
+          </div>
+
+          <div class="assessment-result__footer-meta">
+            <span>最近交卷时间：{{ completedAtText }}</span>
+            <span>合格线：{{ latestResult.passScore }} 分</span>
             <span>记录方式：{{ storageModeText }}</span>
           </div>
 
-          <div class="assessment-exam__section-track">
+          <p v-if="shouldShowRetakeNotice" class="assessment-result__retake-note">
+            建议三日后补考。首版暂不做本地强锁，你可以先看完错题解析与原文出处，再决定何时重考。
+          </p>
+
+          <div class="assessment-result__actions">
+            <button type="button" class="ink-button ink-button--primary" @click="restartExam">
+              重新考核
+            </button>
+            <RouterLink to="/canon" class="ink-button ink-button--ghost">
+              去看立派全典
+            </RouterLink>
+          </div>
+        </article>
+
+        <section class="content-section">
+          <div class="section-heading">
+            <p class="eyebrow">错题解析</p>
+            <h2>交卷后自动回看，错在何处，一眼看清</h2>
+            <p>每道错题都会直接展示你的答案、正确答案以及《立派全典》对应原文，方便立刻复盘。</p>
+          </div>
+
+          <div v-if="latestResult.wrongQuestions.length > 0" class="assessment-result__wrong-list">
             <article
-              v-for="section in sectionProgressList"
-              :key="section.id"
-              class="assessment-exam__section-pill"
-              :class="{
-                'assessment-exam__section-pill--active': section.isActive,
-                'assessment-exam__section-pill--completed': section.isCompleted,
-              }"
+              v-for="question in latestResult.wrongQuestions"
+              :key="question.questionId"
+              class="assessment-result__wrong-card content-card"
             >
-              <strong>{{ section.title }}</strong>
-              <span>{{ section.answeredCount }} / {{ section.questionCount }} 题</span>
+              <div class="assessment-result__wrong-head">
+                <span class="assessment-result__wrong-index">第 {{ question.order }} 题</span>
+                <span class="assessment-result__wrong-type">{{ question.type === 'single' ? '单选题' : '多选题' }}</span>
+                <span class="assessment-result__wrong-section">{{ question.sectionTitle }}</span>
+              </div>
+
+              <h3>{{ question.stem }}</h3>
+
+              <div class="assessment-result__wrong-answer-grid">
+                <article class="assessment-result__answer-box assessment-result__answer-box--user">
+                  <p>你的答案</p>
+                  <strong>{{ question.userAnswerText }}</strong>
+                </article>
+                <article class="assessment-result__answer-box assessment-result__answer-box--correct">
+                  <p>正确答案</p>
+                  <strong>{{ question.correctAnswerText }}</strong>
+                </article>
+              </div>
+
+              <div class="assessment-result__source">
+                <p>{{ question.sourceTitle }}</p>
+                <blockquote>{{ question.sourceExcerpt }}</blockquote>
+              </div>
             </article>
           </div>
-        </article>
-      </div>
 
-      <article v-if="currentSection" class="content-card assessment-exam__chapter-card">
-        <p class="eyebrow">{{ currentSection.eyebrow }}</p>
-        <h2>{{ currentSection.title }}</h2>
-        <p>{{ currentSection.description }}</p>
-        <div class="assessment-exam__chapter-meta">
-          <span>本章题数：{{ currentSection.questions.length }}</span>
-          <span>本章已答：{{ currentSectionAnsweredCount }}</span>
-        </div>
-      </article>
+          <article v-else class="content-card content-card--soft">
+            <p class="eyebrow">满卷通明</p>
+            <h3>本次没有错题</h3>
+            <p>这一卷答得很稳。门风、门规与禁律都已记清，不必再走回头路。</p>
+          </article>
+        </section>
 
-      <div class="assessment-exam__question-list">
-        <AssessmentQuestionCard
-          v-for="question in currentSectionQuestions"
-          :key="question.id"
-          :question="question"
-          :selected-option-ids="getSelectedOptionIds(question.id)"
-          @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
-          @update-single="setSingleAnswer($event.questionId, $event.optionId)"
-        />
-      </div>
-
-      <div class="assessment-exam__actions">
-        <button
-          type="button"
-          class="ink-button ink-button--ghost"
-          :disabled="currentSectionIndex <= 0"
-          @click="goToPreviousSection"
-        >
-          上一章
-        </button>
-
-        <button
-          v-if="!isLastSection"
-          type="button"
-          class="ink-button ink-button--secondary"
-          @click="goToNextSection"
-        >
-          下一章
-        </button>
-
-        <button
-          v-else
-          type="button"
-          class="ink-button ink-button--secondary"
-          :disabled="isSubmitting"
-          @click="submitExam"
-        >
-          {{ isSubmitting ? '正在交卷...' : '完成本卷并交卷' }}
-        </button>
-      </div>
-    </section>
-
-    <section v-else-if="phase === 'result' && latestResult" class="assessment-result">
-      <article class="assessment-result__summary content-card content-card--soft">
-        <div class="assessment-result__summary-head">
-          <div>
-            <p class="eyebrow">考核结果</p>
-            <h2>{{ participantTitle }} · {{ resultHeadline }}</h2>
-            <p class="assessment-result__lead">{{ resultLead }}</p>
+        <section class="content-section">
+          <div class="section-heading">
+            <p class="eyebrow">结果海报</p>
+            <h2>把这张成绩帖留下来，也可直接分享出去</h2>
+            <p>结果海报会自动带上入派考核页二维码，别人扫码后可直接进入同一套考核。</p>
           </div>
-          <div
-            class="assessment-result__score-badge"
-            :class="{ 'assessment-result__score-badge--passed': latestResult.passed }"
-          >
-            <span>总分</span>
-            <strong>{{ latestResult.score }}</strong>
-            <small>/ {{ latestResult.totalScore }}</small>
-          </div>
-        </div>
 
-        <div class="assessment-result__stats">
-          <article class="assessment-result__stat-card">
-            <strong>{{ latestResult.correctCount }}</strong>
-            <span>总答对题数</span>
-          </article>
-          <article class="assessment-result__stat-card">
-            <strong>{{ latestResult.singleCorrectCount }}</strong>
-            <span>单选答对</span>
-          </article>
-          <article class="assessment-result__stat-card">
-            <strong>{{ latestResult.multipleCorrectCount }}</strong>
-            <span>多选答对</span>
-          </article>
-          <article class="assessment-result__stat-card">
-            <strong>{{ durationText }}</strong>
-            <span>本次用时</span>
-          </article>
-        </div>
-
-        <div class="assessment-result__section-summary">
-          <article
-            v-for="section in latestResult.sectionResults"
-            :key="section.sectionId"
-            class="assessment-result__section-card"
-          >
-            <strong>{{ section.sectionTitle }}</strong>
-            <span>{{ section.correctCount }} / {{ section.questionCount }} 题</span>
-          </article>
-        </div>
-
-        <div class="assessment-result__footer-meta">
-          <span>最近交卷时间：{{ completedAtText }}</span>
-          <span>合格线：{{ latestResult.passScore }} 分</span>
-          <span>记录方式：{{ storageModeText }}</span>
-        </div>
-
-        <p v-if="shouldShowRetakeNotice" class="assessment-result__retake-note">
-          建议三日后补考。首版暂不做本地强锁，你可以先看完错题解析与原文出处，再决定何时重考。
-        </p>
-
-        <div class="assessment-result__actions">
-          <button type="button" class="ink-button ink-button--primary" @click="restartExam">
-            重新考核
-          </button>
-          <RouterLink to="/canon" class="ink-button ink-button--ghost">
-            去看立派全典
-          </RouterLink>
-        </div>
-      </article>
-
-      <section class="content-section">
-        <div class="section-heading">
-          <p class="eyebrow">错题解析</p>
-          <h2>交卷后自动回看，错在何处，一眼看清</h2>
-          <p>每道错题都会直接展示你的答案、正确答案以及《立派全典》对应原文，方便立刻复盘。</p>
-        </div>
-
-        <div v-if="latestResult.wrongQuestions.length > 0" class="assessment-result__wrong-list">
-          <article
-            v-for="question in latestResult.wrongQuestions"
-            :key="question.questionId"
-            class="assessment-result__wrong-card content-card"
-          >
-            <div class="assessment-result__wrong-head">
-              <span class="assessment-result__wrong-index">第 {{ question.order }} 题</span>
-              <span class="assessment-result__wrong-type">{{ question.type === 'single' ? '单选题' : '多选题' }}</span>
-              <span class="assessment-result__wrong-section">{{ question.sectionTitle }}</span>
-            </div>
-
-            <h3>{{ question.stem }}</h3>
-
-            <div class="assessment-result__wrong-answer-grid">
-              <article class="assessment-result__answer-box assessment-result__answer-box--user">
-                <p>你的答案</p>
-                <strong>{{ question.userAnswerText }}</strong>
-              </article>
-              <article class="assessment-result__answer-box assessment-result__answer-box--correct">
-                <p>正确答案</p>
-                <strong>{{ question.correctAnswerText }}</strong>
-              </article>
-            </div>
-
-            <div class="assessment-result__source">
-              <p>{{ question.sourceTitle }}</p>
-              <blockquote>{{ question.sourceExcerpt }}</blockquote>
-            </div>
-          </article>
-        </div>
-
-        <article v-else class="content-card content-card--soft">
-          <p class="eyebrow">满卷通明</p>
-          <h3>本次没有错题</h3>
-          <p>这一卷答得很稳。门风、门规与禁律都已记清，不必再走回头路。</p>
-        </article>
-      </section>
-
-      <section class="content-section">
-        <div class="section-heading">
-          <p class="eyebrow">结果海报</p>
-          <h2>把这张成绩帖留下来，也可直接分享出去</h2>
-          <p>结果海报会自动带上入派考核页二维码，别人扫码后可直接进入同一套考核。</p>
-        </div>
-
-        <AssessmentResultPosterStudio
-          :participant-title="latestResult.participantTitle"
-          :score="latestResult.score"
-          :total-score="latestResult.totalScore"
-          :passed="latestResult.passed"
-          :correct-count="latestResult.correctCount"
-          :question-count="latestResult.questionCount"
-          :pass-score="latestResult.passScore"
-          :completed-at-text="completedAtText"
-          :duration-text="durationText"
-          :title="siteContent.assessment.paper.resultPoster.title"
-          :subtitle="siteContent.assessment.paper.resultPoster.subtitle"
-          :signature="siteContent.assessment.paper.resultPoster.signature"
-          :pass-headline="siteContent.assessment.paper.resultPoster.passHeadline"
-          :fail-headline="siteContent.assessment.paper.resultPoster.failHeadline"
-          :pass-copy="siteContent.assessment.paper.resultPoster.passCopy"
-          :fail-copy="siteContent.assessment.paper.resultPoster.failCopy"
-          :qr-label="siteContent.assessment.paper.resultPoster.qrLabel"
-          :export-width="siteContent.assessment.paper.resultPoster.exportWidth"
-          :export-height="siteContent.assessment.paper.resultPoster.exportHeight"
-        />
-      </section>
+          <AssessmentResultPosterStudio
+            :participant-title="latestResult.participantTitle"
+            :score="latestResult.score"
+            :total-score="latestResult.totalScore"
+            :passed="latestResult.passed"
+            :correct-count="latestResult.correctCount"
+            :question-count="latestResult.questionCount"
+            :pass-score="latestResult.passScore"
+            :completed-at-text="completedAtText"
+            :duration-text="durationText"
+            :title="siteContent.assessment.paper.resultPoster.title"
+            :subtitle="siteContent.assessment.paper.resultPoster.subtitle"
+            :signature="siteContent.assessment.paper.resultPoster.signature"
+            :pass-headline="siteContent.assessment.paper.resultPoster.passHeadline"
+            :fail-headline="siteContent.assessment.paper.resultPoster.failHeadline"
+            :pass-copy="siteContent.assessment.paper.resultPoster.passCopy"
+            :fail-copy="siteContent.assessment.paper.resultPoster.failCopy"
+            :qr-label="siteContent.assessment.paper.resultPoster.qrLabel"
+            :export-width="siteContent.assessment.paper.resultPoster.exportWidth"
+            :export-height="siteContent.assessment.paper.resultPoster.exportHeight"
+          />
+        </section>
+      </template>
     </section>
   </div>
 </template>
@@ -769,6 +849,94 @@ onMounted(() => {
   gap: 18px;
 }
 
+.assessment-exam-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  isolation: isolate;
+}
+
+.assessment-exam-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top, rgba(139, 208, 203, 0.12), transparent 30%),
+    rgba(2, 12, 17, 0.78);
+  backdrop-filter: blur(14px);
+}
+
+.assessment-exam-dialog__panel {
+  position: relative;
+  z-index: 1;
+  width: min(1120px, 100%);
+  max-height: calc(100dvh - 36px - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  border: 1px solid rgba(147, 203, 198, 0.22);
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(9, 34, 44, 0.96), rgba(5, 19, 28, 0.98)),
+    rgba(8, 25, 35, 0.94);
+  box-shadow: var(--shadow-strong);
+}
+
+.assessment-exam--dialog {
+  gap: 18px;
+}
+
+.assessment-exam--dialog .assessment-exam__sticky {
+  top: 0;
+}
+
+.assessment-exam--dialog .assessment-exam__question-list {
+  padding-bottom: 4px;
+}
+
+.assessment-exam__actions--dialog {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 4px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  border: 1px solid rgba(147, 203, 198, 0.18);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(6, 22, 31, 0.94), rgba(5, 19, 28, 0.98)),
+    rgba(5, 19, 28, 0.96);
+  box-shadow: 0 -16px 32px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+}
+
+.exam-dialog-fade-enter-active .assessment-exam-dialog__backdrop,
+.exam-dialog-fade-leave-active .assessment-exam-dialog__backdrop {
+  transition: opacity 280ms ease;
+}
+
+.exam-dialog-fade-enter-active .assessment-exam-dialog__panel,
+.exam-dialog-fade-leave-active .assessment-exam-dialog__panel {
+  transition:
+    opacity 280ms ease,
+    transform 280ms ease;
+}
+
+.exam-dialog-fade-enter-from .assessment-exam-dialog__backdrop,
+.exam-dialog-fade-leave-to .assessment-exam-dialog__backdrop {
+  opacity: 0;
+}
+
+.exam-dialog-fade-enter-from .assessment-exam-dialog__panel,
+.exam-dialog-fade-leave-to .assessment-exam-dialog__panel {
+  opacity: 0;
+  transform: translateY(18px) scale(0.985);
+}
+
 .assessment-result {
   display: grid;
   gap: 30px;
@@ -925,6 +1093,17 @@ onMounted(() => {
     top: 92px;
   }
 
+  .assessment-exam-dialog {
+    padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .assessment-exam-dialog__panel {
+    width: min(100%, 980px);
+    padding: 16px;
+    border-radius: 28px;
+    max-height: calc(100dvh - 28px - env(safe-area-inset-bottom));
+  }
+
   /* 这里进一步压缩平板和大屏手机的答题头部，减少题目前方占用高度。 */
   .assessment-exam__overview {
     padding: 20px 18px;
@@ -1024,6 +1203,22 @@ onMounted(() => {
   .assessment-result__section-card,
   .assessment-exam__section-pill {
     min-height: auto;
+  }
+
+  .assessment-exam-dialog {
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .assessment-exam-dialog__panel {
+    width: 100%;
+    padding: 14px 12px;
+    border-radius: 24px;
+    max-height: calc(100dvh - 20px - env(safe-area-inset-bottom));
+  }
+
+  .assessment-exam__actions--dialog {
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    border-radius: 22px;
   }
 }
 </style>
