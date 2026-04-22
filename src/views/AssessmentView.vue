@@ -1145,7 +1145,29 @@ onBeforeUnmount(() => {
 
   .assessment-exam__overview,
   .assessment-exam__chapter-card {
-    padding: 18px 16px;
+    padding: 14px 12px;
+  }
+
+  .assessment-exam__overview-head h2 {
+    font-size: clamp(1.35rem, 5.5vw, 1.7rem);
+    line-height: 1.16;
+  }
+
+  .assessment-exam__time-card {
+    padding: 12px 14px;
+  }
+
+  .assessment-exam__time-card span {
+    font-size: 0.8rem;
+  }
+
+  .assessment-exam__time-card strong {
+    font-size: 1.7rem;
+  }
+
+  .assessment-exam__chapter-card p {
+    line-height: 1.7;
+    font-size: 0.92rem;
   }
 
   .assessment-ready__intro-card,
@@ -1173,18 +1195,23 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__section-track {
-    grid-auto-columns: minmax(156px, 82vw);
-    gap: 10px;
+    grid-auto-columns: minmax(140px, 78vw);
+    gap: 8px;
+    margin-top: 14px;
   }
 
   .assessment-exam__progress-meta {
-    gap: 10px;
+    gap: 8px;
+    margin-top: 14px;
   }
 
   .assessment-exam__progress-meta span,
   .assessment-exam__chapter-meta span {
     flex: 1 1 100%;
     justify-content: center;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.8rem;
   }
 
   .assessment-result__summary-head {
@@ -1205,6 +1232,19 @@ onBeforeUnmount(() => {
     min-height: auto;
   }
 
+  .assessment-exam__section-pill {
+    padding: 12px 12px;
+    min-height: 74px;
+  }
+
+  .assessment-exam__section-pill strong {
+    font-size: 0.92rem;
+  }
+
+  .assessment-exam__section-pill span {
+    font-size: 0.8rem;
+  }
+
   .assessment-exam-dialog {
     padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
   }
@@ -1217,8 +1257,13 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__actions--dialog {
-    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    margin-top: 0;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
     border-radius: 22px;
+  }
+
+  .assessment-exam__question-list {
+    gap: 12px;
   }
 }
 </style>

@@ -257,22 +257,48 @@ function handleOptionClick(optionId: string): void {
   }
 
   .assessment-question-card {
-    padding: 22px 18px;
+    gap: 12px;
+    padding: 16px 14px;
   }
 
   .assessment-question-card__title {
-    font-size: 1.18rem;
+    font-size: 1.06rem;
+    line-height: 1.48;
+  }
+
+  .assessment-question-card__hint {
+    font-size: 0.88rem;
+    line-height: 1.65;
+  }
+
+  .assessment-question-card__options {
+    gap: 10px;
   }
 
   .assessment-question-card__option {
-    padding: 15px 14px;
-    gap: 12px;
+    align-items: center;
+    padding: 12px 12px;
+    gap: 10px;
   }
 
   .assessment-question-card__badge {
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+  }
+
+  .assessment-question-card__option-text {
+    line-height: 1.62;
+    font-size: 0.92rem;
+  }
+
+  .assessment-question-card__index,
+  .assessment-question-card__type,
+  .assessment-question-card__score {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 0.78rem;
   }
 }
 </style>
