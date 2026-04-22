@@ -416,6 +416,7 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   position: relative;
   z-index: 1;
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 14px;
   height: 100%;
   padding: 28px 28px 22px 84px;
@@ -551,6 +552,8 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   grid-template-rows: auto auto minmax(0, 1fr);
   gap: 12px 14px;
   align-items: stretch;
+  min-height: 0;
+  height: 100%;
 }
 
 .member-card-card__portrait {
@@ -633,6 +636,7 @@ const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.l
   gap: 12px;
   min-width: 0;
   min-height: 0;
+  height: 100%;
   grid-template-rows: auto auto minmax(0, 1fr);
 }
 
