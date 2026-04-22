@@ -705,6 +705,8 @@ onMounted(() => {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
   margin-top: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(216, 185, 114, 0.28) transparent;
 }
 
 .assessment-exam__section-pill {
@@ -867,9 +869,33 @@ onMounted(() => {
 @media (max-width: 1180px) {
   .assessment-ready,
   .assessment-result__stats,
-  .assessment-result__section-summary,
-  .assessment-exam__section-track {
+  .assessment-result__section-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 这里把章节进度改成横向滑动条，避免中小屏幕把七个章节硬堆成高面板。 */
+  .assessment-exam__section-track {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(180px, 1fr);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+
+  .assessment-exam__section-pill {
+    min-height: auto;
+    scroll-snap-align: start;
+  }
+
+  .assessment-exam__section-track::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .assessment-exam__section-track::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(216, 185, 114, 0.26);
   }
 }
 
@@ -879,17 +905,65 @@ onMounted(() => {
   .assessment-result__summary-head,
   .assessment-result__stats,
   .assessment-result__section-summary,
-  .assessment-result__wrong-answer-grid,
-  .assessment-exam__section-track {
+  .assessment-result__wrong-answer-grid {
     grid-template-columns: 1fr;
   }
 
   .assessment-exam__sticky {
     top: 92px;
   }
+
+  /* 这里进一步压缩平板和大屏手机的答题头部，减少题目前方占用高度。 */
+  .assessment-exam__overview {
+    padding: 20px 18px;
+  }
+
+  .assessment-exam__time-card {
+    min-width: 0;
+    width: 100%;
+    justify-items: start;
+    padding: 16px 18px;
+  }
+
+  .assessment-exam__progress-meta span {
+    flex: 1 1 calc(50% - 12px);
+    justify-content: center;
+    min-width: 0;
+    text-align: center;
+  }
 }
 
 @media (max-width: 720px) {
+  /* 这里在手机端取消考核概览的吸顶，彻底避免滚动时压住题目内容。 */
+  .assessment-exam__sticky {
+    position: static;
+    top: auto;
+  }
+
+  .assessment-exam__overview,
+  .assessment-exam__chapter-card {
+    padding: 18px 16px;
+  }
+
+  .assessment-exam__section-track {
+    grid-auto-columns: minmax(156px, 82vw);
+    gap: 10px;
+  }
+
+  .assessment-exam__progress-meta {
+    gap: 10px;
+  }
+
+  .assessment-exam__progress-meta span,
+  .assessment-exam__chapter-meta span {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .assessment-exam__actions .ink-button {
+    flex: 1 1 100%;
+  }
+
   .assessment-result__stat-card,
   .assessment-result__section-card,
   .assessment-exam__section-pill {

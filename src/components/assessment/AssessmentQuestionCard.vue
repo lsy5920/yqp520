@@ -174,6 +174,7 @@ function handleOptionClick(optionId: string): void {
 .assessment-question-card__title {
   font-size: 1.36rem;
   line-height: 1.65;
+  word-break: break-word;
 }
 
 .assessment-question-card__hint {
@@ -237,17 +238,41 @@ function handleOptionClick(optionId: string): void {
 
 .assessment-question-card__option-text {
   display: block;
+  min-width: 0;
+  flex: 1 1 auto;
   line-height: 1.82;
   color: rgba(244, 239, 226, 0.9);
+  word-break: break-word;
 }
 
 @media (max-width: 720px) {
+  /* 这里把手机端题卡头部改成上下排布，避免题号、题型和分数挤在一行互相顶住。 */
+  .assessment-question-card__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .assessment-question-card__score {
+    align-self: flex-start;
+  }
+
   .assessment-question-card {
     padding: 22px 18px;
   }
 
   .assessment-question-card__title {
     font-size: 1.18rem;
+  }
+
+  .assessment-question-card__option {
+    padding: 15px 14px;
+    gap: 12px;
+  }
+
+  .assessment-question-card__badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
   }
 }
 </style>
