@@ -137,14 +137,22 @@ const ribbonItems = computed<string[]>(() => [
 
 /**
  * 身份信息块
- * 用途：把常用信息整理成短小的门帖式摘要
+ * 用途：把常用信息整理成更饱满的门帖式摘要
  */
 const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
   { label: '俗世名号', value: displayWorldName.value },
   { label: '所居地域', value: displayResidence.value },
   { label: '门帖编号', value: numberText.value },
   { label: '制成时记', value: createdAtLabel.value },
+  { label: '门帖样式', value: props.template.name },
+  { label: '门中印记', value: memberCardCopy.generated.sideMark },
 ]))
+
+/**
+ * 短签概览
+ * 用途：给短签区补一行提示，避免标签太少时显得空
+ */
+const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.length} 枚短签`)
 </script>
 
 <template>
@@ -192,7 +200,7 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
         </span>
       </div>
 
-      <section class="member-card-card__identity">
+      <section class="member-card-card__body">
         <div class="member-card-card__portrait">
           <img
             v-if="form.avatarDataUrl"
@@ -203,11 +211,20 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
           <div v-else class="member-card-card__portrait-fallback" aria-hidden="true">
             <span>{{ avatarInitial }}</span>
           </div>
+
+          <div class="member-card-card__portrait-caption">
+            <span class="member-card-card__portrait-caption-top">{{ memberCardCopy.generated.sideMark }}</span>
+            <strong class="member-card-card__portrait-caption-name">{{ displayDaoName }}</strong>
+            <span class="member-card-card__portrait-caption-bottom">{{ numberText }} · {{ template.name }}</span>
+          </div>
         </div>
 
-        <div class="member-card-card__identity-stack">
+        <div class="member-card-card__stack">
           <article class="member-card-card__panel member-card-card__panel--tags">
-            <p class="member-card-card__section-label">门中短签</p>
+            <div class="member-card-card__panel-head">
+              <p class="member-card-card__section-label">门中短签</p>
+              <span class="member-card-card__panel-head-note">{{ shortTagSummary }}</span>
+            </div>
 
             <div class="member-card-card__tag-list">
               <span
@@ -221,28 +238,31 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
           </article>
 
           <article class="member-card-card__panel member-card-card__panel--info">
-            <div
-              v-for="item in identityItems"
-              :key="item.label"
-              class="member-card-card__info-row"
-            >
-              <span class="member-card-card__info-label">{{ item.label }}</span>
-              <strong class="member-card-card__info-value">{{ item.value }}</strong>
+            <div class="member-card-card__info-grid">
+              <div
+                v-for="item in identityItems"
+                :key="item.label"
+                class="member-card-card__info-row"
+              >
+                <span class="member-card-card__info-label">{{ item.label }}</span>
+                <strong class="member-card-card__info-value">{{ item.value }}</strong>
+              </div>
             </div>
+            <p class="member-card-card__info-note">{{ cardSubtitle }}</p>
           </article>
+
+          <section class="member-card-card__story-grid">
+            <article class="member-card-card__story-card member-card-card__story-card--origin">
+              <p class="member-card-card__section-label">入栖初心</p>
+              <p class="member-card-card__story-text">{{ displayOrigin }}</p>
+            </article>
+
+            <article class="member-card-card__story-card member-card-card__story-card--motto">
+              <p class="member-card-card__section-label">心之所语</p>
+              <p class="member-card-card__story-text member-card-card__story-text--quote">“{{ displayMotto }}”</p>
+            </article>
+          </section>
         </div>
-      </section>
-
-      <section class="member-card-card__story">
-        <article class="member-card-card__story-card member-card-card__story-card--origin">
-          <p class="member-card-card__section-label">入栖初心</p>
-          <p class="member-card-card__story-text">{{ displayOrigin }}</p>
-        </article>
-
-        <article class="member-card-card__story-card member-card-card__story-card--motto">
-          <p class="member-card-card__section-label">心之所语</p>
-          <p class="member-card-card__story-text member-card-card__story-text--quote">“{{ displayMotto }}”</p>
-        </article>
       </section>
 
       <footer class="member-card-card__footer">
@@ -525,17 +545,21 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
   border-color: rgba(216, 185, 114, 0.28);
 }
 
-.member-card-card__identity {
+.member-card-card__body {
   display: grid;
-  grid-template-columns: minmax(230px, 0.88fr) minmax(0, 1.12fr);
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(240px, 0.88fr) minmax(0, 1.12fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px 14px;
+  align-items: stretch;
 }
 
 .member-card-card__portrait {
   position: relative;
+  grid-row: 1 / span 3;
   overflow: hidden;
-  aspect-ratio: 1 / 1.08;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   border-radius: 30px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   background:
@@ -576,10 +600,40 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
   letter-spacing: 0.2em;
 }
 
-.member-card-card__identity-stack {
+.member-card-card__portrait-caption {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(241, 217, 160, 0.16);
+  background: linear-gradient(180deg, rgba(6, 19, 27, 0.28), rgba(6, 19, 27, 0.88));
+  backdrop-filter: blur(8px);
+}
+
+.member-card-card__portrait-caption-top,
+.member-card-card__portrait-caption-bottom {
+  color: rgba(244, 239, 226, 0.68);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+
+.member-card-card__portrait-caption-name {
+  color: #f0dfb0;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+}
+
+.member-card-card__stack {
   display: grid;
   gap: 12px;
   min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .member-card-card__panel {
@@ -591,15 +645,28 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
   background: rgba(7, 27, 37, 0.54);
 }
 
+.member-card-card__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.member-card-card__panel-head-note {
+  color: rgba(241, 217, 160, 0.7);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
 .member-card-card__panel--tags {
-  min-height: 160px;
   background:
     linear-gradient(180deg, rgba(20, 52, 68, 0.24), rgba(7, 27, 37, 0.92)),
     rgba(7, 27, 37, 0.52);
 }
 
 .member-card-card__panel--info {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .member-card-card__section-label {
@@ -627,6 +694,12 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
   letter-spacing: 0.06em;
 }
 
+.member-card-card__info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
 .member-card-card__info-row {
   display: grid;
   gap: 6px;
@@ -647,16 +720,28 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
   word-break: break-word;
 }
 
-.member-card-card__story {
+.member-card-card__info-note {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(216, 185, 114, 0.12);
+  color: rgba(244, 239, 226, 0.72);
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.14em;
+}
+
+.member-card-card__story-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  min-height: 0;
 }
 
 .member-card-card__story-card {
   display: grid;
+  align-content: start;
   gap: 10px;
-  min-height: 152px;
+  min-height: 100%;
   padding: 14px 16px;
   border-radius: 20px;
   border: 1px solid rgba(147, 203, 198, 0.14);
@@ -775,21 +860,32 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
     gap: 12px;
   }
 
-  .member-card-card__identity,
-  .member-card-card__story,
+  .member-card-card__body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .member-card-card__portrait {
+    grid-row: auto;
+    width: min(100%, 240px);
+    min-height: 0;
+    aspect-ratio: 1 / 1.08;
+  }
+
+  .member-card-card__stack {
+    grid-template-rows: auto auto auto;
+  }
+
+  .member-card-card__info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-card-card__story-grid,
   .member-card-card__footer {
     gap: 12px;
   }
 
-  .member-card-card__identity {
-    grid-template-columns: 1fr;
-  }
-
-  .member-card-card__portrait {
-    width: min(100%, 240px);
-  }
-
-  .member-card-card__identity-stack {
+  .member-card-card__story-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -868,15 +964,36 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
     border-radius: 16px;
   }
 
-  .member-card-card__panel--tags {
-    min-height: 0;
+  .member-card-card__panel-head {
+    align-items: start;
+    flex-direction: column;
   }
 
-  .member-card-card__panel--info {
-    grid-template-columns: 1fr 1fr;
+  .member-card-card__panel-head-note {
+    white-space: normal;
   }
 
-  .member-card-card__story {
+  .member-card-card__info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-card-card__portrait {
+    width: min(100%, 180px);
+    aspect-ratio: 1 / 1.08;
+  }
+
+  .member-card-card__portrait-caption {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    padding: 10px 12px;
+  }
+
+  .member-card-card__portrait-caption-name {
+    font-size: 14px;
+  }
+
+  .member-card-card__story-grid {
     grid-template-columns: 1fr;
   }
 
@@ -884,9 +1001,8 @@ const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
     min-height: 0;
   }
 
-  .member-card-card__portrait {
-    width: min(100%, 180px);
-    aspect-ratio: 1 / 1.08;
+  .member-card-card__info-note {
+    font-size: 11px;
   }
 
   .member-card-card__info-value,
