@@ -954,12 +954,12 @@ onBeforeUnmount(() => {
   }
 
   .poster-studio__card-shell {
-    width: 100%;
-    border-radius: 24px;
+    width: min(100%, 420px);
+    border-radius: 32px;
   }
 
   .poster-studio__poster-source {
-    border-radius: 24px;
+    border-radius: 32px;
   }
 }
 </style>
