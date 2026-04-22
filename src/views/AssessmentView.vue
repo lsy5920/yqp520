@@ -13,6 +13,9 @@ const pageRef = ref<HTMLElement | null>(null)
 
 const resultSummaryRef = ref<HTMLElement | null>(null)
 
+// 这里拿到题目列表节点，方便开考后自动滚到真正的作答区域。
+const examQuestionListRef = ref<HTMLElement | null>(null)
+
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
   rootRef: pageRef,
@@ -162,6 +165,23 @@ function scrollToTarget(target: HTMLElement | null, offset = 104): void {
 }
 
 /**
+ * 滚到考题区域
+ * 用途：弹窗打开后直接让用户看到题目和选项，而不是停在上方说明区
+ * 入参：target 为题目列表节点
+ * 返回值：无返回值
+ */
+function scrollToExamQuestions(target: HTMLElement | null): void {
+  if (!target) {
+    return
+  }
+
+  target.scrollIntoView({
+    block: 'start',
+    behavior: 'smooth',
+  })
+}
+
+/**
  * 同步考核弹窗锁
  * 用途：进入答题时锁住页面滚动，退出答题后恢复页面滚动
  * 入参：isLocked 为是否要锁住页面
@@ -182,6 +202,10 @@ watch(
   async (nextPhase) => {
     syncExamDialogLock(nextPhase === 'exam')
     await nextTick()
+
+    if (nextPhase === 'exam') {
+      scrollToExamQuestions(examQuestionListRef.value)
+    }
 
     if (nextPhase === 'result') {
       scrollToTarget(resultSummaryRef.value)
@@ -377,7 +401,7 @@ onBeforeUnmount(() => {
                 </div>
               </article>
 
-              <div class="assessment-exam__question-list">
+              <div ref="examQuestionListRef" class="assessment-exam__question-list">
                 <AssessmentQuestionCard
                   v-for="question in currentSectionQuestions"
                   :key="question.id"
