@@ -11,6 +11,7 @@ import type {
   RoutineItem,
   RuleItem,
 } from '@/types/site'
+import { assessmentContent } from '@/data/assessmentContent'
 
 // 这里集中存放官网全部内容，页面只负责展示，方便后续统一维护。
 const navItems: NavItem[] = [
@@ -19,6 +20,7 @@ const navItems: NavItem[] = [
   { label: '门规与禁律', path: '/discipline', hint: '共守风气' },
   { label: '宗门日常', path: '/life', hint: '同门相处' },
   { label: '入派指引', path: '/join', hint: '来去随缘' },
+  { label: '入派考核', path: '/assessment', hint: '问心入门' },
   { label: '云栖海报', path: '/poster', hint: '分享门面' },
 ]
 
@@ -374,6 +376,7 @@ export const siteContent = {
     faqs: joinFaqs,
     note: '认同宗旨、品行端正、愿与同门真诚相待，便是踏入云栖最重要的门槛。',
   },
+  assessment: assessmentContent,
   poster: {
     template: posterTemplate,
     defaultTitle: '云中同门',

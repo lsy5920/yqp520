@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
 import { siteContent } from '@/data/siteContent'
@@ -60,6 +61,32 @@ useRevealMotion({
           铜章不是权力象征，也不是门槛证明，它更像一枚纪念章，记下“我曾在这里，与同道并肩一段”的缘分。
         </p>
         <p>申领与否，全凭自愿；重在仪式感，不作硬性要求。</p>
+      </article>
+    </section>
+
+    <section class="content-section" data-reveal>
+      <div class="section-heading">
+        <p class="eyebrow">入派考核</p>
+        <h2>认同宗旨之后，再以一卷问心</h2>
+        <p>
+          首版入派考核采用固定三十题标准题卷，按七个章节分步作答。考核不为难人，只为让新同门先把门风、规矩与禁律读明白。
+        </p>
+      </div>
+
+      <article class="content-card content-card--soft">
+        <p class="content-card__eyebrow">问心入门</p>
+        <h3>答题限时十分钟，交卷后自动显示成绩、错题解析与结果海报</h3>
+        <p>
+          若本轮未过，可先看错题对应的《立派全典》原文，再从容重来。首版补考只做提醒，不做本地强锁。
+        </p>
+        <div class="page-banner__actions">
+          <RouterLink class="ink-button ink-button--primary" to="/assessment">
+            前往入派考核
+          </RouterLink>
+          <RouterLink class="ink-button ink-button--ghost" to="/canon">
+            先看立派全典
+          </RouterLink>
+        </div>
       </article>
     </section>
 

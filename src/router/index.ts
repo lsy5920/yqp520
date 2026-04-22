@@ -1,3 +1,4 @@
+import AssessmentView from '@/views/AssessmentView.vue'
 import type { RouteRecordRaw } from 'vue-router'
 import CanonView from '@/views/CanonView.vue'
 import DisciplineView from '@/views/DisciplineView.vue'
@@ -37,6 +38,12 @@ export const routes: RouteRecordRaw[] = [
     name: 'join',
     component: JoinView,
     meta: { title: '入派指引' },
+  },
+  {
+    path: '/assessment',
+    name: 'assessment',
+    component: AssessmentView,
+    meta: { title: '入派考核' },
   },
   {
     path: '/poster',

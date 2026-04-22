@@ -213,7 +213,7 @@ img {
 .site-nav--desktop {
   display: grid;
   flex: 1 1 auto;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--site-nav-count, 6), minmax(0, 1fr));
   width: min(100%, 860px);
   margin-left: auto;
   gap: 10px;
@@ -508,7 +508,7 @@ img {
 }
 
 .quick-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .flow-grid {

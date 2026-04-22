@@ -34,7 +34,11 @@ function toggleMenu() {
         </span>
       </RouterLink>
 
-      <nav class="site-nav site-nav--desktop" aria-label="主导航">
+      <nav
+        class="site-nav site-nav--desktop"
+        aria-label="主导航"
+        :style="{ '--site-nav-count': String(siteContent.navItems.length) }"
+      >
         <RouterLink
           v-for="item in siteContent.navItems"
           :key="item.path"
