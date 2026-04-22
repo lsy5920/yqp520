@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import MusicLyricOverlay from '@/components/music/MusicLyricOverlay.vue'
+import MusicPlaybackOverlay from '@/components/music/MusicPlaybackOverlay.vue'
 import MusicPlayer from '@/components/music/MusicPlayer.vue'
 import BackTopButton from '@/components/layout/BackTopButton.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
@@ -14,10 +15,17 @@ const {
   currentTrack,
   currentLyricLine,
   desiredPlaying,
+  confirmPlaybackPrompt,
   hasAvailableTrack,
   initializeAudio,
+  isPlaybackPromptVisible,
   isPlaying,
   lastError,
+  playbackPromptActionText,
+  playbackPromptDescription,
+  playbackPromptResumeText,
+  playbackPromptTitle,
+  statusText,
   shouldShowLyricOverlay,
   togglePlayback,
 } = useSiteAudio(siteContent.musicTracks)
@@ -75,12 +83,24 @@ onMounted(() => {
       :visible="shouldShowLyricOverlay"
     />
 
+    <MusicPlaybackOverlay
+      :action-text="playbackPromptActionText"
+      :description="playbackPromptDescription"
+      :error-text="lastError"
+      :resume-text="playbackPromptResumeText"
+      :title="playbackPromptTitle"
+      :track-name="currentTrack?.name ?? ''"
+      :visible="isPlaybackPromptVisible"
+      @confirm-play="confirmPlaybackPrompt"
+    />
+
     <MusicPlayer
       :cover-text="currentTrack?.coverText ?? '待置入曲目'"
       :desired-playing="desiredPlaying"
       :has-track="hasAvailableTrack"
       :is-playing="isPlaying"
       :last-error="lastError"
+      :status-text="statusText"
       :track-name="currentTrack?.name ?? '云栖清音'"
       @toggle-play="togglePlayback"
     />

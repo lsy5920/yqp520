@@ -18,6 +18,8 @@ interface MusicPlayerProps {
   desiredPlaying: boolean
   /** 用途：最近一次错误信息，没有时不展示错误态 */
   lastError?: string
+  /** 用途：上层传入的状态文案，优先用于展示当前音乐状态 */
+  statusText?: string
   /** 用途：是否减少动态效果 */
   reduceMotion?: boolean
 }
@@ -35,6 +37,7 @@ const props = withDefaults(defineProps<MusicPlayerProps>(), {
   trackName: '',
   coverText: '',
   lastError: '',
+  statusText: '',
   reduceMotion: false,
 })
 
@@ -77,6 +80,10 @@ const titleText = computed<string>(() => {
  * 用途：统一把播放、待置入、错误这些状态转成中文提示
  */
 const statusText = computed<string>(() => {
+  if (props.statusText?.trim()) {
+    return props.statusText.trim()
+  }
+
   if (props.lastError?.trim()) {
     return props.lastError.trim()
   }
