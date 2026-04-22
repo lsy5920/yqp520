@@ -13,27 +13,27 @@ import {
 } from '@/utils/memberCard'
 
 /**
- * 组件入参类型
- * 用途：约束同门名帖预览和导出所需的数据
+ * 组件参数类型
+ * 用途：描述名帖卡片需要接收的全部数据，方便预览和导出共用同一套结构。
  */
 interface MemberCardCardProps {
-  /** 用途：当前填写的同门信息 */
+  /** 用途：当前正在展示的名帖表单内容。 */
   form: MemberCardFormValue
-  /** 用途：当前选中的模板配置 */
+  /** 用途：当前选中的卡片模板样式。 */
   template: MemberCardTemplateConfig
-  /** 用途：当前同门编号 */
+  /** 用途：当前同门的顺延编号。 */
   number: number
-  /** 用途：生成时间文本 */
+  /** 用途：卡片落款时显示的生成时间文字。 */
   createdAtText: string
-  /** 用途：卡片主标题，默认沿用门派题头 */
+  /** 用途：卡片顶部的小标题，默认沿用同门名帖总标题。 */
   cardTitle?: string
-  /** 用途：卡片副标题，默认沿用门派抬头 */
+  /** 用途：卡片顶部的副标题，默认沿用生成副标题。 */
   cardSubtitle?: string
-  /** 用途：落款前缀 */
+  /** 用途：卡片底部签名的前缀文字。 */
   signaturePrefix?: string
-  /** 用途：纪年文本 */
+  /** 用途：卡片底部显示的纪年文字。 */
   yearText?: string
-  /** 用途：是否减少动态效果 */
+  /** 用途：是否关闭动效，方便需要静态展示的场景。 */
   reduceMotion?: boolean
 }
 
@@ -45,125 +45,73 @@ const props = withDefaults(defineProps<MemberCardCardProps>(), {
   reduceMotion: false,
 })
 
-/**
- * 道号
- * 用途：展示在名帖最显眼的位置
- */
+// 这里把道号清洗成卡片主标题，方便一眼看到这张名帖是谁的。
 const displayDaoName = computed<string>(() => (
   normalizeMemberCardShortText(props.form.daoName, memberCardCopy.generated.fallbackDaoName)
 ))
 
-/**
- * 俗世名号
- * 用途：展示同门愿不愿意留下俗世姓名
- */
+// 这里把俗世名号清洗出来，方便在身份区里补充真实姓名。
 const displayWorldName = computed<string>(() => (
   normalizeMemberCardShortText(props.form.worldName, memberCardCopy.generated.fallbackWorldName)
 ))
 
-/**
- * 所居地域
- * 用途：展示同门所在的城市或地域
- */
+// 这里把所居地域清洗出来，方便给名帖补一条地点信息。
 const displayResidence = computed<string>(() => (
   normalizeMemberCardShortText(props.form.residence, memberCardCopy.generated.fallbackResidence)
 ))
 
-/**
- * 门中短签
- * 用途：把所好拆成几枚短签，减少空白并增强门派味道
- */
+// 这里把门中短签拆成多个标签，方便卡片看起来更像成品名片。
 const shortTagList = computed<string[]>(() => (
   splitMemberCardTags(props.form.shortTags, memberCardCopy.generated.fallbackShortTags)
 ))
 
-/**
- * 入栖初心
- * 用途：展示加入云栖派的缘起与心境
- */
+// 这里把入栖初心整理成长句，方便放到说明区里稳定展示。
 const displayOrigin = computed<string>(() => (
   normalizeMemberCardLongText(props.form.origin, memberCardCopy.generated.fallbackOrigin)
 ))
 
-/**
- * 个人寄语
- * 用途：展示同门想留下的一句话
- */
+// 这里把心之所语整理成长句，方便在底部用引用式收束。
 const displayMotto = computed<string>(() => (
   normalizeMemberCardLongText(props.form.motto, memberCardCopy.generated.fallbackMotto)
 ))
 
-/**
- * 头像首字
- * 用途：没有上传头像时，让占位块也有门派感
- */
+// 这里取道号首字作为头像占位字，方便没有头像时也不显空。
 const avatarInitial = computed<string>(() => (
   normalizeMemberCardShortText(displayDaoName.value, '栖').slice(0, 1) || '栖'
 ))
 
-/**
- * 水印首字
- * 用途：把道号首字做成半透明底纹，增加古卷感
- */
+// 这里取道号首字做背景水印，方便卡片背后有一点门派记号。
 const watermarkGlyph = computed<string>(() => (
   normalizeMemberCardShortText(displayDaoName.value, '栖').slice(0, 1) || '栖'
 ))
 
-/**
- * 顺延编号文本
- * 用途：把数字变成更有门派感的同门编号
- */
+// 这里把编号整理成统一格式，方便页面和导出图保持一致。
 const numberText = computed<string>(() => formatMemberCardNumber(props.number))
 
-/**
- * 生成时间文本
- * 用途：让名帖里也保留一份生成时刻
- */
+// 这里把生成时间清洗成更适合落款的文字。
 const createdAtLabel = computed<string>(() => {
-  const safeText = props.createdAtText?.trim()
+  const safeText = props.createdAtText.trim()
   return safeText || '刚刚制成'
 })
 
-/**
- * 顶部信息带
- * 用途：把俗名、居处、模板和编号压成一条更像门派落款的带子
- */
-const ribbonItems = computed<string[]>(() => [
-  displayWorldName.value,
-  displayResidence.value,
+// 这里整理顶部要展示的短标签，方便把模板、地域、编号压成一排。
+const headerChipList = computed<string[]>(() => [
   props.template.name,
+  displayResidence.value,
+  memberCardCopy.generated.sideMark,
   numberText.value,
 ])
 
-/**
- * 身份信息块
- * 用途：把常用信息整理成更饱满的门帖式摘要
- */
-const identityItems = computed<Array<{ label: string; value: string }>>(() => ([
+// 这里整理身份信息区的条目，方便用统一网格展示基础信息。
+const identityItemList = computed<Array<{ label: string; value: string }>>(() => [
   { label: '俗世名号', value: displayWorldName.value },
   { label: '所居地域', value: displayResidence.value },
   { label: '门帖编号', value: numberText.value },
   { label: '制成时记', value: createdAtLabel.value },
-  { label: '门帖样式', value: props.template.name },
-  { label: '门中印记', value: memberCardCopy.generated.sideMark },
-]))
+])
 
-/**
- * 短签概览
- * 用途：给短签区补一行提示，避免标签太少时显得空
- */
+// 这里统计短签数量，方便在标签区里给出简短提示。
 const shortTagSummary = computed<string>(() => `已拆成 ${shortTagList.value.length} 枚短签`)
-
-/**
- * 底部总记
- * 用途：把门帖的关键信息再收一遍，顺手填满底部留白
- */
-const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
-  { label: '门帖样式', value: props.template.name },
-  { label: '门帖编号', value: numberText.value },
-  { label: '门中印记', value: memberCardCopy.generated.sideMark },
-  { label: '立派纪年', value: props.yearText },
-]))
 </script>
 
 <template>
@@ -175,10 +123,12 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     ]"
     aria-label="云栖同门名帖预览"
   >
+    <div class="member-card-card__backdrop" aria-hidden="true"></div>
     <div class="member-card-card__grain" aria-hidden="true"></div>
-    <div class="member-card-card__mist member-card-card__mist--top" aria-hidden="true"></div>
-    <div class="member-card-card__mist member-card-card__mist--bottom" aria-hidden="true"></div>
-    <div class="member-card-card__watermark" aria-hidden="true">{{ watermarkGlyph }}</div>
+    <div class="member-card-card__watermark" aria-hidden="true">
+      {{ watermarkGlyph }}
+    </div>
+
     <div class="member-card-card__rail" aria-hidden="true">
       <span class="member-card-card__rail-label">{{ memberCardCopy.generated.sideMark }}</span>
       <strong class="member-card-card__rail-number">{{ numberText }}</strong>
@@ -191,6 +141,17 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
           <p class="member-card-card__eyebrow">{{ cardTitle }}</p>
           <h3 class="member-card-card__title">{{ displayDaoName }}</h3>
           <p class="member-card-card__subtitle">{{ cardSubtitle }}</p>
+
+          <div class="member-card-card__meta-list">
+            <span
+              v-for="chip in headerChipList"
+              :key="chip"
+              class="member-card-card__meta-chip"
+              :class="{ 'member-card-card__meta-chip--strong': chip === numberText }"
+            >
+              {{ chip }}
+            </span>
+          </div>
         </div>
 
         <div class="member-card-card__seal" aria-hidden="true">
@@ -200,19 +161,8 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
         </div>
       </header>
 
-      <div class="member-card-card__ribbon">
-        <span
-          v-for="item in ribbonItems"
-          :key="item"
-          class="member-card-card__ribbon-chip"
-          :class="{ 'member-card-card__ribbon-chip--strong': item === numberText }"
-        >
-          {{ item }}
-        </span>
-      </div>
-
-      <section class="member-card-card__body">
-        <div class="member-card-card__portrait">
+      <section class="member-card-card__hero">
+        <article class="member-card-card__portrait">
           <div class="member-card-card__portrait-frame">
             <img
               v-if="form.avatarDataUrl"
@@ -226,17 +176,20 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
           </div>
 
           <div class="member-card-card__portrait-caption">
-            <span class="member-card-card__portrait-caption-top">{{ memberCardCopy.generated.sideMark }}</span>
-            <strong class="member-card-card__portrait-caption-name">{{ displayDaoName }}</strong>
-            <span class="member-card-card__portrait-caption-bottom">{{ numberText }} · {{ template.name }}</span>
+            <p class="member-card-card__portrait-kicker">{{ memberCardCopy.generated.sideMark }}</p>
+            <strong class="member-card-card__portrait-name">{{ displayDaoName }}</strong>
+            <p class="member-card-card__portrait-detail">{{ numberText }} · {{ template.name }}</p>
           </div>
-        </div>
+        </article>
 
-        <div class="member-card-card__stack">
+        <div class="member-card-card__summary">
           <article class="member-card-card__panel member-card-card__panel--tags">
             <div class="member-card-card__panel-head">
-              <p class="member-card-card__section-label">门中短签</p>
-              <span class="member-card-card__panel-head-note">{{ shortTagSummary }}</span>
+              <div>
+                <p class="member-card-card__section-label">门中短签</p>
+                <strong class="member-card-card__panel-title">{{ shortTagSummary }}</strong>
+              </div>
+              <span class="member-card-card__panel-note">{{ cardSubtitle }}</span>
             </div>
 
             <div class="member-card-card__tag-list">
@@ -250,60 +203,50 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
             </div>
           </article>
 
-          <article class="member-card-card__panel member-card-card__panel--info">
-            <div class="member-card-card__info-grid">
+          <article class="member-card-card__panel member-card-card__panel--identity">
+            <div class="member-card-card__panel-head">
+              <div>
+                <p class="member-card-card__section-label">门籍信息</p>
+                <strong class="member-card-card__panel-title">四项基础身份</strong>
+              </div>
+              <span class="member-card-card__panel-note">清洗后直接展示</span>
+            </div>
+
+            <div class="member-card-card__identity-grid">
               <div
-                v-for="item in identityItems"
+                v-for="item in identityItemList"
                 :key="item.label"
-                class="member-card-card__info-row"
+                class="member-card-card__identity-item"
               >
-                <span class="member-card-card__info-label">{{ item.label }}</span>
-                <strong class="member-card-card__info-value">{{ item.value }}</strong>
+                <span class="member-card-card__identity-label">{{ item.label }}</span>
+                <strong class="member-card-card__identity-value">{{ item.value }}</strong>
               </div>
             </div>
-            <p class="member-card-card__info-note">{{ cardSubtitle }}</p>
           </article>
-
-          <section class="member-card-card__story-grid">
-            <article class="member-card-card__story-card member-card-card__story-card--origin">
-              <p class="member-card-card__section-label">入栖初心</p>
-              <p class="member-card-card__story-text">{{ displayOrigin }}</p>
-            </article>
-
-            <article class="member-card-card__story-card member-card-card__story-card--motto">
-              <p class="member-card-card__section-label">心之所语</p>
-              <p class="member-card-card__story-text member-card-card__story-text--quote">“{{ displayMotto }}”</p>
-            </article>
-          </section>
-
-          <section class="member-card-card__closing">
-            <div class="member-card-card__closing-copy">
-              <p class="member-card-card__section-label">门帖总记</p>
-              <strong class="member-card-card__closing-title">{{ memberCardCopy.generated.subtitle }}</strong>
-              <p class="member-card-card__closing-text">
-                这张门帖会把你的道号、短签、初心和寄语一并收好，像一页真正的同门留档。
-              </p>
-            </div>
-
-            <div class="member-card-card__closing-grid">
-              <div
-                v-for="item in closingItems"
-                :key="item.label"
-                class="member-card-card__closing-item"
-              >
-                <span class="member-card-card__closing-label">{{ item.label }}</span>
-                <strong class="member-card-card__closing-value">{{ item.value }}</strong>
-              </div>
-            </div>
-          </section>
         </div>
+      </section>
+
+      <section class="member-card-card__story">
+        <article class="member-card-card__story-card member-card-card__story-card--origin">
+          <div class="member-card-card__story-head">
+            <p class="member-card-card__section-label">入栖初心</p>
+            <span class="member-card-card__story-mark">门帖收纳</span>
+          </div>
+          <p class="member-card-card__story-text">{{ displayOrigin }}</p>
+        </article>
+
+        <article class="member-card-card__story-card member-card-card__story-card--motto">
+          <div class="member-card-card__story-head">
+            <p class="member-card-card__section-label">心之所语</p>
+            <span class="member-card-card__story-mark">一句落款</span>
+          </div>
+          <p class="member-card-card__story-text member-card-card__story-text--quote">“{{ displayMotto }}”</p>
+        </article>
       </section>
 
       <footer class="member-card-card__footer">
         <div class="member-card-card__signature-block">
-          <p class="member-card-card__signature">
-            {{ signaturePrefix }} · {{ numberText }}
-          </p>
+          <p class="member-card-card__signature">{{ signaturePrefix }} · {{ numberText }}</p>
           <div class="member-card-card__signature-line"></div>
           <p class="member-card-card__stamp">{{ yearText }}</p>
         </div>
@@ -318,19 +261,21 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 </template>
 
 <style scoped>
+/* 这里定义卡片最外层的整体气质，负责背景、边框和整体层次。 */
 .member-card-card {
   position: relative;
   overflow: hidden;
   width: 100%;
   height: 100%;
   border-radius: 38px;
-  border: 1px solid rgba(216, 185, 114, 0.26);
+  border: 1px solid rgba(216, 185, 114, 0.22);
   color: var(--member-card-ink, #f4efe2);
   background:
-    radial-gradient(circle at 10% 8%, rgba(241, 217, 160, 0.18), transparent 18%),
-    radial-gradient(circle at 86% 12%, rgba(139, 208, 203, 0.16), transparent 20%),
-    linear-gradient(180deg, var(--member-card-bg-start, #17384b) 0%, var(--member-card-bg-mid, #0d2533) 46%, var(--member-card-bg-end, #051018) 100%);
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.36);
+    radial-gradient(circle at 12% 10%, rgba(241, 217, 160, 0.18), transparent 20%),
+    radial-gradient(circle at 84% 18%, rgba(139, 208, 203, 0.16), transparent 22%),
+    radial-gradient(circle at 76% 78%, rgba(27, 71, 94, 0.36), transparent 28%),
+    linear-gradient(180deg, var(--member-card-bg-start, #17384b) 0%, var(--member-card-bg-mid, #0d2533) 48%, var(--member-card-bg-end, #07111a) 100%);
+  box-shadow: 0 30px 84px rgba(0, 0, 0, 0.34);
 }
 
 .member-card-card::before {
@@ -346,7 +291,7 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
       transparent 1px,
       transparent 14px
     );
-  opacity: 0.8;
+  opacity: 0.56;
   pointer-events: none;
 }
 
@@ -354,54 +299,51 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
   content: '';
   position: absolute;
   inset: 18px;
-  border-radius: 28px;
-  border: 1px solid rgba(216, 185, 114, 0.14);
+  border-radius: 30px;
+  border: 1px solid rgba(216, 185, 114, 0.12);
   pointer-events: none;
 }
 
+/* 这里放背景装饰层，负责让卡片更像一张有纸感的成品。 */
+.member-card-card__backdrop,
 .member-card-card__grain,
-.member-card-card__mist,
-.member-card-card__watermark {
+.member-card-card__watermark,
+.member-card-card__rail {
   position: absolute;
   pointer-events: none;
+}
+
+.member-card-card__backdrop {
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08), transparent 32%),
+    radial-gradient(circle at 84% 80%, rgba(31, 68, 90, 0.24), transparent 30%);
+  opacity: 0.95;
 }
 
 .member-card-card__grain {
   inset: 0;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03), transparent 34%),
-    radial-gradient(circle at 20% 20%, rgba(241, 217, 160, 0.08), transparent 16%),
-    radial-gradient(circle at 80% 76%, rgba(139, 208, 203, 0.08), transparent 18%);
-  mix-blend-mode: screen;
-  opacity: 0.9;
-}
-
-.member-card-card__mist {
-  inset: 0;
-  background-repeat: no-repeat;
-  opacity: 0.55;
-}
-
-.member-card-card__mist--top {
-  background:
-    radial-gradient(circle at 14% 12%, rgba(139, 208, 203, 0.12), transparent 22%),
-    radial-gradient(circle at 86% 10%, rgba(216, 185, 114, 0.14), transparent 18%);
-}
-
-.member-card-card__mist--bottom {
-  background:
-    radial-gradient(circle at 18% 86%, rgba(216, 185, 114, 0.1), transparent 18%),
-    radial-gradient(circle at 82% 74%, rgba(139, 208, 203, 0.1), transparent 20%);
-  filter: blur(12px);
+    radial-gradient(circle at 16% 20%, rgba(241, 217, 160, 0.08), transparent 18%),
+    radial-gradient(circle at 78% 74%, rgba(139, 208, 203, 0.08), transparent 16%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.012) 0,
+      rgba(255, 255, 255, 0.012) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+  mix-blend-mode: soft-light;
+  opacity: 0.72;
 }
 
 .member-card-card__watermark {
-  right: 54px;
-  top: 50%;
+  right: 50px;
+  top: 52%;
   z-index: 0;
   transform: translateY(-50%) rotate(-8deg);
-  color: rgba(240, 223, 176, 0.08);
-  font-size: clamp(150px, 18vw, 300px);
+  color: rgba(240, 223, 176, 0.07);
+  font-size: clamp(160px, 19vw, 320px);
   line-height: 1;
   letter-spacing: 0.08em;
   text-shadow: 0 0 30px rgba(240, 223, 176, 0.08);
@@ -409,7 +351,6 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 }
 
 .member-card-card__rail {
-  position: absolute;
   left: 24px;
   top: 24px;
   bottom: 24px;
@@ -418,9 +359,9 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
   align-items: center;
   justify-items: center;
   grid-template-rows: auto 1fr auto;
-  width: 42px;
+  width: 44px;
   padding: 6px 0;
-  border-right: 1px solid rgba(216, 185, 114, 0.18);
+  border-right: 1px solid rgba(216, 185, 114, 0.16);
 }
 
 .member-card-card__rail-label,
@@ -432,7 +373,7 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 }
 
 .member-card-card__rail-label {
-  color: rgba(241, 217, 160, 0.92);
+  color: rgba(241, 217, 160, 0.9);
   font-size: 12px;
 }
 
@@ -446,14 +387,15 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
   font-size: 10px;
 }
 
+/* 这里放真正的卡片内容，确保所有信息都按层级整齐排好。 */
 .member-card-card__sheet {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 14px;
+  grid-template-rows: auto auto auto auto;
+  gap: 16px;
   height: 100%;
-  padding: 28px 28px 22px 84px;
+  padding: 28px 28px 24px 84px;
 }
 
 .member-card-card__header {
@@ -472,7 +414,11 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 .member-card-card__eyebrow,
 .member-card-card__subtitle,
 .member-card-card__section-label,
-.member-card-card__info-label,
+.member-card-card__story-mark,
+.member-card-card__panel-note,
+.member-card-card__rail-label,
+.member-card-card__rail-number,
+.member-card-card__rail-time,
 .member-card-card__signature,
 .member-card-card__stamp,
 .member-card-card__footer-mark strong {
@@ -487,7 +433,7 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 
 .member-card-card__title {
   margin: 0;
-  font-size: clamp(58px, 6.8vw, 102px);
+  font-size: clamp(58px, 6.6vw, 102px);
   line-height: 0.98;
   letter-spacing: 0.08em;
   overflow-wrap: anywhere;
@@ -496,20 +442,44 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 }
 
 .member-card-card__subtitle {
-  color: rgba(244, 239, 226, 0.72);
-  line-height: 1.72;
+  color: rgba(244, 239, 226, 0.74);
+  line-height: 1.74;
   letter-spacing: 0.1em;
   font-size: 13px;
+}
+
+.member-card-card__meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.member-card-card__meta-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 185, 114, 0.14);
+  background: rgba(7, 27, 37, 0.34);
+  color: rgba(244, 239, 226, 0.9);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+}
+
+.member-card-card__meta-chip--strong {
+  color: #f0dfb0;
+  border-color: rgba(216, 185, 114, 0.3);
 }
 
 .member-card-card__seal {
   position: relative;
   display: grid;
   place-items: center;
-  width: 132px;
-  min-height: 132px;
+  width: 124px;
+  min-height: 124px;
   padding: 16px 10px;
-  border-radius: 24px;
+  border-radius: 26px;
   border: 1px solid rgba(241, 217, 160, 0.34);
   background:
     linear-gradient(180deg, var(--member-card-seal-start, #6b1218), var(--member-card-seal-end, #33080b)),
@@ -550,53 +520,21 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
   letter-spacing: 0.18em;
 }
 
-.member-card-card__ribbon {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  background:
-    linear-gradient(180deg, rgba(7, 31, 43, 0.56), rgba(6, 22, 31, 0.88)),
-    rgba(7, 27, 37, 0.42);
-}
-
-.member-card-card__ribbon-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  background: rgba(7, 27, 37, 0.34);
-  color: rgba(244, 239, 226, 0.9);
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-}
-
-.member-card-card__ribbon-chip--strong {
-  color: #f0dfb0;
-  border-color: rgba(216, 185, 114, 0.28);
-}
-
-.member-card-card__body {
+/* 这里放头像和信息摘要，负责把最重要的身份信息先摆出来。 */
+.member-card-card__hero {
   display: grid;
-  grid-template-columns: minmax(240px, 0.88fr) minmax(0, 1.12fr);
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 12px 14px;
+  grid-template-columns: minmax(240px, 0.86fr) minmax(0, 1.14fr);
+  gap: 14px;
   align-items: stretch;
   min-height: 0;
-  height: 100%;
 }
 
 .member-card-card__portrait {
   position: relative;
-  grid-row: 1 / span 3;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 10px;
-  width: 100%;
+  min-width: 0;
   min-height: 0;
   padding: 12px;
   border-radius: 30px;
@@ -621,9 +559,8 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 .member-card-card__portrait-frame {
   position: relative;
   overflow: hidden;
-  height: 100%;
-  min-height: 220px;
-  border-radius: 20px;
+  min-height: 224px;
+  border-radius: 22px;
   border: 1px solid rgba(241, 217, 160, 0.12);
   background:
     radial-gradient(circle at 34% 32%, rgba(216, 185, 114, 0.24), transparent 30%),
@@ -657,27 +594,32 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
   background: linear-gradient(180deg, rgba(6, 19, 27, 0.52), rgba(6, 19, 27, 0.9));
 }
 
-.member-card-card__portrait-caption-top,
-.member-card-card__portrait-caption-bottom {
+.member-card-card__portrait-kicker {
+  margin: 0;
   color: rgba(244, 239, 226, 0.68);
   font-size: 11px;
   letter-spacing: 0.18em;
 }
 
-.member-card-card__portrait-caption-name {
+.member-card-card__portrait-name {
   color: #f0dfb0;
   font-size: 15px;
   line-height: 1.2;
   letter-spacing: 0.14em;
 }
 
-.member-card-card__stack {
-  display: flex;
-  flex-direction: column;
+.member-card-card__portrait-detail {
+  margin: 0;
+  color: rgba(244, 239, 226, 0.7);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+
+.member-card-card__summary {
+  display: grid;
   gap: 12px;
   min-width: 0;
   min-height: 0;
-  height: 100%;
 }
 
 .member-card-card__panel {
@@ -691,13 +633,22 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 
 .member-card-card__panel-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
 }
 
-.member-card-card__panel-head-note {
-  color: rgba(241, 217, 160, 0.7);
+.member-card-card__panel-title {
+  display: block;
+  margin-top: 6px;
+  color: #f0dfb0;
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+}
+
+.member-card-card__panel-note {
+  color: rgba(241, 217, 160, 0.72);
   font-size: 11px;
   letter-spacing: 0.14em;
   white-space: nowrap;
@@ -709,8 +660,10 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     rgba(7, 27, 37, 0.52);
 }
 
-.member-card-card__panel--info {
-  gap: 10px;
+.member-card-card__panel--identity {
+  background:
+    linear-gradient(180deg, rgba(9, 33, 45, 0.48), rgba(7, 27, 37, 0.92)),
+    rgba(7, 27, 37, 0.52);
 }
 
 .member-card-card__section-label {
@@ -738,43 +691,38 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
   letter-spacing: 0.06em;
 }
 
-.member-card-card__info-grid {
+.member-card-card__identity-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 14px;
 }
 
-.member-card-card__info-row {
+.member-card-card__identity-item {
   display: grid;
   gap: 6px;
   min-width: 0;
+  padding: 12px 13px;
+  border-radius: 16px;
+  border: 1px solid rgba(216, 185, 114, 0.12);
+  background: rgba(8, 31, 43, 0.36);
 }
 
-.member-card-card__info-label {
+.member-card-card__identity-label {
   color: rgba(139, 208, 203, 0.82);
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.16em;
 }
 
-.member-card-card__info-value {
+.member-card-card__identity-value {
   color: rgba(244, 239, 226, 0.94);
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.58;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-.member-card-card__info-note {
-  margin: 0;
-  padding-top: 12px;
-  border-top: 1px solid rgba(216, 185, 114, 0.12);
-  color: rgba(244, 239, 226, 0.72);
-  font-size: 12px;
-  line-height: 1.7;
-  letter-spacing: 0.14em;
-}
-
-.member-card-card__story-grid {
+/* 这里放初心和寄语区，负责把名帖最有温度的内容收尾。 */
+.member-card-card__story {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -804,86 +752,34 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     rgba(7, 27, 37, 0.52);
 }
 
+.member-card-card__story-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.member-card-card__story-mark {
+  color: rgba(241, 217, 160, 0.72);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
 .member-card-card__story-text {
   margin: 0;
   color: rgba(244, 239, 226, 0.94);
   font-size: 0.98rem;
   line-height: 1.82;
   word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .member-card-card__story-text--quote {
   font-size: 1.02rem;
 }
 
-.member-card-card__closing {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr);
-  gap: 12px 14px;
-  min-height: 0;
-  padding: 16px 16px 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(147, 203, 198, 0.14);
-  background:
-    linear-gradient(180deg, rgba(9, 33, 45, 0.72), rgba(7, 27, 37, 0.94)),
-    rgba(7, 27, 37, 0.5);
-}
-
-.member-card-card__closing-copy {
-  display: grid;
-  align-content: start;
-  gap: 8px;
-  min-width: 0;
-}
-
-.member-card-card__closing-title {
-  color: #f0dfb0;
-  font-size: 1.04rem;
-  line-height: 1.5;
-  letter-spacing: 0.12em;
-}
-
-.member-card-card__closing-text {
-  margin: 0;
-  color: rgba(244, 239, 226, 0.84);
-  font-size: 0.9rem;
-  line-height: 1.8;
-  letter-spacing: 0.08em;
-}
-
-.member-card-card__closing-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 12px;
-  align-content: start;
-  min-width: 0;
-}
-
-.member-card-card__closing-item {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  padding: 12px 13px;
-  border-radius: 16px;
-  border: 1px solid rgba(216, 185, 114, 0.12);
-  background: rgba(8, 31, 43, 0.36);
-}
-
-.member-card-card__closing-label {
-  color: rgba(139, 208, 203, 0.82);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-}
-
-.member-card-card__closing-value {
-  color: rgba(244, 239, 226, 0.94);
-  font-size: 0.9rem;
-  line-height: 1.56;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
+/* 这里放最末尾的落款，方便把签名和纪年统一收住。 */
 .member-card-card__footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -929,15 +825,16 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
 }
 
 .member-card-card__footer-mark strong {
-  color: rgba(244, 239, 226, 0.5);
+  color: rgba(244, 239, 226, 0.52);
   font-size: 11px;
   letter-spacing: 0.14em;
 }
 
+/* 这里保留两套模板的颜色差异，方便同一套版式在不同气质里切换。 */
 .member-card-card--qingya {
   --member-card-bg-start: #17384b;
   --member-card-bg-mid: #0d2533;
-  --member-card-bg-end: #051018;
+  --member-card-bg-end: #07111a;
   --member-card-seal-start: #67141b;
   --member-card-seal-end: #32100b;
 }
@@ -956,10 +853,6 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     0 18px 34px rgba(0, 0, 0, 0.28);
 }
 
-.member-card-card--zhuyin .member-card-card__grain {
-  opacity: 1;
-}
-
 .member-card-card--reduced,
 .member-card-card--reduced * {
   transition: none !important;
@@ -972,45 +865,47 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     gap: 12px;
   }
 
-  .member-card-card__body {
+  .member-card-card__header,
+  .member-card-card__hero {
     grid-template-columns: 1fr;
+  }
+
+  .member-card-card__seal {
+    width: 104px;
+    min-height: 104px;
+    padding: 12px 8px;
+    border-radius: 20px;
+  }
+
+  .member-card-card__seal-center {
+    margin: 4px 0;
+    font-size: 22px;
+  }
+
+  .member-card-card__hero {
     gap: 12px;
   }
 
   .member-card-card__portrait {
-    grid-row: auto;
-    width: min(100%, 240px);
-    min-height: 0;
+    width: min(100%, 260px);
   }
 
   .member-card-card__portrait-frame {
     min-height: 200px;
   }
 
-  .member-card-card__stack {
-    grid-template-rows: auto auto auto;
+  .member-card-card__story {
+    grid-template-columns: 1fr;
   }
 
-  .member-card-card__info-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .member-card-card__story-grid,
   .member-card-card__footer {
-    gap: 12px;
-  }
-
-  .member-card-card__story-grid {
     grid-template-columns: 1fr;
+    justify-items: start;
   }
 
-  .member-card-card__closing {
-    grid-template-columns: 1fr;
-    padding: 14px;
-  }
-
-  .member-card-card__closing-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .member-card-card__footer-mark {
+    justify-items: start;
+    text-align: left;
   }
 }
 
@@ -1042,23 +937,6 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     gap: 10px;
   }
 
-  .member-card-card__header {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .member-card-card__seal {
-    width: 96px;
-    min-height: 96px;
-    padding: 10px 8px;
-    border-radius: 18px;
-  }
-
-  .member-card-card__seal-center {
-    margin: 4px 0;
-    font-size: 20px;
-  }
-
   .member-card-card__title {
     font-size: clamp(2.1rem, 8vw, 3rem);
     line-height: 1.02;
@@ -1071,12 +949,11 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     letter-spacing: 0.08em;
   }
 
-  .member-card-card__ribbon {
-    padding: 10px 12px;
-    gap: 8px;
+  .member-card-card__meta-list {
+    gap: 6px;
   }
 
-  .member-card-card__ribbon-chip {
+  .member-card-card__meta-chip {
     min-height: 28px;
     padding: 0 10px;
     font-size: 0.76rem;
@@ -1093,16 +970,12 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     flex-direction: column;
   }
 
-  .member-card-card__panel-head-note {
+  .member-card-card__panel-note {
     white-space: normal;
   }
 
-  .member-card-card__info-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .member-card-card__portrait {
-    width: min(100%, 180px);
+    width: min(100%, 190px);
     padding: 10px;
   }
 
@@ -1114,32 +987,19 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     padding: 10px 12px;
   }
 
-  .member-card-card__portrait-caption-name {
+  .member-card-card__portrait-name {
     font-size: 14px;
   }
 
-  .member-card-card__story-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .member-card-card__story-card {
-    min-height: 0;
-  }
-
-  .member-card-card__info-note {
-    font-size: 11px;
-  }
-
-  .member-card-card__closing {
-    padding: 12px;
+  .member-card-card__identity-grid {
     gap: 10px;
   }
 
-  .member-card-card__closing-grid {
-    grid-template-columns: 1fr;
+  .member-card-card__identity-item {
+    padding: 10px 11px;
   }
 
-  .member-card-card__info-value,
+  .member-card-card__identity-value,
   .member-card-card__story-text,
   .member-card-card__signature {
     font-size: 0.88rem;
@@ -1150,14 +1010,13 @@ const closingItems = computed<Array<{ label: string; value: string }>>(() => ([
     font-size: 0.92rem;
   }
 
-  .member-card-card__footer {
-    grid-template-columns: 1fr;
-    justify-items: start;
+  .member-card-card__story {
+    gap: 10px;
   }
 
-  .member-card-card__footer-mark {
-    justify-items: start;
-    text-align: left;
+  .member-card-card__story-head {
+    align-items: start;
+    flex-direction: column;
   }
 }
 </style>
