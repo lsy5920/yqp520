@@ -628,6 +628,26 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
   }
 
   /**
+   * 直接切换到指定章节
+   * 用途：支持答题页点击章节卡片后直接跳到对应章节，而不必只能按上一章下一章顺序切换
+   * 入参：nextSectionIndex 为目标章节下标
+   * 返回值：无返回值
+   */
+  function setCurrentSectionIndex(nextSectionIndex: number): void {
+    const safeSectionIndex = Math.min(
+      Math.max(0, nextSectionIndex),
+      Math.max(0, sectionBundles.value.length - 1),
+    )
+
+    if (safeSectionIndex === currentSectionIndex.value) {
+      return
+    }
+
+    currentSectionIndex.value = safeSectionIndex
+    persistDraft()
+  }
+
+  /**
    * 跳到下一章节
    * 用途：答题页逐章前进，直到最后一章准备交卷
    * 入参：无
@@ -683,6 +703,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
     restartExam,
     sectionBundles,
     setSingleAnswer,
+    setCurrentSectionIndex,
     startExam,
     storageMode: readonly(storageMode),
     storageModeText,

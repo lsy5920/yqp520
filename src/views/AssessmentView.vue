@@ -7,6 +7,33 @@ import PageBanner from '@/components/common/PageBanner.vue'
 import { useAssessmentExam } from '@/composables/useAssessmentExam'
 import { useRevealMotion } from '@/composables/useRevealMotion'
 import { siteContent } from '@/data/siteContent'
+import type { AssessmentQuestion } from '@/types/assessment'
+
+/**
+ * 扁平化题目结构
+ * 用途：把分章节题目整理成一条连续题目序列，方便按题号快速切换
+ */
+interface FlattenedAssessmentQuestion extends AssessmentQuestion {
+  /** 用途：题目所属章节下标，便于从题号直接切换到对应章节 */
+  sectionIndex: number
+}
+
+/**
+ * 错题章节导航项
+ * 用途：让错题解析区也能按章节快速切换到对应错题
+ */
+interface WrongQuestionSectionNavItem {
+  /** 用途：章节唯一标识 */
+  sectionId: string
+  /** 用途：章节标题 */
+  title: string
+  /** 用途：章节眉题 */
+  eyebrow: string
+  /** 用途：该章节下首道错题 id */
+  firstQuestionId: string
+  /** 用途：该章节下错题数量 */
+  wrongCount: number
+}
 
 // 这里拿到页面根节点，供静态区块做统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
@@ -28,6 +55,15 @@ const isExamDialogVisible = ref<boolean>(false)
 // 这里保存临时退出前的弹窗滚动位置，方便恢复时回到刚才看到的地方。
 const lastExamDialogScrollTop = ref<number>(0)
 
+// 这里记录当前答题弹窗正在看的题目 id，保证答题区改成单题展示后仍能稳定切换。
+const activeExamQuestionId = ref<string>('')
+
+// 这里临时记住跨章节点击的目标题目 id，等章节切过去后再把那一题激活。
+const pendingExamQuestionId = ref<string>('')
+
+// 这里记录错题解析当前正在看的那一道错题 id，方便结果页按题号逐题切换。
+const activeWrongQuestionId = ref<string>('')
+
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
   rootRef: pageRef,
@@ -42,8 +78,6 @@ const {
   currentSectionQuestions,
   formatDuration,
   getSelectedOptionIds,
-  goToNextSection,
-  goToPreviousSection,
   initializeAssessment,
   isSubmitting,
   latestResult,
@@ -54,6 +88,7 @@ const {
   resultLead,
   sectionBundles,
   setSingleAnswer,
+  setCurrentSectionIndex,
   startExam,
   storageModeText,
   submitExam,
@@ -67,12 +102,6 @@ const {
 })
 
 /**
- * 是否已经到了最后一章
- * 用途：控制底部按钮文案和是否显示“前往下一章”
- */
-const isLastSection = computed<boolean>(() => currentSectionIndex.value >= sectionBundles.value.length - 1)
-
-/**
  * 章节进度列表
  * 用途：答题页顶部展示每一章的完成情况，让用户知道当前进行到了哪里
  */
@@ -81,14 +110,194 @@ const sectionProgressList = computed(() => sectionBundles.value.map((section, in
 
   return {
     id: section.id,
+    eyebrow: section.eyebrow,
     title: section.title,
     index,
     answeredCount: answeredInSection,
     questionCount: section.questions.length,
     isActive: index === currentSectionIndex.value,
+    isStarted: answeredInSection > 0,
     isCompleted: answeredInSection === section.questions.length,
   }
 }))
+
+/**
+ * 扁平化后的整卷题目列表
+ * 用途：把所有章节题目拉平成一条连续题号序列，方便“按题号快速切换”
+ */
+const flatExamQuestions = computed<FlattenedAssessmentQuestion[]>(() => sectionBundles.value.flatMap((section, sectionIndex) => (
+  section.questions.map((question) => ({
+    ...question,
+    sectionIndex,
+  }))
+)))
+
+/**
+ * 当前正在展示的答题题目
+ * 用途：答题弹窗只渲染这一题，实现一题一题切换
+ */
+const activeExamQuestion = computed<AssessmentQuestion | null>(() => (
+  currentSectionQuestions.value.find((question) => question.id === activeExamQuestionId.value) ?? null
+))
+
+/**
+ * 当前题目在整卷中的下标
+ * 用途：实现跨章节的上一题、下一题连续切换
+ */
+const activeExamQuestionFlatIndex = computed<number>(() => (
+  flatExamQuestions.value.findIndex((question) => question.id === activeExamQuestionId.value)
+))
+
+/**
+ * 当前题目在本章节内的位置
+ * 用途：答题区展示“本章第几题”，让用户更容易判断当前进度
+ */
+const activeExamQuestionIndexInSection = computed<number>(() => (
+  currentSectionQuestions.value.findIndex((question) => question.id === activeExamQuestionId.value)
+))
+
+/**
+ * 当前题目章节内位置文本
+ * 用途：答题头部直接显示本题处于当前章节的第几题
+ */
+const activeExamQuestionSectionProgressText = computed<string>(() => {
+  if (!activeExamQuestion.value || activeExamQuestionIndexInSection.value < 0) {
+    return ''
+  }
+
+  return `本章第 ${activeExamQuestionIndexInSection.value + 1} / ${currentSectionQuestions.value.length} 题`
+})
+
+/**
+ * 当前是否已到整卷第一题
+ * 用途：控制答题底部“上一题”按钮是否禁用
+ */
+const isFirstExamQuestion = computed<boolean>(() => activeExamQuestionFlatIndex.value <= 0)
+
+/**
+ * 当前是否已到整卷最后一题
+ * 用途：控制答题底部“下一题”按钮是否切换成下一章或交卷
+ */
+const isLastExamQuestion = computed<boolean>(() => {
+  if (activeExamQuestionFlatIndex.value < 0) {
+    return false
+  }
+
+  return activeExamQuestionFlatIndex.value >= flatExamQuestions.value.length - 1
+})
+
+/**
+ * 答题题号导航列表
+ * 用途：顶部直接显示整卷 30 题的题号，并用颜色区分当前题、已答题和未答题
+ */
+const examQuestionOrderList = computed(() => flatExamQuestions.value.map((question) => {
+  const isAnswered = getSelectedOptionIds(question.id).length > 0
+
+  return {
+    id: question.id,
+    order: question.order,
+    sectionIndex: question.sectionIndex,
+    isActive: question.id === activeExamQuestionId.value,
+    isAnswered,
+  }
+}))
+
+/**
+ * 是否存在错题
+ * 用途：结果页决定展示逐题错题解析工作台，还是显示“本次没有错题”
+ */
+const hasWrongQuestions = computed<boolean>(() => Boolean(latestResult.value && latestResult.value.wrongQuestions.length > 0))
+
+/**
+ * 当前正在看的错题
+ * 用途：错题解析区只展示这一题，实现一题一题回看
+ */
+const activeWrongQuestion = computed(() => {
+  if (!latestResult.value) {
+    return null
+  }
+
+  return latestResult.value.wrongQuestions.find((question) => question.questionId === activeWrongQuestionId.value) ?? null
+})
+
+/**
+ * 当前错题在错题列表中的下标
+ * 用途：控制错题解析区的上一题、下一题切换
+ */
+const activeWrongQuestionIndex = computed<number>(() => {
+  if (!latestResult.value) {
+    return -1
+  }
+
+  return latestResult.value.wrongQuestions.findIndex((question) => question.questionId === activeWrongQuestionId.value)
+})
+
+/**
+ * 错题题号导航列表
+ * 用途：结果页按错题题号快速切换，方便直接跳到某一道错题
+ */
+const wrongQuestionOrderList = computed(() => {
+  if (!latestResult.value) {
+    return []
+  }
+
+  return latestResult.value.wrongQuestions.map((question) => ({
+    id: question.questionId,
+    order: question.order,
+    sectionId: question.sectionId,
+    isActive: question.questionId === activeWrongQuestionId.value,
+  }))
+})
+
+/**
+ * 错题章节导航列表
+ * 用途：错题解析区支持按章节跳转到本章第一道错题
+ */
+const wrongQuestionSectionList = computed<WrongQuestionSectionNavItem[]>(() => {
+  if (!latestResult.value) {
+    return []
+  }
+
+  return sectionBundles.value.flatMap((section) => {
+    const wrongQuestions = latestResult.value?.wrongQuestions.filter((question) => question.sectionId === section.id) ?? []
+
+    if (wrongQuestions.length === 0) {
+      return []
+    }
+
+    const firstWrongQuestion = wrongQuestions[0]
+
+    if (!firstWrongQuestion) {
+      return []
+    }
+
+    return [{
+      sectionId: section.id,
+      title: section.title,
+      eyebrow: section.eyebrow,
+      firstQuestionId: firstWrongQuestion.questionId,
+      wrongCount: wrongQuestions.length,
+    }]
+  })
+})
+
+/**
+ * 当前错题是否已经到第一题
+ * 用途：控制错题解析上一题按钮是否禁用
+ */
+const isFirstWrongQuestion = computed<boolean>(() => activeWrongQuestionIndex.value <= 0)
+
+/**
+ * 当前错题是否已经到最后一题
+ * 用途：控制错题解析下一题按钮是否禁用
+ */
+const isLastWrongQuestion = computed<boolean>(() => {
+  if (!latestResult.value || activeWrongQuestionIndex.value < 0) {
+    return false
+  }
+
+  return activeWrongQuestionIndex.value >= latestResult.value.wrongQuestions.length - 1
+})
 
 /**
  * 最近一次交卷时间文本
@@ -152,6 +361,194 @@ function formatDateTime(timestamp: number): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(timestamp)
+}
+
+/**
+ * 计算指定题目数组里的默认激活题目
+ * 用途：切章节、恢复答题或跨章节跳题时，优先落到目标题，其次落到本章第一道未答题
+ * 入参：questions 为当前可用题目列表，preferredQuestionId 为优先想展示的题目 id
+ * 返回值：返回最适合激活的题目 id，没有题目时返回空字符串
+ */
+function resolvePreferredExamQuestionId(
+  questions: AssessmentQuestion[],
+  preferredQuestionId = '',
+): string {
+  if (questions.length === 0) {
+    return ''
+  }
+
+  if (preferredQuestionId && questions.some((question) => question.id === preferredQuestionId)) {
+    return preferredQuestionId
+  }
+
+  const firstUnansweredQuestion = questions.find((question) => getSelectedOptionIds(question.id).length === 0)
+  return firstUnansweredQuestion?.id ?? questions[0]?.id ?? ''
+}
+
+/**
+ * 同步当前章节的激活题目
+ * 用途：当章节变化或跨章节跳题时，确保单题展示区始终有且只有一题可看
+ * 入参：preferredQuestionId 为优先想展示的题目 id
+ * 返回值：无返回值
+ */
+function syncActiveExamQuestion(preferredQuestionId = ''): void {
+  activeExamQuestionId.value = resolvePreferredExamQuestionId(currentSectionQuestions.value, preferredQuestionId)
+}
+
+/**
+ * 点击章节时切换章节
+ * 用途：支持用户直接点章节选择，不必只能顺着上一章和下一章慢慢切
+ * 入参：sectionIndex 为目标题章节下标，preferredQuestionId 为切换后优先展示的题目 id
+ * 返回值：无返回值
+ */
+function handleSelectExamSection(sectionIndex: number, preferredQuestionId = ''): void {
+  if (sectionIndex === currentSectionIndex.value) {
+    if (preferredQuestionId) {
+      syncActiveExamQuestion(preferredQuestionId)
+      return
+    }
+
+    if (!activeExamQuestion.value) {
+      syncActiveExamQuestion()
+    }
+
+    return
+  }
+
+  pendingExamQuestionId.value = preferredQuestionId
+  setCurrentSectionIndex(sectionIndex)
+}
+
+/**
+ * 点击题号时切换到指定题目
+ * 用途：支持整卷按题号快速跳转，跨章节题目也能直接切过去
+ * 入参：questionId 为目标题目 id
+ * 返回值：无返回值
+ */
+function handleSelectExamQuestion(questionId: string): void {
+  const matchedQuestion = flatExamQuestions.value.find((question) => question.id === questionId)
+
+  if (!matchedQuestion) {
+    return
+  }
+
+  if (matchedQuestion.sectionIndex !== currentSectionIndex.value) {
+    handleSelectExamSection(matchedQuestion.sectionIndex, matchedQuestion.id)
+    return
+  }
+
+  pendingExamQuestionId.value = ''
+  activeExamQuestionId.value = matchedQuestion.id
+}
+
+/**
+ * 切到整卷上一题
+ * 用途：让单题答题模式仍然可以保持连续翻题体验
+ * 入参：无
+ * 返回值：无返回值
+ */
+function goToPreviousExamQuestion(): void {
+  if (activeExamQuestionFlatIndex.value <= 0) {
+    return
+  }
+
+  const previousQuestion = flatExamQuestions.value[activeExamQuestionFlatIndex.value - 1]
+
+  if (!previousQuestion) {
+    return
+  }
+
+  handleSelectExamQuestion(previousQuestion.id)
+}
+
+/**
+ * 切到整卷下一题
+ * 用途：让单题答题模式可以连续前进，遇到跨章节时自动切章
+ * 入参：无
+ * 返回值：无返回值
+ */
+function goToNextExamQuestion(): void {
+  if (activeExamQuestionFlatIndex.value < 0 || activeExamQuestionFlatIndex.value >= flatExamQuestions.value.length - 1) {
+    return
+  }
+
+  const nextQuestion = flatExamQuestions.value[activeExamQuestionFlatIndex.value + 1]
+
+  if (!nextQuestion) {
+    return
+  }
+
+  handleSelectExamQuestion(nextQuestion.id)
+}
+
+/**
+ * 点击错题题号时切换到指定错题
+ * 用途：错题解析区可以像答题区一样，快速跳到某一道具体错题
+ * 入参：questionId 为目标错题 id
+ * 返回值：无返回值
+ */
+function handleSelectWrongQuestion(questionId: string): void {
+  if (!latestResult.value || !latestResult.value.wrongQuestions.some((question) => question.questionId === questionId)) {
+    return
+  }
+
+  activeWrongQuestionId.value = questionId
+}
+
+/**
+ * 点击错题章节时切换到本章第一道错题
+ * 用途：结果页支持按章节复盘，不必一题题顺着翻找
+ * 入参：sectionId 为目标章节 id
+ * 返回值：无返回值
+ */
+function handleSelectWrongSection(sectionId: string): void {
+  const matchedSection = wrongQuestionSectionList.value.find((section) => section.sectionId === sectionId)
+
+  if (!matchedSection) {
+    return
+  }
+
+  activeWrongQuestionId.value = matchedSection.firstQuestionId
+}
+
+/**
+ * 切到上一道错题
+ * 用途：错题解析区提供连续翻题操作，方便顺着复盘
+ * 入参：无
+ * 返回值：无返回值
+ */
+function goToPreviousWrongQuestion(): void {
+  if (!latestResult.value || activeWrongQuestionIndex.value <= 0) {
+    return
+  }
+
+  const previousQuestion = latestResult.value.wrongQuestions[activeWrongQuestionIndex.value - 1]
+
+  if (!previousQuestion) {
+    return
+  }
+
+  activeWrongQuestionId.value = previousQuestion.questionId
+}
+
+/**
+ * 切到下一道错题
+ * 用途：错题解析区提供连续翻题操作，方便快速浏览后续错题
+ * 入参：无
+ * 返回值：无返回值
+ */
+function goToNextWrongQuestion(): void {
+  if (!latestResult.value || activeWrongQuestionIndex.value < 0 || activeWrongQuestionIndex.value >= latestResult.value.wrongQuestions.length - 1) {
+    return
+  }
+
+  const nextQuestion = latestResult.value.wrongQuestions[activeWrongQuestionIndex.value + 1]
+
+  if (!nextQuestion) {
+    return
+  }
+
+  activeWrongQuestionId.value = nextQuestion.questionId
 }
 
 /** 用途：给考核弹窗开关统一加一个页面锁，避免底下正文跟着滚动。 */
@@ -316,6 +713,8 @@ watch(
   phase,
   async (nextPhase) => {
     if (nextPhase === 'exam') {
+      syncActiveExamQuestion(pendingExamQuestionId.value)
+      pendingExamQuestionId.value = ''
       await openExamDialog(false)
       return
     }
@@ -344,6 +743,35 @@ watch(
 
     await nextTick()
     scrollExamDialogToBodyStart()
+  },
+)
+
+// 这里监听当前章节题目，保证单题模式切章后总能自动落到目标题或本章第一道未答题。
+watch(
+  currentSectionQuestions,
+  (questions) => {
+    if (questions.length === 0) {
+      activeExamQuestionId.value = ''
+      pendingExamQuestionId.value = ''
+      return
+    }
+
+    syncActiveExamQuestion(pendingExamQuestionId.value)
+    pendingExamQuestionId.value = ''
+  },
+  {
+    immediate: true,
+  },
+)
+
+// 这里监听最近一次结果，结果页出现后默认先落到第一道错题，方便立即开始复盘。
+watch(
+  latestResult,
+  (result) => {
+    activeWrongQuestionId.value = result?.wrongQuestions[0]?.questionId ?? ''
+  },
+  {
+    immediate: true,
   },
 )
 
@@ -561,18 +989,23 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div class="assessment-exam__section-track">
-                    <article
+                    <button
                       v-for="section in sectionProgressList"
                       :key="section.id"
+                      type="button"
                       class="assessment-exam__section-pill"
                       :class="{
                         'assessment-exam__section-pill--active': section.isActive,
+                        'assessment-exam__section-pill--started': section.isStarted && !section.isCompleted,
                         'assessment-exam__section-pill--completed': section.isCompleted,
                       }"
+                      :aria-pressed="section.isActive ? 'true' : 'false'"
+                      @click="handleSelectExamSection(section.index)"
                     >
+                      <p>{{ section.eyebrow }}</p>
                       <strong>{{ section.title }}</strong>
                       <span>{{ section.answeredCount }} / {{ section.questionCount }} 题</span>
-                    </article>
+                    </button>
                   </div>
                 </article>
               </div>
@@ -585,15 +1018,50 @@ onBeforeUnmount(() => {
                   <div class="assessment-exam__chapter-meta">
                     <span>本章题数：{{ currentSection.questions.length }}</span>
                     <span>本章已答：{{ currentSectionAnsweredCount }}</span>
+                    <span v-if="activeExamQuestion">当前题号：第 {{ activeExamQuestion.order }} 题</span>
+                    <span v-if="activeExamQuestionSectionProgressText">{{ activeExamQuestionSectionProgressText }}</span>
                   </div>
                 </article>
 
-                <div ref="examQuestionListRef" class="assessment-exam__question-list">
+                <div ref="examQuestionListRef" class="assessment-exam__question-workspace">
+                  <article class="content-card content-card--soft assessment-exam__order-card">
+                    <div class="assessment-exam__order-head">
+                      <div>
+                        <p class="eyebrow">题号速切</p>
+                        <h3>按题号直接切换，整卷三十题一眼可见</h3>
+                      </div>
+
+                      <div class="assessment-exam__order-legend">
+                        <span class="assessment-exam__legend-chip assessment-exam__legend-chip--active">当前题</span>
+                        <span class="assessment-exam__legend-chip assessment-exam__legend-chip--answered">已作答</span>
+                        <span class="assessment-exam__legend-chip assessment-exam__legend-chip--pending">未作答</span>
+                      </div>
+                    </div>
+
+                    <div class="assessment-exam__order-grid">
+                      <button
+                        v-for="question in examQuestionOrderList"
+                        :key="question.id"
+                        type="button"
+                        class="assessment-exam__order-button"
+                        :class="{
+                          'assessment-exam__order-button--active': question.isActive,
+                          'assessment-exam__order-button--answered': question.isAnswered && !question.isActive,
+                          'assessment-exam__order-button--pending': !question.isAnswered && !question.isActive,
+                        }"
+                        :aria-pressed="question.isActive ? 'true' : 'false'"
+                        @click="handleSelectExamQuestion(question.id)"
+                      >
+                        {{ question.order }}
+                      </button>
+                    </div>
+                  </article>
+
                   <AssessmentQuestionCard
-                    v-for="question in currentSectionQuestions"
-                    :key="question.id"
-                    :question="question"
-                    :selected-option-ids="getSelectedOptionIds(question.id)"
+                    v-if="activeExamQuestion"
+                    :key="activeExamQuestion.id"
+                    :question="activeExamQuestion"
+                    :selected-option-ids="getSelectedOptionIds(activeExamQuestion.id)"
                     @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
                     @update-single="setSingleAnswer($event.questionId, $event.optionId)"
                   />
@@ -604,19 +1072,19 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="ink-button ink-button--ghost"
-                  :disabled="currentSectionIndex <= 0"
-                  @click="goToPreviousSection"
+                  :disabled="isFirstExamQuestion"
+                  @click="goToPreviousExamQuestion"
                 >
-                  上一章
+                  上一题
                 </button>
 
                 <button
-                  v-if="!isLastSection"
+                  v-if="!isLastExamQuestion"
                   type="button"
                   class="ink-button ink-button--secondary"
-                  @click="goToNextSection"
+                  @click="goToNextExamQuestion"
                 >
-                  下一章
+                  下一题
                 </button>
 
                 <button
@@ -707,40 +1175,99 @@ onBeforeUnmount(() => {
         <section class="content-section">
           <div class="section-heading">
             <p class="eyebrow">错题解析</p>
-            <h2>交卷后自动回看，错在何处，一眼看清</h2>
-            <p>每道错题都会直接展示你的答案、正确答案以及《立派全典》对应原文，方便立刻复盘。</p>
+            <h2>交卷后逐题回看，错在何处，一眼看清</h2>
+            <p>错题解析现在也改成一题一题展示，可按章节和题号快速切换，复盘时更聚焦。</p>
           </div>
 
-          <div v-if="latestResult.wrongQuestions.length > 0" class="assessment-result__wrong-list">
-            <article
-              v-for="question in latestResult.wrongQuestions"
-              :key="question.questionId"
-              class="assessment-result__wrong-card content-card"
-            >
-              <div class="assessment-result__wrong-head">
-                <span class="assessment-result__wrong-index">第 {{ question.order }} 题</span>
-                <span class="assessment-result__wrong-type">{{ question.type === 'single' ? '单选题' : '多选题' }}</span>
-                <span class="assessment-result__wrong-section">{{ question.sectionTitle }}</span>
+          <div v-if="hasWrongQuestions" class="assessment-result__wrong-workspace">
+            <article class="content-card content-card--soft assessment-result__wrong-nav-card">
+              <div class="assessment-result__wrong-nav-head">
+                <div>
+                  <p class="eyebrow">错题定位</p>
+                  <h3>先选章节，再按题号直达对应错题</h3>
+                </div>
+
+                <div class="assessment-result__wrong-count">
+                  <span>错题总数</span>
+                  <strong>{{ latestResult.wrongQuestions.length }}</strong>
+                </div>
               </div>
 
-              <h3>{{ question.stem }}</h3>
+              <div class="assessment-result__section-track">
+                <button
+                  v-for="section in wrongQuestionSectionList"
+                  :key="section.sectionId"
+                  type="button"
+                  class="assessment-result__section-pill"
+                  :class="{ 'assessment-result__section-pill--active': activeWrongQuestion?.sectionId === section.sectionId }"
+                  :aria-pressed="activeWrongQuestion?.sectionId === section.sectionId ? 'true' : 'false'"
+                  @click="handleSelectWrongSection(section.sectionId)"
+                >
+                  <p>{{ section.eyebrow }}</p>
+                  <strong>{{ section.title }}</strong>
+                  <span>{{ section.wrongCount }} 道错题</span>
+                </button>
+              </div>
+
+              <div class="assessment-result__order-grid">
+                <button
+                  v-for="question in wrongQuestionOrderList"
+                  :key="question.id"
+                  type="button"
+                  class="assessment-result__order-button"
+                  :class="{ 'assessment-result__order-button--active': question.isActive }"
+                  :aria-pressed="question.isActive ? 'true' : 'false'"
+                  @click="handleSelectWrongQuestion(question.id)"
+                >
+                  {{ question.order }}
+                </button>
+              </div>
+            </article>
+
+            <article v-if="activeWrongQuestion" class="assessment-result__wrong-card content-card">
+              <div class="assessment-result__wrong-head">
+                <span class="assessment-result__wrong-index">第 {{ activeWrongQuestion.order }} 题</span>
+                <span class="assessment-result__wrong-type">{{ activeWrongQuestion.type === 'single' ? '单选题' : '多选题' }}</span>
+                <span class="assessment-result__wrong-section">{{ activeWrongQuestion.sectionTitle }}</span>
+              </div>
+
+              <h3>{{ activeWrongQuestion.stem }}</h3>
 
               <div class="assessment-result__wrong-answer-grid">
                 <article class="assessment-result__answer-box assessment-result__answer-box--user">
                   <p>你的答案</p>
-                  <strong>{{ question.userAnswerText }}</strong>
+                  <strong>{{ activeWrongQuestion.userAnswerText }}</strong>
                 </article>
                 <article class="assessment-result__answer-box assessment-result__answer-box--correct">
                   <p>正确答案</p>
-                  <strong>{{ question.correctAnswerText }}</strong>
+                  <strong>{{ activeWrongQuestion.correctAnswerText }}</strong>
                 </article>
               </div>
 
               <div class="assessment-result__source">
-                <p>{{ question.sourceTitle }}</p>
-                <blockquote>{{ question.sourceExcerpt }}</blockquote>
+                <p>{{ activeWrongQuestion.sourceTitle }}</p>
+                <blockquote>{{ activeWrongQuestion.sourceExcerpt }}</blockquote>
               </div>
             </article>
+
+            <div class="assessment-result__wrong-actions">
+              <button
+                type="button"
+                class="ink-button ink-button--ghost"
+                :disabled="isFirstWrongQuestion"
+                @click="goToPreviousWrongQuestion"
+              >
+                上一题
+              </button>
+              <button
+                type="button"
+                class="ink-button ink-button--secondary"
+                :disabled="isLastWrongQuestion"
+                @click="goToNextWrongQuestion"
+              >
+                下一题
+              </button>
+            </div>
           </div>
 
           <article v-else class="content-card content-card--soft">
@@ -844,10 +1371,67 @@ onBeforeUnmount(() => {
 
 .assessment-ready__intro-list,
 .assessment-ready__score-grid,
-.assessment-ready__chapter-list,
-.assessment-result__wrong-list {
+.assessment-ready__chapter-list {
   display: grid;
   gap: 16px;
+}
+
+.assessment-exam__question-workspace,
+.assessment-result__wrong-workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.assessment-exam__order-card,
+.assessment-result__wrong-nav-card {
+  display: grid;
+  gap: 18px;
+}
+
+.assessment-exam__order-head,
+.assessment-result__wrong-nav-head {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.assessment-exam__order-head h3,
+.assessment-result__wrong-nav-head h3 {
+  margin: 6px 0 0;
+  font-size: clamp(1.1rem, 2vw, 1.36rem);
+  line-height: 1.5;
+}
+
+.assessment-exam__order-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.assessment-exam__legend-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.assessment-exam__legend-chip--active {
+  background: rgba(216, 185, 114, 0.16);
+  color: rgba(241, 217, 160, 0.98);
+}
+
+.assessment-exam__legend-chip--answered {
+  background: rgba(139, 208, 203, 0.14);
+  color: rgba(139, 208, 203, 0.96);
+}
+
+.assessment-exam__legend-chip--pending {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(244, 239, 226, 0.72);
 }
 
 .assessment-ready__intro-list {
@@ -1022,12 +1606,51 @@ onBeforeUnmount(() => {
 .assessment-exam__section-pill {
   display: grid;
   gap: 6px;
+  width: 100%;
   min-height: 94px;
   align-content: center;
   padding: 14px 16px;
   border: 1px solid rgba(216, 185, 114, 0.12);
   border-radius: 22px;
   background: rgba(5, 19, 28, 0.42);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.28s ease,
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.assessment-exam__section-pill p,
+.assessment-exam__section-pill strong,
+.assessment-exam__section-pill span,
+.assessment-result__section-pill p,
+.assessment-result__section-pill strong,
+.assessment-result__section-pill span {
+  margin: 0;
+}
+
+.assessment-exam__section-pill p,
+.assessment-result__section-pill p {
+  color: rgba(139, 208, 203, 0.84);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+
+.assessment-exam__section-pill:hover,
+.assessment-result__section-pill:hover,
+.assessment-exam__order-button:hover,
+.assessment-result__order-button:hover {
+  transform: translateY(-2px);
+}
+
+.assessment-exam__section-pill:focus-visible,
+.assessment-result__section-pill:focus-visible,
+.assessment-exam__order-button:focus-visible,
+.assessment-result__order-button:focus-visible {
+  outline: 2px solid rgba(241, 217, 160, 0.72);
+  outline-offset: 2px;
 }
 
 .assessment-exam__section-pill strong {
@@ -1045,6 +1668,11 @@ onBeforeUnmount(() => {
   background:
     linear-gradient(135deg, rgba(216, 185, 114, 0.12), rgba(9, 34, 46, 0.86)),
     rgba(8, 25, 35, 0.86);
+}
+
+.assessment-exam__section-pill--started {
+  border-color: rgba(216, 185, 114, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(216, 185, 114, 0.08);
 }
 
 .assessment-exam__section-pill--completed {
@@ -1066,9 +1694,54 @@ onBeforeUnmount(() => {
   word-break: break-word;
 }
 
-.assessment-exam__question-list {
+.assessment-exam__order-grid,
+.assessment-result__order-grid {
   display: grid;
-  gap: 18px;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.assessment-exam__order-button,
+.assessment-result__order-button {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(4, 17, 24, 0.6);
+  color: rgba(244, 239, 226, 0.76);
+  font-size: 0.94rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.28s ease,
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    box-shadow 0.28s ease,
+    color 0.28s ease;
+}
+
+.assessment-exam__order-button--active {
+  border-color: rgba(216, 185, 114, 0.42);
+  background:
+    linear-gradient(180deg, rgba(216, 185, 114, 0.18), rgba(34, 25, 7, 0.76)),
+    rgba(20, 18, 10, 0.88);
+  color: rgba(248, 237, 204, 0.98);
+  box-shadow: 0 14px 26px rgba(216, 185, 114, 0.14);
+}
+
+.assessment-exam__order-button--answered {
+  border-color: rgba(139, 208, 203, 0.28);
+  background:
+    linear-gradient(180deg, rgba(139, 208, 203, 0.16), rgba(7, 31, 36, 0.86)),
+    rgba(7, 29, 35, 0.88);
+  color: rgba(209, 241, 238, 0.96);
+}
+
+.assessment-exam__order-button--pending {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(4, 17, 24, 0.6);
+  color: rgba(244, 239, 226, 0.7);
 }
 
 .assessment-exam__resume-card {
@@ -1245,9 +1918,94 @@ onBeforeUnmount(() => {
   margin-top: 22px;
 }
 
+.assessment-result__section-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.assessment-result__section-pill {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-height: 92px;
+  align-content: center;
+  padding: 14px 16px;
+  border: 1px solid rgba(212, 154, 114, 0.18);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(36, 17, 17, 0.86), rgba(22, 10, 12, 0.92)),
+    rgba(20, 8, 10, 0.9);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.28s ease,
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.assessment-result__section-pill strong {
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.assessment-result__section-pill span {
+  color: rgba(244, 239, 226, 0.72);
+  font-size: 0.86rem;
+}
+
+.assessment-result__section-pill--active {
+  border-color: rgba(216, 185, 114, 0.32);
+  background:
+    linear-gradient(135deg, rgba(216, 185, 114, 0.14), rgba(49, 17, 18, 0.88)),
+    rgba(34, 12, 14, 0.92);
+  box-shadow: 0 16px 30px rgba(212, 154, 114, 0.12);
+}
+
+.assessment-result__wrong-count {
+  display: grid;
+  gap: 4px;
+  min-width: 138px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(212, 154, 114, 0.18);
+  background:
+    linear-gradient(180deg, rgba(54, 21, 21, 0.9), rgba(29, 12, 13, 0.94)),
+    rgba(28, 10, 12, 0.92);
+}
+
+.assessment-result__wrong-count span {
+  color: rgba(244, 239, 226, 0.68);
+  font-size: 0.84rem;
+}
+
+.assessment-result__wrong-count strong {
+  font-size: 1.7rem;
+  line-height: 1;
+  color: rgba(244, 196, 170, 0.98);
+}
+
 .assessment-result__wrong-card {
   display: grid;
   gap: 18px;
+}
+
+.assessment-result__order-button {
+  border-color: rgba(212, 154, 114, 0.14);
+  background:
+    linear-gradient(180deg, rgba(43, 17, 18, 0.88), rgba(23, 9, 10, 0.94)),
+    rgba(20, 8, 10, 0.9);
+  color: rgba(244, 208, 193, 0.82);
+}
+
+.assessment-result__order-button--active {
+  border-color: rgba(216, 185, 114, 0.38);
+  background:
+    linear-gradient(180deg, rgba(216, 185, 114, 0.18), rgba(52, 22, 14, 0.88)),
+    rgba(38, 15, 11, 0.92);
+  color: rgba(249, 237, 203, 0.98);
+  box-shadow: 0 14px 24px rgba(212, 154, 114, 0.12);
 }
 
 .assessment-result__wrong-head {
@@ -1314,6 +2072,12 @@ onBeforeUnmount(() => {
   line-height: 1.9;
 }
 
+.assessment-result__wrong-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 @media (max-width: 1180px) {
   .assessment-ready,
   .assessment-result__stats,
@@ -1345,12 +2109,37 @@ onBeforeUnmount(() => {
     border-radius: 999px;
     background: rgba(216, 185, 114, 0.26);
   }
+
+  .assessment-result__section-track {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(180px, 1fr);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+
+  .assessment-result__section-pill {
+    scroll-snap-align: start;
+  }
+
+  .assessment-result__section-track::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .assessment-result__section-track::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(212, 154, 114, 0.28);
+  }
 }
 
 @media (max-width: 920px) {
   .assessment-ready,
   .assessment-exam__overview-head,
+  .assessment-exam__order-head,
   .assessment-result__summary-head,
+  .assessment-result__wrong-nav-head,
   .assessment-result__stats,
   .assessment-result__section-summary,
   .assessment-result__wrong-answer-grid {
@@ -1400,6 +2189,15 @@ onBeforeUnmount(() => {
     padding: 16px 18px;
   }
 
+  .assessment-exam__order-legend {
+    justify-content: flex-start;
+  }
+
+  .assessment-result__wrong-count {
+    min-width: 0;
+    width: 100%;
+  }
+
   .assessment-exam__time-card strong,
   .assessment-result__score-badge strong {
     font-size: 2rem;
@@ -1411,6 +2209,11 @@ onBeforeUnmount(() => {
     min-width: 0;
     text-align: center;
   }
+
+  .assessment-exam__order-grid,
+  .assessment-result__order-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -1421,7 +2224,9 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__overview,
-  .assessment-exam__chapter-card {
+  .assessment-exam__chapter-card,
+  .assessment-exam__order-card,
+  .assessment-result__wrong-nav-card {
     padding: 14px 12px;
   }
 
@@ -1452,6 +2257,7 @@ onBeforeUnmount(() => {
   .assessment-ready__chapter-card,
   .assessment-result__section-card,
   .assessment-result__stat-card,
+  .assessment-result__section-pill,
   .assessment-result__answer-box,
   .assessment-result__source {
     padding: 16px 14px;
@@ -1461,6 +2267,7 @@ onBeforeUnmount(() => {
   .assessment-ready__actions,
   .assessment-exam__actions,
   .assessment-result__actions,
+  .assessment-result__wrong-actions,
   .assessment-exam__resume-actions {
     flex-direction: column;
     align-items: stretch;
@@ -1469,6 +2276,7 @@ onBeforeUnmount(() => {
   .assessment-ready__actions .ink-button,
   .assessment-exam__actions .ink-button,
   .assessment-result__actions .ink-button,
+  .assessment-result__wrong-actions .ink-button,
   .assessment-exam__resume-actions .ink-button {
     width: 100%;
   }
@@ -1477,6 +2285,11 @@ onBeforeUnmount(() => {
     grid-auto-columns: minmax(140px, 78vw);
     gap: 8px;
     margin-top: 14px;
+  }
+
+  .assessment-result__section-track {
+    grid-auto-columns: minmax(160px, 82vw);
+    gap: 8px;
   }
 
   .assessment-exam__progress-meta {
@@ -1517,12 +2330,39 @@ onBeforeUnmount(() => {
     min-height: 74px;
   }
 
+  .assessment-result__section-pill {
+    min-height: 78px;
+  }
+
   .assessment-exam__section-pill strong {
     font-size: 0.92rem;
   }
 
   .assessment-exam__section-pill span {
     font-size: 0.8rem;
+  }
+
+  .assessment-result__section-pill strong {
+    font-size: 0.92rem;
+  }
+
+  .assessment-result__section-pill span {
+    font-size: 0.8rem;
+  }
+
+  .assessment-exam__order-head h3,
+  .assessment-result__wrong-nav-head h3 {
+    font-size: 1rem;
+  }
+
+  .assessment-exam__order-legend {
+    gap: 8px;
+  }
+
+  .assessment-exam__legend-chip {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 0.76rem;
   }
 
   .assessment-exam-dialog {
@@ -1542,8 +2382,22 @@ onBeforeUnmount(() => {
     border-radius: 20px;
   }
 
-  .assessment-exam__question-list {
+  .assessment-exam__question-workspace,
+  .assessment-result__wrong-workspace {
     gap: 12px;
+  }
+
+  .assessment-exam__order-grid,
+  .assessment-result__order-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .assessment-exam__order-button,
+  .assessment-result__order-button {
+    min-height: 42px;
+    border-radius: 14px;
+    font-size: 0.86rem;
   }
 }
 </style>
