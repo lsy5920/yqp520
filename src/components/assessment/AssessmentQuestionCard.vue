@@ -60,15 +60,60 @@ function isOptionSelected(optionId: string): boolean {
 }
 
 /**
+ * 判断是否需要释放触屏焦点
+ * 用途：手机端点按按钮后，浏览器有时会为了保持焦点而轻微滚动弹窗，导致题目像突然滑动一下
+ * 入参：无
+ * 返回值：触屏设备返回 true，否则返回 false
+ */
+function shouldReleaseTapFocus(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false
+  }
+
+  return window.matchMedia('(pointer: coarse)').matches
+}
+
+/**
+ * 释放当前被点按按钮的焦点
+ * 用途：避免手机端选项按钮保留焦点后触发浏览器自动滚动，造成题目区域突然跳动
+ * 入参：event 为当前点击事件对象
+ * 返回值：无返回值
+ */
+function releaseTappedOptionFocus(event?: Event): void {
+  if (!shouldReleaseTapFocus()) {
+    return
+  }
+
+  const currentButton = event?.currentTarget
+
+  if (!(currentButton instanceof HTMLButtonElement)) {
+    return
+  }
+
+  // 这里放到下一帧再移除焦点，保证本次点击仍然能正常触发选项更新。
+  if (typeof window === 'undefined') {
+    currentButton.blur()
+    return
+  }
+
+  window.requestAnimationFrame(() => {
+    currentButton.blur()
+  })
+}
+
+/**
  * 处理选项点击
  * 用途：根据题型抛出单选或多选事件，让外层统一更新答案
  * 入参：optionId 为当前点击的选项编号
  * 返回值：无返回值
  */
-function handleOptionClick(optionId: string): void {
+function handleOptionClick(optionId: string, event?: MouseEvent): void {
   if (props.disabled) {
     return
   }
+
+  // 这里先释放手机端触屏焦点，避免点击后题目区域被浏览器意外带着轻微滚动。
+  releaseTappedOptionFocus(event)
 
   if (props.question.type === 'single') {
     emit('update-single', {
@@ -106,7 +151,7 @@ function handleOptionClick(optionId: string): void {
         class="assessment-question-card__option"
         :class="{ 'assessment-question-card__option--active': isOptionSelected(option.id) }"
         :disabled="disabled"
-        @click="handleOptionClick(option.id)"
+        @click="handleOptionClick(option.id, $event)"
       >
         <span class="assessment-question-card__badge">{{ option.label }}</span>
         <span class="assessment-question-card__option-text">{{ option.text }}</span>
@@ -200,11 +245,18 @@ function handleOptionClick(optionId: string): void {
   color: #f4efe2;
   text-align: left;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition:
     transform 0.28s ease,
     border-color 0.28s ease,
     background-color 0.28s ease,
     box-shadow 0.28s ease;
+}
+
+.assessment-question-card__option:focus-visible {
+  outline: 2px solid rgba(241, 217, 160, 0.72);
+  outline-offset: 2px;
 }
 
 .assessment-question-card__option:hover:not(:disabled) {
@@ -279,6 +331,15 @@ function handleOptionClick(optionId: string): void {
     align-items: center;
     padding: 12px 12px;
     gap: 10px;
+    transition:
+      border-color 0.28s ease,
+      background-color 0.28s ease,
+      box-shadow 0.28s ease;
+  }
+
+  /* 这里关掉手机端点按时的位移动画，避免触屏设备把 hover 当成滑动效果。 */
+  .assessment-question-card__option:hover:not(:disabled) {
+    transform: none;
   }
 
   .assessment-question-card__badge {
