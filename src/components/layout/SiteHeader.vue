@@ -52,17 +52,23 @@ function toggleMenu() {
       </nav>
 
       <div class="site-header__actions">
-        <button class="site-menu-button" type="button" @click="toggleMenu">
+        <button
+          class="site-menu-button"
+          type="button"
+          :aria-expanded="isMenuOpen"
+          aria-controls="site-mobile-drawer"
+          :aria-label="isMenuOpen ? '收起导航菜单' : '展开导航菜单'"
+          @click="toggleMenu"
+        >
           <span></span>
           <span></span>
           <span></span>
-          <i class="sr-only">切换导航菜单</i>
         </button>
       </div>
     </div>
 
     <Transition name="drawer-fade">
-      <div v-if="isMenuOpen" class="site-drawer">
+      <div v-if="isMenuOpen" id="site-mobile-drawer" class="site-drawer">
         <nav class="site-nav site-nav--mobile" aria-label="移动端导航">
           <RouterLink
             v-for="item in siteContent.navItems"

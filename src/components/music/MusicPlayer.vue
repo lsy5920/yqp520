@@ -594,17 +594,58 @@ onBeforeUnmount(() => {
     left: 10px;
     width: auto;
     bottom: calc(10px + env(safe-area-inset-bottom));
+    gap: 12px;
+    padding: 14px;
+    border-radius: 22px;
   }
 
   .music-player--collapsed {
     right: 0;
     left: auto;
-    width: 92px;
-    padding: 12px 10px 12px 14px;
+    width: 86px;
+    padding: 10px 8px 10px 12px;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    border-top-left-radius: 20px;
-    border-bottom-left-radius: 20px;
+    border-top-left-radius: 18px;
+    border-bottom-left-radius: 18px;
+  }
+
+  .music-player__head {
+    gap: 12px;
+  }
+
+  .music-player__cover {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+  }
+
+  .music-player__disc {
+    width: 32px;
+    height: 32px;
+  }
+
+  .music-player__title {
+    font-size: 1.06rem;
+    line-height: 1.35;
+  }
+
+  .music-player__cover-text {
+    display: none;
+  }
+
+  .music-player__status {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .music-player__controls {
+    gap: 10px;
+  }
+
+  .music-player__button {
+    min-height: 42px;
+    padding: 0 14px;
   }
 }
 </style>

@@ -922,4 +922,44 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 720px) {
+  .poster-studio__panel,
+  .poster-studio__preview {
+    padding: 18px 16px;
+    border-radius: 24px;
+  }
+
+  .poster-studio__title {
+    font-size: 22px;
+    line-height: 1.4;
+  }
+
+  .poster-studio__desc {
+    font-size: 0.94rem;
+    line-height: 1.76;
+  }
+
+  .poster-studio__actions {
+    flex-direction: column;
+  }
+
+  .poster-studio__button {
+    width: 100%;
+  }
+
+  .poster-studio__meta {
+    margin-top: 16px;
+    font-size: 0.88rem;
+  }
+
+  .poster-studio__card-shell {
+    width: 100%;
+    border-radius: 24px;
+  }
+
+  .poster-studio__poster-source {
+    border-radius: 24px;
+  }
+}
 </style>

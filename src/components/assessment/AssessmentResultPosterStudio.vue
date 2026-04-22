@@ -778,4 +778,44 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 720px) {
+  .assessment-result-poster-studio__panel,
+  .assessment-result-poster-studio__preview {
+    padding: 18px 16px;
+    border-radius: 24px;
+  }
+
+  .assessment-result-poster-studio__title {
+    font-size: 22px;
+    line-height: 1.4;
+  }
+
+  .assessment-result-poster-studio__desc {
+    font-size: 0.94rem;
+    line-height: 1.76;
+  }
+
+  .assessment-result-poster-studio__actions {
+    flex-direction: column;
+  }
+
+  .assessment-result-poster-studio__button {
+    width: 100%;
+  }
+
+  .assessment-result-poster-studio__meta {
+    margin-top: 16px;
+    font-size: 0.88rem;
+  }
+
+  .assessment-result-poster-studio__card-shell {
+    width: 100%;
+    border-radius: 24px;
+  }
+
+  .assessment-result-poster-studio__poster-source {
+    border-radius: 24px;
+  }
+}
 </style>

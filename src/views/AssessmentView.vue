@@ -937,6 +937,18 @@ onMounted(() => {
     padding: 16px 18px;
   }
 
+  .assessment-result__score-badge {
+    min-width: 0;
+    width: 100%;
+    justify-items: start;
+    padding: 16px 18px;
+  }
+
+  .assessment-exam__time-card strong,
+  .assessment-result__score-badge strong {
+    font-size: 2rem;
+  }
+
   .assessment-exam__progress-meta span {
     flex: 1 1 calc(50% - 12px);
     justify-content: center;
@@ -957,6 +969,30 @@ onMounted(() => {
     padding: 18px 16px;
   }
 
+  .assessment-ready__intro-card,
+  .assessment-ready__score-card,
+  .assessment-ready__chapter-card,
+  .assessment-result__section-card,
+  .assessment-result__stat-card,
+  .assessment-result__answer-box,
+  .assessment-result__source {
+    padding: 16px 14px;
+    border-radius: 20px;
+  }
+
+  .assessment-ready__actions,
+  .assessment-exam__actions,
+  .assessment-result__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .assessment-ready__actions .ink-button,
+  .assessment-exam__actions .ink-button,
+  .assessment-result__actions .ink-button {
+    width: 100%;
+  }
+
   .assessment-exam__section-track {
     grid-auto-columns: minmax(156px, 82vw);
     gap: 10px;
@@ -970,6 +1006,14 @@ onMounted(() => {
   .assessment-exam__chapter-meta span {
     flex: 1 1 100%;
     justify-content: center;
+  }
+
+  .assessment-result__summary-head {
+    gap: 16px;
+  }
+
+  .assessment-exam__overview-head {
+    gap: 16px;
   }
 
   .assessment-exam__actions .ink-button {
