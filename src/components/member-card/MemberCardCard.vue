@@ -262,6 +262,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   overflow: hidden;
   width: 100%;
   height: 100%;
+  container-type: inline-size;
   border-radius: 38px;
   border: 1px solid rgba(216, 185, 114, 0.24);
   color: #f4efe2;
@@ -836,7 +837,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   animation: none !important;
 }
 
-@media (max-width: 960px) {
+@container (max-width: 960px) {
   .member-card-card__sheet {
     padding: 20px 18px 16px 66px;
     gap: 10px;
@@ -868,7 +869,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   }
 }
 
-@media (max-width: 720px) {
+@container (max-width: 720px) {
   .member-card-card {
     border-radius: 30px;
   }
