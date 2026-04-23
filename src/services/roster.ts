@@ -21,6 +21,12 @@ import {
   normalizeRosterShortText,
 } from '@/utils/roster'
 
+// 这里定义后台鉴权请求超时时间，避免会话卡住时页面一直停在“保存中”。
+const ROSTER_ADMIN_REQUEST_TIMEOUT_MS = 20000
+
+// 这里定义登录状态刷新缓冲时间，快过期时会先主动刷新会话再执行后台操作。
+const ROSTER_SESSION_REFRESH_BUFFER_MS = 90 * 1000
+
 // 这里定义公开名录查询条件，方便名录页传参更清楚。
 export interface ListPublicRosterEntriesOptions {
   /** 用途：搜索关键字 */
@@ -60,6 +66,26 @@ function extractRawRosterErrorMessage(error: unknown): string {
 }
 
 /**
+ * 判断是否命中登录状态失效类报错
+ * 用途：把会话过期、令牌失效这类错误统一翻译成更容易理解的中文提示
+ * 入参：message 为原始错误文本
+ * 返回值：命中登录失效时返回 true
+ */
+function isRosterAuthExpiredErrorMessage(message: string): boolean {
+  const normalizedMessage = message.toLowerCase()
+
+  return normalizedMessage.includes('jwt expired')
+    || normalizedMessage.includes('invalid jwt')
+    || normalizedMessage.includes('refresh token')
+    || normalizedMessage.includes('session expired')
+    || normalizedMessage.includes('session_not_found')
+    || normalizedMessage.includes('auth session missing')
+    || normalizedMessage.includes('invalid claim')
+    || normalizedMessage.includes('token is expired')
+    || normalizedMessage.includes('token has expired')
+}
+
+/**
  * 判断是否命中了旧版名册结构报错
  * 用途：当线上数据库还没执行最新版 SQL 时，给用户更清楚的中文提示
  * 入参：message 为原始错误文本
@@ -89,6 +115,35 @@ function isMissingRosterDaohaoColumnMessage(message: string): boolean {
 
   return normalizedMessage.includes('column yunqi_roster_entries.daohao does not exist')
     || normalizedMessage.includes('column "daohao" does not exist')
+}
+
+/**
+ * 给异步请求包一层超时兜底
+ * 用途：避免后台会话刷新或 RPC 调用卡住时，页面按钮长时间无法恢复
+ * 入参：task 为要执行的异步任务，timeoutMs 为超时毫秒数，timeoutMessage 为超时提示
+ * 返回值：返回原任务结果，超时则抛出中文错误
+ */
+async function withRosterTimeout<T>(
+  task: PromiseLike<T>,
+  timeoutMs: number,
+  timeoutMessage: string,
+): Promise<T> {
+  let timerId: ReturnType<typeof setTimeout> | null = null
+
+  try {
+    return await Promise.race<T>([
+      Promise.resolve(task),
+      new Promise<T>((_resolve, reject) => {
+        timerId = globalThis.setTimeout(() => {
+          reject(new Error(timeoutMessage))
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timerId) {
+      globalThis.clearTimeout(timerId)
+    }
+  }
 }
 
 /**
@@ -151,6 +206,10 @@ function resolveRosterErrorMessage(error: unknown): string {
   const rawMessage = extractRawRosterErrorMessage(error)
 
   if (rawMessage) {
+    if (isRosterAuthExpiredErrorMessage(rawMessage)) {
+      return '当前执事登录状态已过期，请刷新页面后重新登录审核台，再继续保存或删档。'
+    }
+
     if (isLegacyRosterSchemaErrorMessage(rawMessage)) {
       return '当前 Supabase 仍在使用旧版云栖名册结构，请先到 Supabase SQL Editor 重新执行项目里的 supabase/yunqi_roster.sql，完成“道号字段”和“后台保存 RPC”升级后再重试。'
     }
@@ -186,11 +245,15 @@ async function getRosterAdminProfileByUserId(userId: string): Promise<RosterAdmi
     return null
   }
 
-  const { data, error } = await supabase
-    .from('yunqi_roster_admin_profiles')
-    .select('user_id, email, display_name, role, is_active')
-    .eq('user_id', userId)
-    .maybeSingle()
+  const { data, error } = await withRosterTimeout(
+    supabase
+      .from('yunqi_roster_admin_profiles')
+      .select('user_id, email, display_name, role, is_active')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '读取执事资料超时，请刷新页面后重新登录审核台。',
+  )
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
@@ -217,10 +280,53 @@ async function getRosterAdminProfileByUserId(userId: string): Promise<RosterAdmi
  */
 export async function getRosterSession(): Promise<Session | null> {
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.auth.getSession()
+  const { data, error } = await withRosterTimeout(
+    supabase.auth.getSession(),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '读取登录状态超时，请刷新页面后重新登录审核台。',
+  )
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  return data.session
+}
+
+/**
+ * 确保当前执事会话可用
+ * 用途：后台操作前主动检查并刷新临近过期的登录状态，减少长时间停留后的保存卡死
+ * 入参：无
+ * 返回值：返回确认可用的会话
+ */
+async function ensureRosterAdminSession(): Promise<Session> {
+  const supabase = getSupabaseClient()
+  const currentSession = await getRosterSession()
+
+  if (!currentSession?.user) {
+    throw new Error('当前执事登录状态已失效，请刷新页面后重新登录审核台。')
+  }
+
+  const expiresAtMs = typeof currentSession.expires_at === 'number'
+    ? currentSession.expires_at * 1000
+    : 0
+
+  if (expiresAtMs && expiresAtMs - Date.now() > ROSTER_SESSION_REFRESH_BUFFER_MS) {
+    return currentSession
+  }
+
+  const { data, error } = await withRosterTimeout(
+    supabase.auth.refreshSession(),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '刷新登录状态超时，请刷新页面后重新登录审核台。',
+  )
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  if (!data.session?.user) {
+    throw new Error('当前执事登录状态已过期，请刷新页面后重新登录审核台。')
   }
 
   return data.session
@@ -233,7 +339,7 @@ export async function getRosterSession(): Promise<Session | null> {
  * 返回值：返回管理员资料，没有资料时返回 null
  */
 export async function getCurrentRosterAdminProfile(): Promise<RosterAdminProfile | null> {
-  const session = await getRosterSession()
+  const session = await ensureRosterAdminSession()
 
   if (!session?.user) {
     return null
@@ -441,11 +547,19 @@ export async function listAdminRosterEntries(options: ListAdminRosterEntriesOpti
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
-  let { data, error } = await buildAdminRosterListQuery(supabase, options)
+  let { data, error } = await withRosterTimeout(
+    buildAdminRosterListQuery(supabase, options),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '读取审核台档案超时，请刷新页面后重新登录审核台。',
+  )
 
   // 这里兼容旧版表结构：如果线上还没有 daohao 列，就回退到旧字段检索。
   if (error && isMissingRosterDaohaoColumnMessage(extractRawRosterErrorMessage(error))) {
-    const fallbackResult = await buildAdminRosterListQuery(supabase, options, true)
+    const fallbackResult = await withRosterTimeout(
+      buildAdminRosterListQuery(supabase, options, true),
+      ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+      '读取审核台档案超时，请刷新页面后重新登录审核台。',
+    )
     data = fallbackResult.data
     error = fallbackResult.error
   }
@@ -467,11 +581,15 @@ export async function listRosterReviewLogs(entryId: string): Promise<RosterRevie
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('yunqi_roster_review_logs')
-    .select('*')
-    .eq('entry_id', entryId)
-    .order('created_at', { ascending: false })
+  const { data, error } = await withRosterTimeout(
+    supabase
+      .from('yunqi_roster_review_logs')
+      .select('*')
+      .eq('entry_id', entryId)
+      .order('created_at', { ascending: false }),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '读取审核日志超时，请刷新页面后重新登录审核台。',
+  )
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
@@ -490,7 +608,11 @@ export async function getNextRosterEntryNo(): Promise<number> {
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.rpc('get_next_roster_entry_no')
+  const { data, error } = await withRosterTimeout(
+    supabase.rpc('get_next_roster_entry_no'),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '获取默认文牒号超时，请刷新页面后重新登录审核台。',
+  )
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
@@ -521,36 +643,40 @@ export async function saveAdminRosterEntry(payload: AdminRosterEntrySavePayload)
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.rpc('admin_save_roster_entry', {
-    entry_payload: {
-      entry_id: payload.entryId,
-      status: payload.status,
-      entry_no: payload.entryNo,
-      daohao: payload.daohao,
-      secular_name: payload.secularName,
-      gender: payload.gender,
-      position_key: payload.positionKey,
-      current_city: payload.currentCity,
-      birth_year: payload.birthYear,
-      profession: payload.profession,
-      referrer_name: payload.referrerName,
-      hall_key: payload.hallKey,
-      hall_other_text: payload.hallOtherText,
-      entry_intent: payload.entryIntent,
-      wechat_id: payload.wechatId,
-      social_xiaohongshu_douyin: payload.socialXiaohongshuDouyin,
-      social_qq: payload.socialQq,
-      social_other: payload.socialOther,
-      allow_contact_public: payload.allowContactPublic,
-      strengths: payload.strengths,
-      hobbies: payload.hobbies,
-      free_time_slots: payload.freeTimeSlots,
-      contribution_level: payload.contributionLevel,
-      oath_signed_name: payload.oathSignedName,
-      oath_signed_date: payload.oathSignedDate,
-      review_comment: payload.reviewComment,
-    },
-  })
+  const { data, error } = await withRosterTimeout(
+    supabase.rpc('admin_save_roster_entry', {
+      entry_payload: {
+        entry_id: payload.entryId,
+        status: payload.status,
+        entry_no: payload.entryNo,
+        daohao: payload.daohao,
+        secular_name: payload.secularName,
+        gender: payload.gender,
+        position_key: payload.positionKey,
+        current_city: payload.currentCity,
+        birth_year: payload.birthYear,
+        profession: payload.profession,
+        referrer_name: payload.referrerName,
+        hall_key: payload.hallKey,
+        hall_other_text: payload.hallOtherText,
+        entry_intent: payload.entryIntent,
+        wechat_id: payload.wechatId,
+        social_xiaohongshu_douyin: payload.socialXiaohongshuDouyin,
+        social_qq: payload.socialQq,
+        social_other: payload.socialOther,
+        allow_contact_public: payload.allowContactPublic,
+        strengths: payload.strengths,
+        hobbies: payload.hobbies,
+        free_time_slots: payload.freeTimeSlots,
+        contribution_level: payload.contributionLevel,
+        oath_signed_name: payload.oathSignedName,
+        oath_signed_date: payload.oathSignedDate,
+        review_comment: payload.reviewComment,
+      },
+    }),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '保存档案超时，请先确认网络与登录状态，再刷新页面重新登录审核台后重试。',
+  )
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
@@ -576,9 +702,13 @@ export async function deleteAdminRosterEntry(entryId: string): Promise<string> {
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.rpc('admin_delete_roster_entry', {
-    target_entry_id: entryId,
-  })
+  const { data, error } = await withRosterTimeout(
+    supabase.rpc('admin_delete_roster_entry', {
+      target_entry_id: entryId,
+    }),
+    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
+    '删除档案超时，请先确认网络与登录状态，再刷新页面重新登录审核台后重试。',
+  )
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
