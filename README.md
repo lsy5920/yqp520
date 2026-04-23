@@ -111,6 +111,8 @@ supabase/yunqi_roster.sql
 
 如果后台出现“编辑时道号没自动带出”“点击保存像没反应”这类现象，基本也说明这里还没有执行到最新版。因为旧库里没有 `daohao` 字段，也没有新版后台保存 RPC。
 
+如果 SQL Editor 报 `cannot change return type of existing function`，说明你库里已经有旧版同名函数。现在项目里的新版 `supabase/yunqi_roster.sql` 已经补了“先删除旧函数，再重建”的兼容处理，使用最新本地脚本整段重新执行即可。
+
 执行完 SQL 后，再去 Supabase 的 `Authentication` 里先创建执事账号，并按 SQL 文件末尾示例把该账号写入 `yunqi_roster_admin_profiles`，这样站内审核台才能登录使用。
 
 ### 第五步：启动本地开发环境
@@ -301,15 +303,16 @@ VITE_BASE_PATH: /yunqi-site/
 2. 也可以从顶部导航或 `入派指引` 页进入 `云栖名册`。
 3. 登记页会按 `弟子名籍 / 门派司职 / 传讯方式 / 所长与愿 / 入派誓约 / 提交确认` 六段展开。
 4. 登记页现在已经把 `江湖名号 + 法号` 统一成单一 `道号` 字段；道号支持自由拟定，不再强制以 `云` 或 `栖` 开头，也不再限制固定两字。
-5. `道号` 会先做基础长度校验，再调用 Supabase RPC 做重名检查；若已被占用，就不能继续递交。
-6. 提交成功后会立刻跳到 `/roster/entry/:publicSlug`，先看到一张 `待审核` 名帖。
-7. `待审核` 名帖可以保存图片、复制链接和原生分享；`准予入册` 后会自动切成正式版名帖并进入公开名录。
-8. `暂缓入册` 与 `不予收录` 的详情页仍可查看公开批语，但不再提供名帖导出。
-9. `公开名录` 页只展示已经审核通过的条目，支持按 `道号 / 文牒号` 搜索，也支持按堂口筛选。
-10. `审核台` 登录地址是 `/roster/admin/login`，只允许已经加入白名单的 Supabase 执事账号使用。
-11. `审核台` 现在支持直接编辑所有已填信息、修改状态、后台自定义正式文牒号；如果你不手填文牒号，系统会自动带出“当前最大正式牒号 + 1”的建议值。
-12. `审核台` 支持彻底删除任意一条档案；删除后，公开页和后台都会查不到这条记录，且不可恢复。
-13. `公开名录` 页顶部和站点页脚都已补上“执事管理入口 / 执事审核”入口，手机端也能直接点击进入。
+5. 当前名册登记里的所有输入框和文本框都按必填处理；如果有任意一项留空，前端和 Supabase 接口都会直接拦下。
+6. `道号` 会先做基础长度校验，再调用 Supabase RPC 做重名检查；若已被占用，就不能继续递交。
+7. 提交成功后会立刻跳到 `/roster/entry/:publicSlug`，先看到一张 `待审核` 名帖。
+8. `待审核` 名帖可以保存图片、复制链接和原生分享；`准予入册` 后会自动切成正式版名帖并进入公开名录。
+9. `暂缓入册` 与 `不予收录` 的详情页仍可查看公开批语，但不再提供名帖导出。
+10. `公开名录` 页只展示已经审核通过的条目，支持按 `道号 / 文牒号` 搜索，也支持按堂口筛选。
+11. `审核台` 登录地址是 `/roster/admin/login`，只允许已经加入白名单的 Supabase 执事账号使用。
+12. `审核台` 现在支持直接编辑所有已填信息、修改状态、后台自定义正式文牒号；如果你不手填文牒号，系统会自动带出“当前最大正式牒号 + 1”的建议值，移动端列表也统一改成优先显示道号，不再用堂口做前缀。
+13. `审核台` 支持彻底删除任意一条档案；删除后，公开页和后台都会查不到这条记录，且不可恢复。
+14. `公开名录` 页顶部和站点页脚都已补上“执事管理入口 / 执事审核”入口，手机端也能直接点击进入。
 
 ## 入派考核使用教程
 
@@ -606,6 +609,21 @@ yqp520/
 
 当前前端已经补了旧字段回填兼容，并且会在抽屉里直接提示是否命中了旧库问题；但要真正恢复后台保存、删档和新版检索能力，仍然需要回到 Supabase 的 `SQL Editor`，重新执行项目里的 `supabase/yunqi_roster.sql`。执行完成后刷新后台页面，再进入编辑模式即可看到统一后的道号与正常的保存反馈。
 
+### 20. 为什么在 Supabase 执行名册 SQL 时会提示 `cannot change return type of existing function`？
+这是因为数据库里已经存在旧版同名函数，而 PostgreSQL 不允许直接用 `create or replace function` 修改 `returns table` 的返回结构。现在项目里的最新 [supabase/yunqi_roster.sql](C:/Users/lanshiy/Documents/小亦伟大工程/yqp520/supabase/yunqi_roster.sql) 已经补了兼容处理，会先删除这些旧函数，再重建新版函数。
+
+如果你此刻正卡在 SQL Editor，不想等整份脚本替换，也可以先手工执行下面这些删除语句，再重新跑整份脚本：
+
+```sql
+drop function if exists public.check_roster_daohao_available(text);
+drop function if exists public.submit_roster_entry(jsonb);
+drop function if exists public.list_public_roster_entries(text, text, integer, integer);
+drop function if exists public.get_public_roster_entry_by_slug(text);
+drop function if exists public.get_next_roster_entry_no();
+drop function if exists public.admin_save_roster_entry(jsonb);
+drop function if exists public.admin_delete_roster_entry(uuid);
+```
+
 ## 更新日志
 2026-04-21 23:14 【初次发布】完成云栖派官网首版开发，落地六个核心页面、统一青金云海视觉风格、滚动动效与移动端适配。  
 2026-04-21 23:15 【新增】新增海报分享生成器、背景音乐播放器与首页启播引导，并补齐完整中文 README、安装教程、使用说明与排错文档。  
@@ -661,3 +679,5 @@ yqp520/
 2026-04-23 11:24 【修复】修复手机端名册登记页被动隐藏导致表单不显示的问题，并修复执事登录在移动端可能因会话与白名单同步时序抖动而短暂登录后又回到未登录状态的问题，同步更新 README 排错说明。
 2026-04-23 13:52 【优化】重构云栖名册字段口径为单一“道号”，新增后台自定义与推荐文牒号、全字段编辑、硬删除档案，以及公开页和后台按道号/文牒号双端搜索能力，并同步更新 README 使用说明与部署说明。
 2026-04-23 14:25 【修复】兼容旧版 Supabase 名册字段回填，给后台编辑抽屉补充就地保存反馈，并把旧库缺少 `daohao` 字段或新版 RPC 时的提示改成明确引导重新执行 `supabase/yunqi_roster.sql`，同步更新 README 排错说明。
+2026-04-23 14:38 【修复】修复 Supabase 执行新版名册 SQL 时旧函数返回结构冲突的问题，在 `supabase/yunqi_roster.sql` 中补充同名旧函数先删后建的兼容处理，并同步更新 README 的 SQL 排错说明。
+2026-04-23 16:05 【优化】将云栖名册移动端审核卡片的堂口前缀统一改为道号口径，并把登记页所有输入框与文本框改为必填校验；同时补齐前端与 Supabase 后端的同步拦截规则，更新 README 使用说明。

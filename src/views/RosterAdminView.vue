@@ -193,7 +193,7 @@ const saveSummary = computed<string>(() => {
     currentCity: normalizeRosterShortText(editForm.value.currentCity),
     birthYear: normalizeRosterShortText(editForm.value.birthYear),
     profession: normalizeRosterShortText(editForm.value.profession),
-    referrerName: normalizeRosterShortText(editForm.value.referrerName, '自行登门'),
+    referrerName: normalizeRosterShortText(editForm.value.referrerName),
     hallKey: editForm.value.hallKey,
     hallOtherText: normalizeRosterShortText(editForm.value.hallOtherText),
     entryIntent: normalizeRosterLongText(editForm.value.entryIntent),
@@ -512,7 +512,7 @@ function buildSavePayload(): AdminRosterEntrySavePayload | null {
     currentCity: normalizeRosterShortText(editForm.value.currentCity),
     birthYear: normalizeRosterShortText(editForm.value.birthYear),
     profession: normalizeRosterShortText(editForm.value.profession),
-    referrerName: normalizeRosterShortText(editForm.value.referrerName, '自行登门'),
+    referrerName: normalizeRosterShortText(editForm.value.referrerName),
     hallKey: editForm.value.hallKey,
     hallOtherText: normalizeRosterShortText(editForm.value.hallOtherText),
     entryIntent: normalizeRosterLongText(editForm.value.entryIntent),
@@ -783,7 +783,7 @@ onMounted(async () => {
               <strong>{{ entry.daohao }}</strong>
               <span>{{ entry.status === 'approved' ? formatRosterEntryNo(entry.entryNo) : entry.receiptCode }}</span>
             </div>
-            <p>{{ getRosterHallLabel(entry.hallKey) }} · {{ rosterStatusLabelMap[entry.status] }}</p>
+            <p>{{ entry.daohao }} · {{ rosterStatusLabelMap[entry.status] }}</p>
             <small>{{ formatRosterDateTime(entry.createdAt) }}</small>
           </button>
 
@@ -803,7 +803,7 @@ onMounted(async () => {
             <div>
               <p class="eyebrow">文牒详情</p>
               <h2>{{ activeEntry.daohao }}</h2>
-              <p>{{ getRosterHallLabel(activeEntry.hallKey) }} · {{ activeEntry.receiptCode }} · {{ rosterStatusLabelMap[activeEntry.status] }}</p>
+              <p>{{ activeEntry.daohao }} · {{ activeEntry.status === 'approved' ? formatRosterEntryNo(activeEntry.entryNo) : activeEntry.receiptCode }} · {{ rosterStatusLabelMap[activeEntry.status] }}</p>
             </div>
 
             <div class="roster-admin-drawer__head-actions">

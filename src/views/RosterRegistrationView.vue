@@ -251,7 +251,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">弟子名籍</p>
             <h2>先把道号与来处写清</h2>
-            <p>道号为必填项，会成为公开详情页与分享名帖的唯一称呼。俗家姓名仅用于线下大型活动实名备案，不会进入公开名帖。</p>
+            <p>当前登记页里的所有填写框都需要补全后才能递交。俗家姓名仅用于线下大型活动实名备案，不会进入公开名帖。</p>
           </div>
 
           <div class="roster-registration-grid">
@@ -269,8 +269,8 @@ function handleSelectContribution(value: RosterContributionLevel): void {
             </label>
 
             <label class="roster-registration-field">
-              <span>俗家姓名</span>
-              <input v-model="formValue.secularName" class="roster-registration-input" maxlength="24" placeholder="线下实名备案才会用到" type="text" />
+              <span>俗家姓名 *</span>
+              <input v-model="formValue.secularName" class="roster-registration-input" maxlength="24" placeholder="请输入俗家姓名" type="text" />
             </label>
 
             <label class="roster-registration-field">
@@ -279,12 +279,12 @@ function handleSelectContribution(value: RosterContributionLevel): void {
             </label>
 
             <label class="roster-registration-field">
-              <span>生年</span>
+              <span>生年 *</span>
               <input v-model="formValue.birthYear" class="roster-registration-input" maxlength="8" placeholder="例如：1998" type="text" />
             </label>
 
             <label class="roster-registration-field roster-registration-field--full">
-              <span>俗务</span>
+              <span>俗务 *</span>
               <input v-model="formValue.profession" class="roster-registration-input" maxlength="40" placeholder="例如：学生、设计师、工程师" type="text" />
             </label>
           </div>
@@ -294,13 +294,13 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">门派司职</p>
             <h2>再把堂口与来意定下来</h2>
-            <p>道号不再强制以“云”或“栖”开头。堂口只做归类和同好联络，不分高低。</p>
+            <p>道号不再强制以“云”或“栖”开头。当前所有填写框都按必填处理，堂口仍只做归类和同好联络。</p>
           </div>
 
           <div class="roster-registration-grid">
             <label class="roster-registration-field">
-              <span>引荐人</span>
-              <input v-model="formValue.referrerName" class="roster-registration-input" maxlength="32" placeholder="默认：自行登门" type="text" />
+              <span>引荐人 *</span>
+              <input v-model="formValue.referrerName" class="roster-registration-input" maxlength="32" placeholder="无引荐人请填写：自行登门" type="text" />
             </label>
           </div>
 
@@ -342,7 +342,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">传讯方式</p>
             <h2>留下正式联络方式</h2>
-            <p>微信号为门派唯一正式联络渠道。其他社交号都只存库备用，不会进入公开页面与分享名帖。</p>
+            <p>微信号为门派唯一正式联络渠道。当前这里的所有填写框都需要补全，但都不会进入公开页面与分享名帖。</p>
           </div>
 
           <div class="roster-registration-grid">
@@ -352,18 +352,18 @@ function handleSelectContribution(value: RosterContributionLevel): void {
             </label>
 
             <label class="roster-registration-field">
-              <span>小红书 / 抖音</span>
-              <input v-model="formValue.socialXiaohongshuDouyin" class="roster-registration-input" maxlength="48" placeholder="选填" type="text" />
+              <span>小红书 / 抖音 *</span>
+              <input v-model="formValue.socialXiaohongshuDouyin" class="roster-registration-input" maxlength="48" placeholder="请输入小红书或抖音账号" type="text" />
             </label>
 
             <label class="roster-registration-field">
-              <span>QQ</span>
-              <input v-model="formValue.socialQq" class="roster-registration-input" maxlength="48" placeholder="选填" type="text" />
+              <span>QQ *</span>
+              <input v-model="formValue.socialQq" class="roster-registration-input" maxlength="48" placeholder="请输入 QQ" type="text" />
             </label>
 
             <label class="roster-registration-field">
-              <span>其他传讯</span>
-              <input v-model="formValue.socialOther" class="roster-registration-input" maxlength="48" placeholder="选填" type="text" />
+              <span>其他传讯 *</span>
+              <input v-model="formValue.socialOther" class="roster-registration-input" maxlength="48" placeholder="请输入其他传讯方式" type="text" />
             </label>
           </div>
 
@@ -377,12 +377,12 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">所长与愿</p>
             <h2>让同门知道你擅长什么、喜欢什么</h2>
-            <p>这些内容会在通过审核后进入公开名帖，建议写你愿意公开分享的能力与雅事，不要写隐私信息。</p>
+            <p>这些内容会在通过审核后进入公开名帖。当前文字填写框都为必填，请写你愿意公开分享的能力与雅事。</p>
           </div>
 
           <div class="roster-registration-grid">
             <label class="roster-registration-field roster-registration-field--full">
-              <span>身怀所长</span>
+              <span>身怀所长 *</span>
               <textarea
                 v-model="formValue.strengths"
                 class="roster-registration-input roster-registration-input--textarea"
@@ -393,7 +393,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
             </label>
 
             <label class="roster-registration-field roster-registration-field--full">
-              <span>所好雅事</span>
+              <span>所好雅事 *</span>
               <textarea
                 v-model="formValue.hobbies"
                 class="roster-registration-input roster-registration-input--textarea"

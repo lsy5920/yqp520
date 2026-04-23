@@ -331,6 +331,7 @@ as $$
 $$;
 
 -- 这里给前台提供道号重名检查接口。
+drop function if exists public.check_roster_daohao_available(text);
 create or replace function public.check_roster_daohao_available(input_daohao text)
 returns table (
   available boolean,
@@ -371,6 +372,7 @@ end;
 $$;
 
 -- 这里提供公开登记提交接口，匿名用户只能通过它写入数据。
+drop function if exists public.submit_roster_entry(jsonb);
 create or replace function public.submit_roster_entry(entry_payload jsonb)
 returns table (
   public_slug text,
@@ -383,11 +385,20 @@ set search_path = public
 as $$
 declare
   normalized_daohao text := public.clean_yunqi_short_text(entry_payload ->> 'daohao');
+  normalized_secular_name text := public.clean_yunqi_short_text(entry_payload ->> 'secular_name');
   normalized_current_city text := public.clean_yunqi_short_text(entry_payload ->> 'current_city');
+  normalized_birth_year text := public.clean_yunqi_short_text(entry_payload ->> 'birth_year');
+  normalized_profession text := public.clean_yunqi_short_text(entry_payload ->> 'profession');
+  normalized_referrer_name text := public.clean_yunqi_short_text(entry_payload ->> 'referrer_name');
   normalized_hall_key text := public.clean_yunqi_short_text(entry_payload ->> 'hall_key');
   normalized_hall_other_text text := public.clean_yunqi_short_text(entry_payload ->> 'hall_other_text');
   normalized_entry_intent text := trim(coalesce(entry_payload ->> 'entry_intent', ''));
   normalized_wechat_id text := public.clean_yunqi_short_text(entry_payload ->> 'wechat_id');
+  normalized_social_xiaohongshu_douyin text := public.clean_yunqi_short_text(entry_payload ->> 'social_xiaohongshu_douyin');
+  normalized_social_qq text := public.clean_yunqi_short_text(entry_payload ->> 'social_qq');
+  normalized_social_other text := public.clean_yunqi_short_text(entry_payload ->> 'social_other');
+  normalized_strengths text := trim(coalesce(entry_payload ->> 'strengths', ''));
+  normalized_hobbies text := trim(coalesce(entry_payload ->> 'hobbies', ''));
   normalized_oath_name text := public.clean_yunqi_short_text(entry_payload ->> 'oath_signed_name');
   normalized_oath_date text := trim(coalesce(entry_payload ->> 'oath_signed_date', ''));
   normalized_contribution_level text := coalesce(nullif(public.clean_yunqi_short_text(entry_payload ->> 'contribution_level'), ''), 'focus_on_learning');
@@ -415,6 +426,22 @@ begin
     raise exception '请填写现居洞府';
   end if;
 
+  if normalized_secular_name = '' then
+    raise exception '请填写俗家姓名';
+  end if;
+
+  if normalized_birth_year = '' then
+    raise exception '请填写生年';
+  end if;
+
+  if normalized_profession = '' then
+    raise exception '请填写俗务';
+  end if;
+
+  if normalized_referrer_name = '' then
+    raise exception '请填写引荐人；若无人引荐，请填写“自行登门”';
+  end if;
+
   if normalized_hall_key not in ('yunyi', 'qimo', 'yunshao', 'qiying', 'yunce', 'other') then
     raise exception '请选择正确的归属堂口';
   end if;
@@ -429,6 +456,26 @@ begin
 
   if normalized_wechat_id = '' then
     raise exception '请填写核心传讯微信号';
+  end if;
+
+  if normalized_social_xiaohongshu_douyin = '' then
+    raise exception '请填写小红书或抖音账号';
+  end if;
+
+  if normalized_social_qq = '' then
+    raise exception '请填写 QQ';
+  end if;
+
+  if normalized_social_other = '' then
+    raise exception '请填写其他传讯方式';
+  end if;
+
+  if normalized_strengths = '' then
+    raise exception '请填写身怀所长';
+  end if;
+
+  if normalized_hobbies = '' then
+    raise exception '请填写所好雅事';
   end if;
 
   if normalized_contribution_level not in ('steward', 'help_when_available', 'focus_on_learning') then
@@ -475,21 +522,21 @@ begin
   )
   values (
     normalized_daohao,
-    public.clean_yunqi_short_text(entry_payload ->> 'secular_name'),
+    normalized_secular_name,
     normalized_current_city,
-    public.clean_yunqi_short_text(entry_payload ->> 'birth_year'),
-    public.clean_yunqi_short_text(entry_payload ->> 'profession'),
-    coalesce(nullif(public.clean_yunqi_short_text(entry_payload ->> 'referrer_name'), ''), '自行登门'),
+    normalized_birth_year,
+    normalized_profession,
+    normalized_referrer_name,
     normalized_hall_key,
     normalized_hall_other_text,
     normalized_entry_intent,
     normalized_wechat_id,
-    public.clean_yunqi_short_text(entry_payload ->> 'social_xiaohongshu_douyin'),
-    public.clean_yunqi_short_text(entry_payload ->> 'social_qq'),
-    public.clean_yunqi_short_text(entry_payload ->> 'social_other'),
+    normalized_social_xiaohongshu_douyin,
+    normalized_social_qq,
+    normalized_social_other,
     coalesce((entry_payload ->> 'allow_contact_public')::boolean, false),
-    trim(coalesce(entry_payload ->> 'strengths', '')),
-    trim(coalesce(entry_payload ->> 'hobbies', '')),
+    normalized_strengths,
+    normalized_hobbies,
     free_time_values,
     normalized_contribution_level,
     normalized_oath_name,
@@ -503,6 +550,7 @@ end;
 $$;
 
 -- 这里提供公开名录接口，只返回审核通过且已脱敏的数据。
+drop function if exists public.list_public_roster_entries(text, text, integer, integer);
 create or replace function public.list_public_roster_entries(
   search_keyword text default '',
   hall_filter text default '',
@@ -565,6 +613,7 @@ as $$
 $$;
 
 -- 这里提供公开详情接口，按 slug 返回一条脱敏记录。
+drop function if exists public.get_public_roster_entry_by_slug(text);
 create or replace function public.get_public_roster_entry_by_slug(target_slug text)
 returns table (
   public_slug text,
@@ -608,6 +657,7 @@ as $$
 $$;
 
 -- 这里给后台提供下一个建议文牒号接口，只允许执事调用。
+drop function if exists public.get_next_roster_entry_no();
 create or replace function public.get_next_roster_entry_no()
 returns table (
   next_entry_no integer
@@ -627,6 +677,7 @@ end;
 $$;
 
 -- 这里统一处理后台保存动作，支持全字段编辑、状态修改与文牒号调整。
+drop function if exists public.admin_save_roster_entry(jsonb);
 create or replace function public.admin_save_roster_entry(entry_payload jsonb)
 returns table (
   entry_id uuid,
@@ -643,11 +694,20 @@ declare
   target_status text := public.clean_yunqi_short_text(entry_payload ->> 'status');
   target_entry_no integer := public.parse_yunqi_entry_no(entry_payload ->> 'entry_no');
   target_daohao text := public.clean_yunqi_short_text(entry_payload ->> 'daohao');
+  target_secular_name text := public.clean_yunqi_short_text(entry_payload ->> 'secular_name');
   target_current_city text := public.clean_yunqi_short_text(entry_payload ->> 'current_city');
+  target_birth_year text := public.clean_yunqi_short_text(entry_payload ->> 'birth_year');
+  target_profession text := public.clean_yunqi_short_text(entry_payload ->> 'profession');
+  target_referrer_name text := public.clean_yunqi_short_text(entry_payload ->> 'referrer_name');
   target_hall_key text := public.clean_yunqi_short_text(entry_payload ->> 'hall_key');
   target_hall_other_text text := public.clean_yunqi_short_text(entry_payload ->> 'hall_other_text');
   target_entry_intent text := trim(coalesce(entry_payload ->> 'entry_intent', ''));
   target_wechat_id text := public.clean_yunqi_short_text(entry_payload ->> 'wechat_id');
+  target_social_xiaohongshu_douyin text := public.clean_yunqi_short_text(entry_payload ->> 'social_xiaohongshu_douyin');
+  target_social_qq text := public.clean_yunqi_short_text(entry_payload ->> 'social_qq');
+  target_social_other text := public.clean_yunqi_short_text(entry_payload ->> 'social_other');
+  target_strengths text := trim(coalesce(entry_payload ->> 'strengths', ''));
+  target_hobbies text := trim(coalesce(entry_payload ->> 'hobbies', ''));
   target_contribution_level text := coalesce(nullif(public.clean_yunqi_short_text(entry_payload ->> 'contribution_level'), ''), 'focus_on_learning');
   target_oath_name text := public.clean_yunqi_short_text(entry_payload ->> 'oath_signed_name');
   target_oath_date text := trim(coalesce(entry_payload ->> 'oath_signed_date', ''));
@@ -703,6 +763,22 @@ begin
     raise exception '请填写现居洞府';
   end if;
 
+  if target_secular_name = '' then
+    raise exception '请填写俗家姓名';
+  end if;
+
+  if target_birth_year = '' then
+    raise exception '请填写生年';
+  end if;
+
+  if target_profession = '' then
+    raise exception '请填写俗务';
+  end if;
+
+  if target_referrer_name = '' then
+    raise exception '请填写引荐人；若无人引荐，请填写“自行登门”';
+  end if;
+
   if target_hall_key not in ('yunyi', 'qimo', 'yunshao', 'qiying', 'yunce', 'other') then
     raise exception '请选择正确的归属堂口';
   end if;
@@ -717,6 +793,26 @@ begin
 
   if target_wechat_id = '' then
     raise exception '请填写核心传讯微信号';
+  end if;
+
+  if target_social_xiaohongshu_douyin = '' then
+    raise exception '请填写小红书或抖音账号';
+  end if;
+
+  if target_social_qq = '' then
+    raise exception '请填写 QQ';
+  end if;
+
+  if target_social_other = '' then
+    raise exception '请填写其他传讯方式';
+  end if;
+
+  if target_strengths = '' then
+    raise exception '请填写身怀所长';
+  end if;
+
+  if target_hobbies = '' then
+    raise exception '请填写所好雅事';
   end if;
 
   if target_contribution_level not in ('steward', 'help_when_available', 'focus_on_learning') then
@@ -767,21 +863,21 @@ begin
     status = target_status,
     entry_no = final_entry_no,
     daohao = target_daohao,
-    secular_name = public.clean_yunqi_short_text(entry_payload ->> 'secular_name'),
+    secular_name = target_secular_name,
     current_city = target_current_city,
-    birth_year = public.clean_yunqi_short_text(entry_payload ->> 'birth_year'),
-    profession = public.clean_yunqi_short_text(entry_payload ->> 'profession'),
-    referrer_name = coalesce(nullif(public.clean_yunqi_short_text(entry_payload ->> 'referrer_name'), ''), '自行登门'),
+    birth_year = target_birth_year,
+    profession = target_profession,
+    referrer_name = target_referrer_name,
     hall_key = target_hall_key,
     hall_other_text = target_hall_other_text,
     entry_intent = target_entry_intent,
     wechat_id = target_wechat_id,
-    social_xiaohongshu_douyin = public.clean_yunqi_short_text(entry_payload ->> 'social_xiaohongshu_douyin'),
-    social_qq = public.clean_yunqi_short_text(entry_payload ->> 'social_qq'),
-    social_other = public.clean_yunqi_short_text(entry_payload ->> 'social_other'),
+    social_xiaohongshu_douyin = target_social_xiaohongshu_douyin,
+    social_qq = target_social_qq,
+    social_other = target_social_other,
     allow_contact_public = coalesce((entry_payload ->> 'allow_contact_public')::boolean, false),
-    strengths = trim(coalesce(entry_payload ->> 'strengths', '')),
-    hobbies = trim(coalesce(entry_payload ->> 'hobbies', '')),
+    strengths = target_strengths,
+    hobbies = target_hobbies,
     free_time_slots = free_time_values,
     contribution_level = target_contribution_level,
     oath_signed_name = target_oath_name,
@@ -834,6 +930,7 @@ end;
 $$;
 
 -- 这里统一处理后台删除动作，采用不可恢复的硬删除。
+drop function if exists public.admin_delete_roster_entry(uuid);
 create or replace function public.admin_delete_roster_entry(target_entry_id uuid)
 returns table (
   entry_id uuid

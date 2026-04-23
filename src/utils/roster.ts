@@ -135,7 +135,7 @@ export function normalizeRosterFormValue(form: RosterRegistrationFormValue): Ros
     currentCity: normalizeRosterShortText(form.currentCity),
     birthYear: normalizeRosterShortText(form.birthYear),
     profession: normalizeRosterShortText(form.profession),
-    referrerName: normalizeRosterShortText(form.referrerName, '自行登门'),
+    referrerName: normalizeRosterShortText(form.referrerName),
     hallKey: form.hallKey,
     otherHallText: normalizeRosterShortText(form.otherHallText),
     entryIntent: normalizeRosterLongText(form.entryIntent),
@@ -299,7 +299,7 @@ export function mapRosterFormToSubmitPayload(form: RosterRegistrationFormValue):
     current_city: form.currentCity,
     birth_year: form.birthYear || null,
     profession: form.profession,
-    referrer_name: form.referrerName || '自行登门',
+    referrer_name: form.referrerName,
     hall_key: form.hallKey as RosterHallKey,
     hall_other_text: form.otherHallText,
     entry_intent: form.entryIntent,
@@ -401,8 +401,24 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
     return daohaoError
   }
 
+  if (!form.secularName) {
+    return '请填写俗家姓名'
+  }
+
   if (!form.currentCity) {
     return '请填写现居洞府，至少精确到市'
+  }
+
+  if (!form.birthYear) {
+    return '请填写生年'
+  }
+
+  if (!form.profession) {
+    return '请填写俗务'
+  }
+
+  if (!form.referrerName) {
+    return '请填写引荐人；若无人引荐，请填写“自行登门”'
   }
 
   if (!form.hallKey) {
@@ -419,6 +435,26 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
 
   if (!form.wechatId) {
     return '请填写核心传讯微信号'
+  }
+
+  if (!form.socialXiaohongshuDouyin) {
+    return '请填写小红书或抖音账号'
+  }
+
+  if (!form.socialQq) {
+    return '请填写 QQ'
+  }
+
+  if (!form.socialOther) {
+    return '请填写其他传讯方式'
+  }
+
+  if (!form.strengths) {
+    return '请填写身怀所长'
+  }
+
+  if (!form.hobbies) {
+    return '请填写所好雅事'
   }
 
   if (!form.oathSignedName) {
@@ -449,8 +485,24 @@ export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePay
     return daohaoError
   }
 
+  if (!payload.secularName) {
+    return '请填写俗家姓名'
+  }
+
   if (!payload.currentCity) {
     return '请填写现居洞府'
+  }
+
+  if (!payload.birthYear) {
+    return '请填写生年'
+  }
+
+  if (!payload.profession) {
+    return '请填写俗务'
+  }
+
+  if (!payload.referrerName) {
+    return '请填写引荐人；若无人引荐，请填写“自行登门”'
   }
 
   if (!payload.hallKey) {
@@ -467,6 +519,26 @@ export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePay
 
   if (!payload.wechatId) {
     return '请填写核心传讯'
+  }
+
+  if (!payload.socialXiaohongshuDouyin) {
+    return '请填写小红书或抖音账号'
+  }
+
+  if (!payload.socialQq) {
+    return '请填写 QQ'
+  }
+
+  if (!payload.socialOther) {
+    return '请填写其他传讯方式'
+  }
+
+  if (!payload.strengths) {
+    return '请填写身怀所长'
+  }
+
+  if (!payload.hobbies) {
+    return '请填写所好雅事'
   }
 
   if (!payload.oathSignedName) {
