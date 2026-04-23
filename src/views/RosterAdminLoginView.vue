@@ -22,7 +22,6 @@ const router = useRouter()
 // 这里接入名册鉴权状态，统一管理登录和已登录跳转。
 const {
   isAdmin,
-  isLoading,
   initializeRosterAuth,
   loginRosterAdmin,
 } = useRosterAuth()
@@ -35,6 +34,9 @@ const password = ref<string>('')
 
 // 这里保存页面提示语，给用户明确反馈。
 const actionMessage = ref<string>(rosterContent.admin.loginLead)
+
+// 这里单独记录登录提交状态，避免把初始化鉴权也算成按钮禁用。
+const isSubmitting = ref<boolean>(false)
 
 /**
  * 登录成功后的跳转地址
@@ -52,10 +54,16 @@ function resolveRedirectPath(): string {
  * 返回值：无返回值
  */
 async function handleLogin(): Promise<void> {
+  if (isSubmitting.value) {
+    return
+  }
+
   if (!isSupabaseConfigured()) {
     actionMessage.value = getSupabaseConfigErrorText()
     return
   }
+
+  isSubmitting.value = true
 
   try {
     actionMessage.value = '正在核对执事身份，请稍候...'
@@ -64,14 +72,20 @@ async function handleLogin(): Promise<void> {
     await router.replace(resolveRedirectPath())
   } catch (error) {
     actionMessage.value = error instanceof Error ? error.message : '执事登录失败，请稍后再试'
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 onMounted(async () => {
-  await initializeRosterAuth()
+  try {
+    await initializeRosterAuth()
 
-  if (isAdmin.value) {
-    await router.replace(resolveRedirectPath())
+    if (isAdmin.value) {
+      await router.replace(resolveRedirectPath())
+    }
+  } catch (error) {
+    actionMessage.value = error instanceof Error ? error.message : '执事登录页初始化失败，请稍后再试'
   }
 })
 </script>
@@ -93,29 +107,30 @@ onMounted(async () => {
           <p>{{ isSupabaseConfigured() ? actionMessage : getSupabaseConfigErrorText() }}</p>
         </div>
 
-        <label class="roster-admin-login-field">
-          <span>执事邮箱</span>
-          <input v-model="email" class="roster-admin-login-input" autocomplete="username" placeholder="请输入执事邮箱" type="email" />
-        </label>
+        <form class="roster-admin-login-form" @submit.prevent="handleLogin">
+          <label class="roster-admin-login-field">
+            <span>执事邮箱</span>
+            <input v-model="email" class="roster-admin-login-input" autocomplete="username" placeholder="请输入执事邮箱" type="email" />
+          </label>
 
-        <label class="roster-admin-login-field">
-          <span>登录密码</span>
-          <input v-model="password" class="roster-admin-login-input" autocomplete="current-password" placeholder="请输入登录密码" type="password" />
-        </label>
+          <label class="roster-admin-login-field">
+            <span>登录密码</span>
+            <input v-model="password" class="roster-admin-login-input" autocomplete="current-password" placeholder="请输入登录密码" type="password" />
+          </label>
 
-        <div class="roster-admin-login-actions">
-          <button
-            type="button"
-            class="ink-button ink-button--primary"
-            :disabled="isLoading || !isSupabaseConfigured()"
-            @click="handleLogin"
-          >
-            {{ isLoading ? '登录中...' : rosterContent.admin.loginButton }}
-          </button>
-          <RouterLink class="ink-button ink-button--ghost" to="/roster/list">
-            返回公开名录
-          </RouterLink>
-        </div>
+          <div class="roster-admin-login-actions">
+            <button
+              type="submit"
+              class="ink-button ink-button--primary"
+              :disabled="isSubmitting || !isSupabaseConfigured()"
+            >
+              {{ isSubmitting ? '登录中...' : rosterContent.admin.loginButton }}
+            </button>
+            <RouterLink class="ink-button ink-button--ghost" to="/roster/list">
+              返回公开名录
+            </RouterLink>
+          </div>
+        </form>
       </article>
 
       <article class="content-card content-card--soft">
@@ -174,6 +189,11 @@ onMounted(async () => {
 .roster-admin-login-field {
   display: grid;
   gap: 10px;
+}
+
+.roster-admin-login-form {
+  display: grid;
+  gap: 18px;
 }
 
 .roster-admin-login-field span {
