@@ -1163,7 +1163,19 @@ onBeforeUnmount(() => {
           </p>
 
           <div class="assessment-result__actions">
-            <button type="button" class="ink-button ink-button--primary" @click="restartExam">
+            <RouterLink
+              v-if="latestResult.passed"
+              to="/roster"
+              class="ink-button ink-button--primary"
+            >
+              前往云栖名册登记
+            </RouterLink>
+            <button
+              type="button"
+              class="ink-button"
+              :class="latestResult.passed ? 'ink-button--secondary' : 'ink-button--primary'"
+              @click="restartExam"
+            >
               重新考核
             </button>
             <RouterLink to="/canon" class="ink-button ink-button--ghost">

@@ -5,6 +5,12 @@ import { siteContent } from '@/data/siteContent'
 
 // 这里生成年份文本，方便页脚展示当前年份。
 const currentYear = computed(() => new Date().getFullYear())
+
+// 这里把云栖名册入口补到页脚导航，方便从站尾也能直接进入。
+const navItems = computed(() => ([
+  ...siteContent.navItems,
+  { label: '云栖名册', path: '/roster/list', hint: '线上入册' },
+]))
 </script>
 
 <template>
@@ -18,7 +24,7 @@ const currentYear = computed(() => new Date().getFullYear())
 
       <div class="site-footer__links">
         <RouterLink
-          v-for="item in siteContent.navItems"
+          v-for="item in navItems"
           :key="item.path"
           :to="item.path"
           class="site-footer__link"

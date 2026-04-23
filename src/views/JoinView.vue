@@ -93,6 +93,39 @@ useRevealMotion({
 
     <section class="content-section" data-reveal>
       <div class="section-heading">
+        <p class="eyebrow">云栖名册</p>
+        <h2>考核通过后，可再递上一份正式入册文牒</h2>
+        <p>
+          江湖名帖更像个人风格名帖，而云栖名册是正式门籍流程。你可以在线填写入册文牒，提交后立刻生成待审核名帖，待执事批阅后转为正式入册名帖并进入公开名录。
+        </p>
+      </div>
+
+      <div class="split-showcase">
+        <article class="content-card content-card--soft">
+          <p class="content-card__eyebrow">线上登记</p>
+          <h3>长表单分段填写，公开信息严格脱敏</h3>
+          <p>
+            这套流程会把江湖名号、法号、堂口、入派本心与所长雅事整理成正式门籍文牒。俗家姓名、微信号、现居洞府等敏感信息只入库审核，不会出现在公开名帖与公开名录里。
+          </p>
+        </article>
+
+        <article class="content-card content-card--serif">
+          <p class="content-card__eyebrow">进入名册</p>
+          <h3>先看公开名录，也可直接去递交文牒</h3>
+          <div class="page-banner__actions">
+            <RouterLink class="ink-button ink-button--primary" to="/roster">
+              前往云栖名册登记
+            </RouterLink>
+            <RouterLink class="ink-button ink-button--ghost" to="/roster/list">
+              浏览公开名录
+            </RouterLink>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-section" data-reveal>
+      <div class="section-heading">
         <p class="eyebrow">江湖名帖</p>
         <h2>填好名号与缘起，就能立成一张云栖江湖正帖</h2>
         <p>

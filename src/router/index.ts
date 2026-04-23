@@ -8,8 +8,13 @@ import JoinView from '@/views/JoinView.vue'
 import LifeView from '@/views/LifeView.vue'
 import MemberCardView from '@/views/MemberCardView.vue'
 import PosterView from '@/views/PosterView.vue'
+import RosterAdminLoginView from '@/views/RosterAdminLoginView.vue'
+import RosterAdminView from '@/views/RosterAdminView.vue'
+import RosterEntryDetailView from '@/views/RosterEntryDetailView.vue'
+import RosterListView from '@/views/RosterListView.vue'
+import RosterRegistrationView from '@/views/RosterRegistrationView.vue'
 
-// 这里集中定义全站路由，方便后续继续扩展活动页或专题页。
+// 这里集中定义全站路由，方便后续继续扩展专题页与工作台。
 export const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -59,14 +64,49 @@ export const routes: RouteRecordRaw[] = [
     component: MemberCardView,
     meta: { title: '江湖名帖' },
   },
+  {
+    path: '/roster',
+    name: 'rosterRegistration',
+    component: RosterRegistrationView,
+    meta: { title: '云栖名册登记' },
+  },
+  {
+    path: '/roster/list',
+    name: 'rosterList',
+    component: RosterListView,
+    meta: { title: '云栖名册' },
+  },
+  {
+    path: '/roster/entry/:publicSlug',
+    name: 'rosterEntryDetail',
+    component: RosterEntryDetailView,
+    meta: { title: '云栖名帖详情' },
+  },
+  {
+    path: '/roster/admin/login',
+    name: 'rosterAdminLogin',
+    component: RosterAdminLoginView,
+    meta: { title: '名册审核登录' },
+  },
+  {
+    path: '/roster/admin',
+    name: 'rosterAdmin',
+    component: RosterAdminView,
+    meta: { title: '名册审核台', requiresRosterAdmin: true },
+  },
 ]
 
-// 这里创建路由实例，负责整站页面切换与滚动行为。
+// 这里创建路由实例，统一负责全站页面切换和滚动行为。
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to) {
-    // 如果跳转到了锚点，就平滑滚到对应章节。
+  scrollBehavior(to, _from, savedPosition) {
+    // 这里优先恢复浏览器记住的位置，避免前进后退时滚动体验跳动。
+    if (savedPosition) {
+      return savedPosition
+    }
+
+    // 这里遇到锚点时平滑滚到对应位置，并给固定页头预留空间。
     if (to.hash) {
       return {
         el: to.hash,
@@ -75,10 +115,10 @@ export const router = createRouter({
       }
     }
 
-    // 普通页面切换时回到顶部，避免残留旧页面滚动位置。
+    // 这里普通页面切换直接回到顶部，避免残留旧页面滚动位置。
     return {
       top: 0,
-      behavior: 'smooth',
+      behavior: 'auto',
     }
   },
 })
