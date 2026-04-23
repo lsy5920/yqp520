@@ -476,7 +476,12 @@ onMounted(() => {
 @media (max-width: 720px) {
   .roster-list-toolbar__actions {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
+  }
+
+  .roster-list-toolbar__actions > *:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 
   .roster-list-grid {

@@ -941,11 +941,16 @@ onBeforeUnmount(() => {
   }
 
   .poster-studio__actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .poster-studio__button {
     width: 100%;
+  }
+
+  .poster-studio__button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 
   .poster-studio__meta {

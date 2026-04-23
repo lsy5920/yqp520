@@ -1830,7 +1830,6 @@ onBeforeUnmount(() => {
 
 @media (max-width: 920px) {
   .roster-admin-toolbar__head,
-  .roster-admin-review-actions,
   .roster-admin-drawer__head,
   .roster-admin-drawer__head-actions,
   .roster-admin-danger-row {
@@ -1860,6 +1859,18 @@ onBeforeUnmount(() => {
     border-radius: 22px;
   }
 
+  .roster-admin-review-actions,
+  .roster-admin-drawer__head-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .roster-admin-review-actions > *:last-child:nth-child(odd),
+  .roster-admin-drawer__head-actions > *:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .roster-admin-toolbar__chips,
   .roster-admin-choice-row {
     gap: 8px;
@@ -1871,8 +1882,21 @@ onBeforeUnmount(() => {
     min-height: 36px;
     padding: 0 12px;
     font-size: 0.86rem;
-    width: 100%;
     justify-content: center;
+  }
+
+  .roster-admin-toolbar__chip,
+  .roster-admin-choice-chip {
+    width: 100%;
+  }
+
+  .roster-admin-review-actions .ink-button,
+  .roster-admin-drawer__head-actions > button {
+    width: 100%;
+  }
+
+  .roster-admin-danger-button {
+    width: 100%;
   }
 }
 </style>

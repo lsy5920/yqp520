@@ -44,7 +44,17 @@ useRevealMotion({
 
 @media (max-width: 720px) {
   .member-card-view__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+
+  .member-card-view__actions > * {
+    width: 100%;
+  }
+
+  .member-card-view__actions > *:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 </style>

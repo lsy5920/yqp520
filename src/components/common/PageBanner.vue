@@ -57,12 +57,17 @@ withDefaults(
   }
 
   .page-banner__actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
   }
 
   .page-banner__actions :deep(.ink-button) {
     width: 100%;
+  }
+
+  .page-banner__actions :deep(.ink-button:last-child:nth-child(odd)) {
+    grid-column: 1 / -1;
   }
 }
 </style>

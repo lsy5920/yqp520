@@ -821,14 +821,18 @@ function handleSelectGender(value: RosterGender): void {
     border-radius: 22px;
   }
 
-  .roster-registration-submit__actions,
-  .roster-registration-choice-row {
-    flex-direction: column;
+  .roster-registration-submit__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .roster-registration-submit__actions .ink-button,
   .roster-registration-choice {
     width: 100%;
+  }
+
+  .roster-registration-submit__actions .ink-button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 </style>

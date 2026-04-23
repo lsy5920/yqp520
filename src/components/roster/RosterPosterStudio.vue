@@ -794,11 +794,16 @@ onBeforeUnmount(() => {
   }
 
   .roster-poster-studio__actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .roster-poster-studio__button {
     width: 100%;
+  }
+
+  .roster-poster-studio__button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 
   .roster-poster-studio__meta {

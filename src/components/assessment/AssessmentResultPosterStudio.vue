@@ -797,11 +797,16 @@ onBeforeUnmount(() => {
   }
 
   .assessment-result-poster-studio__actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .assessment-result-poster-studio__button {
     width: 100%;
+  }
+
+  .assessment-result-poster-studio__button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 
   .assessment-result-poster-studio__meta {

@@ -2281,7 +2281,8 @@ onBeforeUnmount(() => {
   .assessment-result__actions,
   .assessment-result__wrong-actions,
   .assessment-exam__resume-actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
   }
 
@@ -2291,6 +2292,14 @@ onBeforeUnmount(() => {
   .assessment-result__wrong-actions .ink-button,
   .assessment-exam__resume-actions .ink-button {
     width: 100%;
+  }
+
+  .assessment-ready__actions .ink-button:last-child:nth-child(odd),
+  .assessment-exam__actions .ink-button:last-child:nth-child(odd),
+  .assessment-result__actions .ink-button:last-child:nth-child(odd),
+  .assessment-result__wrong-actions .ink-button:last-child:nth-child(odd),
+  .assessment-exam__resume-actions .ink-button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 
   .assessment-exam__section-track {
@@ -2328,7 +2337,7 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__actions .ink-button {
-    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .assessment-result__stat-card,
