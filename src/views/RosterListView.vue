@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
 import RosterRegistrationPosterStudio from '@/components/roster/RosterRegistrationPosterStudio.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
@@ -16,6 +16,9 @@ const pageRef = ref<HTMLElement | null>(null)
 useRevealMotion({
   rootRef: pageRef,
 })
+
+// 这里拿到路由实例，供工具栏按钮做显式跳转，避免桌面端复杂层级下点击看起来没有反应。
+const router = useRouter()
 
 // 这里保存搜索关键字，供名录检索使用。
 const keyword = ref<string>('')
@@ -41,6 +44,26 @@ let searchTimer: number | null = null
  * 入参：无
  * 返回值：无返回值
  */
+/**
+ * 前往名册登记页
+ * 用途：工具栏主按钮点击后显式跳转到登记页
+ * 入参：无
+ * 返回值：无返回值
+ */
+function handleGoToRegistration(): void {
+  void router.push('/roster')
+}
+
+/**
+ * 前往执事登录页
+ * 用途：工具栏管理入口点击后显式跳转到登录页，减少按钮被布局覆盖时的无响应体感
+ * 入参：无
+ * 返回值：无返回值
+ */
+function handleGoToAdminLogin(): void {
+  void router.push('/roster/admin/login')
+}
+
 async function loadEntryList(): Promise<void> {
   if (!isSupabaseConfigured()) {
     errorMessage.value = getSupabaseConfigErrorText()
@@ -107,12 +130,12 @@ onMounted(() => {
         </div>
 
         <div class="roster-list-toolbar__actions">
-          <RouterLink class="ink-button ink-button--primary" to="/roster">
+          <button type="button" class="ink-button ink-button--primary" @click="handleGoToRegistration">
             {{ rosterContent.list.registerButton }}
-          </RouterLink>
-          <RouterLink class="ink-button ink-button--ghost" to="/roster/admin/login">
+          </button>
+          <button type="button" class="ink-button ink-button--ghost" @click="handleGoToAdminLogin">
             {{ rosterContent.list.adminButton }}
-          </RouterLink>
+          </button>
         </div>
       </div>
 
@@ -228,6 +251,12 @@ onMounted(() => {
   gap: 30px;
 }
 
+.roster-list-toolbar {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+}
+
 .roster-list-toolbar,
 .roster-list-poster,
 .roster-list-grid {
@@ -247,6 +276,8 @@ onMounted(() => {
 }
 
 .roster-list-toolbar__actions {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;

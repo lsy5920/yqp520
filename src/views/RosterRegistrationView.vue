@@ -8,7 +8,6 @@ import {
   rosterFreeTimeOptions,
   rosterGenderOptions,
   rosterHallOptions,
-  rosterRegistrationSections,
 } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { checkRosterDaohaoAvailable, submitRosterEntry } from '@/services/roster'
@@ -217,55 +216,7 @@ function handleSelectGender(value: RosterGender): void {
       </div>
     </section>
 
-    <section class="roster-registration-outline content-card">
-      <div class="roster-registration-outline__head">
-        <div>
-          <p class="content-card__eyebrow">登记分段</p>
-          <h2>长表单按六段展开，便于逐步立名、立身、立誓</h2>
-        </div>
-        <RouterLink class="ink-button ink-button--ghost" to="/roster/list">
-          去看公开名录
-        </RouterLink>
-      </div>
-
-      <div class="roster-registration-outline__grid">
-        <article
-          v-for="section in rosterRegistrationSections"
-          :key="section.key"
-          class="roster-registration-outline__item"
-        >
-          <p>{{ section.eyebrow }}</p>
-          <strong>{{ section.title }}</strong>
-          <span>{{ section.description }}</span>
-        </article>
-      </div>
-    </section>
-
     <section class="roster-registration-shell">
-      <aside class="roster-registration-side">
-        <article class="content-card content-card--soft">
-          <p class="content-card__eyebrow">填写说明</p>
-          <h3>公开展示只取最克制字段</h3>
-          <ul class="list-column">
-            <li v-for="line in rosterContent.privacyNotes" :key="line">{{ line }}</li>
-          </ul>
-        </article>
-
-        <article class="content-card content-card--serif">
-          <p class="content-card__eyebrow">道号提示</p>
-          <h3>道号会成为公开页与名帖的唯一称呼</h3>
-          <ul class="list-column">
-            <li v-for="line in rosterContent.daohaoTips" :key="line">{{ line }}</li>
-          </ul>
-        </article>
-
-        <article class="content-card">
-          <p class="content-card__eyebrow">当前提示</p>
-          <h3>{{ hasSupabaseError ? '尚未连上名册数据库' : '文牒可随时递交' }}</h3>
-          <p>{{ hasSupabaseError ? supabaseErrorText : actionMessage }}</p>
-        </article>
-      </aside>
-
       <article class="roster-registration-form">
         <section class="roster-registration-card">
           <div class="roster-registration-card__head">
@@ -534,7 +485,6 @@ function handleSelectGender(value: RosterGender): void {
 }
 
 .roster-registration-alert,
-.roster-registration-outline,
 .roster-registration-shell {
   display: grid;
   gap: 20px;
@@ -588,69 +538,13 @@ function handleSelectGender(value: RosterGender): void {
   line-height: 1.78;
 }
 
-.roster-registration-outline__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.roster-registration-outline__head h2 {
-  margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2.2rem);
-  line-height: 1.24;
-}
-
-.roster-registration-outline__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.roster-registration-outline__item {
-  display: grid;
-  gap: 8px;
-  padding: 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(7, 27, 37, 0.46);
-}
-
-.roster-registration-outline__item p,
-.roster-registration-outline__item strong,
-.roster-registration-outline__item span {
-  margin: 0;
-}
-
-.roster-registration-outline__item p {
-  color: var(--color-cyan);
-  letter-spacing: 0.14em;
-  font-size: 0.82rem;
-}
-
-.roster-registration-outline__item strong {
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-.roster-registration-outline__item span {
-  color: var(--color-text-soft);
-  font-size: 0.9rem;
-  line-height: 1.72;
-}
-
 .roster-registration-shell {
-  grid-template-columns: minmax(280px, 0.76fr) minmax(0, 1.24fr);
-  align-items: start;
+  width: 100%;
 }
 
-.roster-registration-side,
 .roster-registration-form {
   display: grid;
   gap: 18px;
-}
-
-.roster-registration-form {
   min-width: 0;
 }
 
@@ -857,9 +751,8 @@ function handleSelectGender(value: RosterGender): void {
 
 .roster-registration-submit {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .roster-registration-submit__message {
@@ -881,7 +774,6 @@ function handleSelectGender(value: RosterGender): void {
 
 @media (max-width: 1180px) {
   .roster-registration-alert__grid,
-  .roster-registration-outline__grid,
   .roster-registration-shell {
     grid-template-columns: 1fr;
   }
@@ -892,10 +784,6 @@ function handleSelectGender(value: RosterGender): void {
   .roster-registration-option-grid,
   .roster-registration-submit {
     grid-template-columns: 1fr;
-  }
-
-  .roster-registration-outline__head {
-    flex-direction: column;
   }
 }
 
