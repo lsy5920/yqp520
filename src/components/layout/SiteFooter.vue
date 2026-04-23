@@ -10,6 +10,7 @@ const currentYear = computed(() => new Date().getFullYear())
 const navItems = computed(() => ([
   ...siteContent.navItems,
   { label: '云栖名册', path: '/roster/list', hint: '线上入册' },
+  { label: '执事审核', path: '/roster/admin/login', hint: '管理入口' },
 ]))
 </script>
 

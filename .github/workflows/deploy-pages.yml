@@ -32,9 +32,22 @@ jobs:
       - name: 安装项目依赖
         run: npm ci
 
+      - name: 校验名册部署变量
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "缺少 GitHub 仓库变量：VITE_SUPABASE_URL 或 VITE_SUPABASE_ANON_KEY"
+            echo "请先在仓库的 Settings -> Secrets and variables -> Actions -> Variables 中补齐。"
+            exit 1
+          fi
+
       - name: 构建 GitHub Pages 产物
         env:
           VITE_BASE_PATH: /yqp520/
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: npm run build:pages
 
       - name: 配置 GitHub Pages

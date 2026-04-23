@@ -25,7 +25,7 @@ export function getSupabaseConfigErrorText(): string {
     return ''
   }
 
-  return '当前还没有配置 Supabase 环境变量，请先在项目根目录创建 .env.local 并补齐 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY。'
+  return '当前还没有配置 Supabase 环境变量。本地开发请在项目根目录创建 .env.local 并补齐 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY；若你是在 GitHub Pages 线上站点看到这条提示，请检查仓库 Actions Variables 是否已配置这两个变量并重新部署。'
 }
 
 // 这里延迟保存客户端实例，确保整个站点只创建一份连接。

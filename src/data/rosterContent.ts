@@ -318,6 +318,8 @@ export const rosterContent = {
     emptyTitle: '当前还没有符合条件的入册条目',
     emptyDescription: '可以先放宽搜索或筛选条件，也可先递交自己的入册文牒。',
     registerButton: '我要登记入册',
+    adminButton: '执事管理入口',
+    adminHint: '执事可从此处登录审核台，查看原始登记资料并执行准予、暂缓或不予收录。',
   },
   detail: {
     pendingTitle: '待审核名帖',

@@ -104,10 +104,19 @@ onMounted(() => {
           <p>{{ errorMessage || `当前共收录 ${entryList.length} 条公开记录，可按名号、法号或堂口筛选。` }}</p>
         </div>
 
-        <RouterLink class="ink-button ink-button--primary" to="/roster">
-          {{ rosterContent.list.registerButton }}
-        </RouterLink>
+        <div class="roster-list-toolbar__actions">
+          <RouterLink class="ink-button ink-button--primary" to="/roster">
+            {{ rosterContent.list.registerButton }}
+          </RouterLink>
+          <RouterLink class="ink-button ink-button--ghost" to="/roster/admin/login">
+            {{ rosterContent.list.adminButton }}
+          </RouterLink>
+        </div>
       </div>
+
+      <p class="roster-list-toolbar__admin-note">
+        {{ rosterContent.list.adminHint }}
+      </p>
 
       <div class="roster-list-toolbar__controls">
         <label class="roster-list-toolbar__search">
@@ -226,6 +235,13 @@ onMounted(() => {
   gap: 18px;
 }
 
+.roster-list-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .roster-list-toolbar__head h2 {
   margin: 0 0 12px;
   font-size: clamp(1.5rem, 3vw, 2.2rem);
@@ -236,6 +252,12 @@ onMounted(() => {
   margin: 0;
   color: var(--color-text-soft);
   line-height: 1.78;
+}
+
+.roster-list-toolbar__admin-note {
+  margin: 0;
+  color: rgba(248, 237, 204, 0.74);
+  line-height: 1.74;
 }
 
 .roster-list-toolbar__controls {
@@ -434,9 +456,18 @@ onMounted(() => {
   .roster-list-toolbar__head {
     flex-direction: column;
   }
+
+  .roster-list-toolbar__actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 720px) {
+  .roster-list-toolbar__actions {
+    display: grid;
+    width: 100%;
+  }
+
   .roster-list-grid {
     grid-template-columns: 1fr;
   }
