@@ -3,6 +3,12 @@ import { readonly, ref } from 'vue'
 // 这里定义存储模式类型，方便页面知道当前是本地持久记录还是仅当前会话可用。
 type AssessmentStorageMode = 'local' | 'session'
 
+// 这里集中定义考核草稿存储键名，方便答题页和其他页面统一复用。
+export const ASSESSMENT_DRAFT_STORAGE_KEY = 'yunqi-assessment-draft'
+
+// 这里集中定义考核结果存储键名，方便名册登记页读取最近一次考核资格。
+export const ASSESSMENT_RESULT_STORAGE_KEY = 'yunqi-assessment-result'
+
 // 这里导出考核专用存储工具，统一兜底本地存储不可用的情况。
 export function useAssessmentStorage() {
   // 这里记录当前存储模式，默认先按本地持久模式处理。

@@ -19,21 +19,10 @@ interface FlattenedAssessmentQuestion extends AssessmentQuestion {
 }
 
 /**
- * 错题章节导航项
- * 用途：让错题解析区也能按章节快速切换到对应错题
+ * 章节切换来源
+ * 用途：区分手动切章、题号或下一题跨章，以及弹窗打开时的回位方式
  */
-interface WrongQuestionSectionNavItem {
-  /** 用途：章节唯一标识 */
-  sectionId: string
-  /** 用途：章节标题 */
-  title: string
-  /** 用途：章节眉题 */
-  eyebrow: string
-  /** 用途：该章节下首道错题 id */
-  firstQuestionId: string
-  /** 用途：该章节下错题数量 */
-  wrongCount: number
-}
+type ExamSectionSwitchSource = 'manual' | 'question-nav' | 'dialog-open'
 
 // 这里拿到页面根节点，供静态区块做统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
@@ -61,8 +50,8 @@ const activeExamQuestionId = ref<string>('')
 // 这里临时记住跨章节点击的目标题目 id，等章节切过去后再把那一题激活。
 const pendingExamQuestionId = ref<string>('')
 
-// 这里记录错题解析当前正在看的那一道错题 id，方便结果页按题号逐题切换。
-const activeWrongQuestionId = ref<string>('')
+// 这里记录当前章节切换是由什么动作触发的，避免“下一题跨章”时误把弹窗滚回章节开头。
+const examSectionSwitchSource = ref<ExamSectionSwitchSource>('dialog-open')
 
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
@@ -203,103 +192,6 @@ const examQuestionOrderList = computed(() => flatExamQuestions.value.map((questi
 }))
 
 /**
- * 是否存在错题
- * 用途：结果页决定展示逐题错题解析工作台，还是显示“本次没有错题”
- */
-const hasWrongQuestions = computed<boolean>(() => Boolean(latestResult.value && latestResult.value.wrongQuestions.length > 0))
-
-/**
- * 当前正在看的错题
- * 用途：错题解析区只展示这一题，实现一题一题回看
- */
-const activeWrongQuestion = computed(() => {
-  if (!latestResult.value) {
-    return null
-  }
-
-  return latestResult.value.wrongQuestions.find((question) => question.questionId === activeWrongQuestionId.value) ?? null
-})
-
-/**
- * 当前错题在错题列表中的下标
- * 用途：控制错题解析区的上一题、下一题切换
- */
-const activeWrongQuestionIndex = computed<number>(() => {
-  if (!latestResult.value) {
-    return -1
-  }
-
-  return latestResult.value.wrongQuestions.findIndex((question) => question.questionId === activeWrongQuestionId.value)
-})
-
-/**
- * 错题题号导航列表
- * 用途：结果页按错题题号快速切换，方便直接跳到某一道错题
- */
-const wrongQuestionOrderList = computed(() => {
-  if (!latestResult.value) {
-    return []
-  }
-
-  return latestResult.value.wrongQuestions.map((question) => ({
-    id: question.questionId,
-    order: question.order,
-    sectionId: question.sectionId,
-    isActive: question.questionId === activeWrongQuestionId.value,
-  }))
-})
-
-/**
- * 错题章节导航列表
- * 用途：错题解析区支持按章节跳转到本章第一道错题
- */
-const wrongQuestionSectionList = computed<WrongQuestionSectionNavItem[]>(() => {
-  if (!latestResult.value) {
-    return []
-  }
-
-  return sectionBundles.value.flatMap((section) => {
-    const wrongQuestions = latestResult.value?.wrongQuestions.filter((question) => question.sectionId === section.id) ?? []
-
-    if (wrongQuestions.length === 0) {
-      return []
-    }
-
-    const firstWrongQuestion = wrongQuestions[0]
-
-    if (!firstWrongQuestion) {
-      return []
-    }
-
-    return [{
-      sectionId: section.id,
-      title: section.title,
-      eyebrow: section.eyebrow,
-      firstQuestionId: firstWrongQuestion.questionId,
-      wrongCount: wrongQuestions.length,
-    }]
-  })
-})
-
-/**
- * 当前错题是否已经到第一题
- * 用途：控制错题解析上一题按钮是否禁用
- */
-const isFirstWrongQuestion = computed<boolean>(() => activeWrongQuestionIndex.value <= 0)
-
-/**
- * 当前错题是否已经到最后一题
- * 用途：控制错题解析下一题按钮是否禁用
- */
-const isLastWrongQuestion = computed<boolean>(() => {
-  if (!latestResult.value || activeWrongQuestionIndex.value < 0) {
-    return false
-  }
-
-  return activeWrongQuestionIndex.value >= latestResult.value.wrongQuestions.length - 1
-})
-
-/**
  * 最近一次交卷时间文本
  * 用途：结果页和结果海报都要展示本次完成时间
  */
@@ -398,10 +290,14 @@ function syncActiveExamQuestion(preferredQuestionId = ''): void {
 /**
  * 点击章节时切换章节
  * 用途：支持用户直接点章节选择，不必只能顺着上一章和下一章慢慢切
- * 入参：sectionIndex 为目标题章节下标，preferredQuestionId 为切换后优先展示的题目 id
+ * 入参：sectionIndex 为目标题章节下标，preferredQuestionId 为切换后优先展示的题目 id，switchSource 为本次切章来源
  * 返回值：无返回值
  */
-function handleSelectExamSection(sectionIndex: number, preferredQuestionId = ''): void {
+function handleSelectExamSection(
+  sectionIndex: number,
+  preferredQuestionId = '',
+  switchSource: ExamSectionSwitchSource = 'manual',
+): void {
   if (sectionIndex === currentSectionIndex.value) {
     if (preferredQuestionId) {
       syncActiveExamQuestion(preferredQuestionId)
@@ -416,6 +312,7 @@ function handleSelectExamSection(sectionIndex: number, preferredQuestionId = '')
   }
 
   pendingExamQuestionId.value = preferredQuestionId
+  examSectionSwitchSource.value = switchSource
   setCurrentSectionIndex(sectionIndex)
 }
 
@@ -433,7 +330,7 @@ function handleSelectExamQuestion(questionId: string): void {
   }
 
   if (matchedQuestion.sectionIndex !== currentSectionIndex.value) {
-    handleSelectExamSection(matchedQuestion.sectionIndex, matchedQuestion.id)
+    handleSelectExamSection(matchedQuestion.sectionIndex, matchedQuestion.id, 'question-nav')
     return
   }
 
@@ -479,76 +376,6 @@ function goToNextExamQuestion(): void {
   }
 
   handleSelectExamQuestion(nextQuestion.id)
-}
-
-/**
- * 点击错题题号时切换到指定错题
- * 用途：错题解析区可以像答题区一样，快速跳到某一道具体错题
- * 入参：questionId 为目标错题 id
- * 返回值：无返回值
- */
-function handleSelectWrongQuestion(questionId: string): void {
-  if (!latestResult.value || !latestResult.value.wrongQuestions.some((question) => question.questionId === questionId)) {
-    return
-  }
-
-  activeWrongQuestionId.value = questionId
-}
-
-/**
- * 点击错题章节时切换到本章第一道错题
- * 用途：结果页支持按章节复盘，不必一题题顺着翻找
- * 入参：sectionId 为目标章节 id
- * 返回值：无返回值
- */
-function handleSelectWrongSection(sectionId: string): void {
-  const matchedSection = wrongQuestionSectionList.value.find((section) => section.sectionId === sectionId)
-
-  if (!matchedSection) {
-    return
-  }
-
-  activeWrongQuestionId.value = matchedSection.firstQuestionId
-}
-
-/**
- * 切到上一道错题
- * 用途：错题解析区提供连续翻题操作，方便顺着复盘
- * 入参：无
- * 返回值：无返回值
- */
-function goToPreviousWrongQuestion(): void {
-  if (!latestResult.value || activeWrongQuestionIndex.value <= 0) {
-    return
-  }
-
-  const previousQuestion = latestResult.value.wrongQuestions[activeWrongQuestionIndex.value - 1]
-
-  if (!previousQuestion) {
-    return
-  }
-
-  activeWrongQuestionId.value = previousQuestion.questionId
-}
-
-/**
- * 切到下一道错题
- * 用途：错题解析区提供连续翻题操作，方便快速浏览后续错题
- * 入参：无
- * 返回值：无返回值
- */
-function goToNextWrongQuestion(): void {
-  if (!latestResult.value || activeWrongQuestionIndex.value < 0 || activeWrongQuestionIndex.value >= latestResult.value.wrongQuestions.length - 1) {
-    return
-  }
-
-  const nextQuestion = latestResult.value.wrongQuestions[activeWrongQuestionIndex.value + 1]
-
-  if (!nextQuestion) {
-    return
-  }
-
-  activeWrongQuestionId.value = nextQuestion.questionId
 }
 
 /** 用途：给考核弹窗开关统一加一个页面锁，避免底下正文跟着滚动。 */
@@ -657,6 +484,7 @@ async function openExamDialog(shouldRestoreScroll = false): Promise<void> {
     return
   }
 
+  examSectionSwitchSource.value = 'dialog-open'
   scrollExamDialogToBodyStart()
 }
 
@@ -729,7 +557,7 @@ watch(
   },
 )
 
-// 这里监听章节切换，确保点击上一章或下一章后回到当前章节开头，而不是停在列表中段。
+// 这里监听章节切换，只在手动切章节时把弹窗滚回章节开头，避免“下一题跨章”突然跳动。
 watch(
   currentSectionIndex,
   async (nextSectionIndex, previousSectionIndex) => {
@@ -738,6 +566,13 @@ watch(
       || !isExamDialogVisible.value
       || nextSectionIndex === previousSectionIndex
     ) {
+      return
+    }
+
+    const currentSwitchSource = examSectionSwitchSource.value
+    examSectionSwitchSource.value = 'manual'
+
+    if (currentSwitchSource !== 'manual') {
       return
     }
 
@@ -758,17 +593,6 @@ watch(
 
     syncActiveExamQuestion(pendingExamQuestionId.value)
     pendingExamQuestionId.value = ''
-  },
-  {
-    immediate: true,
-  },
-)
-
-// 这里监听最近一次结果，结果页出现后默认先落到第一道错题，方便立即开始复盘。
-watch(
-  latestResult,
-  (result) => {
-    activeWrongQuestionId.value = result?.wrongQuestions[0]?.questionId ?? ''
   },
   {
     immediate: true,
@@ -1185,7 +1009,7 @@ onBeforeUnmount(() => {
           </div>
 
           <p v-if="shouldShowRetakeNotice" class="assessment-result__retake-note">
-            建议三日后补考。首版暂不做本地强锁，你可以先看完错题解析与原文出处，再决定何时重考。
+            建议三日后补考。首版暂不做本地强锁，你可以先阅立派全典，再决定何时重考。
           </p>
 
           <div class="assessment-result__actions">
@@ -1198,122 +1022,20 @@ onBeforeUnmount(() => {
             </RouterLink>
             <button
               type="button"
-              class="ink-button"
-              :class="latestResult.passed ? 'ink-button--secondary' : 'ink-button--primary'"
+              class="ink-button ink-button--secondary"
               @click="restartExam"
             >
               重新考核
             </button>
-            <RouterLink to="/canon" class="ink-button ink-button--ghost">
+            <RouterLink
+              to="/canon"
+              class="ink-button"
+              :class="latestResult.passed ? 'ink-button--ghost' : 'ink-button--primary'"
+            >
               去看立派全典
             </RouterLink>
           </div>
         </article>
-
-        <section class="content-section">
-          <div class="section-heading">
-            <p class="eyebrow">错题解析</p>
-            <h2>交卷后逐题回看，错在何处，一眼看清</h2>
-            <p>错题解析现在也改成一题一题展示，可按章节和题号快速切换，复盘时更聚焦。</p>
-          </div>
-
-          <div v-if="hasWrongQuestions" class="assessment-result__wrong-workspace">
-            <article class="content-card content-card--soft assessment-result__wrong-nav-card">
-              <div class="assessment-result__wrong-nav-head">
-                <div>
-                  <p class="eyebrow">错题定位</p>
-                  <h3>先选章节，再按题号直达对应错题</h3>
-                </div>
-
-                <div class="assessment-result__wrong-count">
-                  <span>错题总数</span>
-                  <strong>{{ latestResult.wrongQuestions.length }}</strong>
-                </div>
-              </div>
-
-              <div class="assessment-result__section-track">
-                <button
-                  v-for="section in wrongQuestionSectionList"
-                  :key="section.sectionId"
-                  type="button"
-                  class="assessment-result__section-pill"
-                  :class="{ 'assessment-result__section-pill--active': activeWrongQuestion?.sectionId === section.sectionId }"
-                  :aria-pressed="activeWrongQuestion?.sectionId === section.sectionId ? 'true' : 'false'"
-                  @click="handleSelectWrongSection(section.sectionId)"
-                >
-                  <p>{{ section.eyebrow }}</p>
-                  <strong>{{ section.title }}</strong>
-                  <span>{{ section.wrongCount }} 道错题</span>
-                </button>
-              </div>
-
-              <div class="assessment-result__order-grid">
-                <button
-                  v-for="question in wrongQuestionOrderList"
-                  :key="question.id"
-                  type="button"
-                  class="assessment-result__order-button"
-                  :class="{ 'assessment-result__order-button--active': question.isActive }"
-                  :aria-pressed="question.isActive ? 'true' : 'false'"
-                  @click="handleSelectWrongQuestion(question.id)"
-                >
-                  {{ question.order }}
-                </button>
-              </div>
-            </article>
-
-            <article v-if="activeWrongQuestion" class="assessment-result__wrong-card content-card">
-              <div class="assessment-result__wrong-head">
-                <span class="assessment-result__wrong-index">第 {{ activeWrongQuestion.order }} 题</span>
-                <span class="assessment-result__wrong-type">{{ activeWrongQuestion.type === 'single' ? '单选题' : '多选题' }}</span>
-                <span class="assessment-result__wrong-section">{{ activeWrongQuestion.sectionTitle }}</span>
-              </div>
-
-              <h3>{{ activeWrongQuestion.stem }}</h3>
-
-              <div class="assessment-result__wrong-answer-grid">
-                <article class="assessment-result__answer-box assessment-result__answer-box--user">
-                  <p>你的答案</p>
-                  <strong>{{ activeWrongQuestion.userAnswerText }}</strong>
-                </article>
-                <article class="assessment-result__answer-box assessment-result__answer-box--correct">
-                  <p>正确答案</p>
-                  <strong>{{ activeWrongQuestion.correctAnswerText }}</strong>
-                </article>
-              </div>
-
-              <div class="assessment-result__source">
-                <p>{{ activeWrongQuestion.sourceTitle }}</p>
-                <blockquote>{{ activeWrongQuestion.sourceExcerpt }}</blockquote>
-              </div>
-            </article>
-
-            <div class="assessment-result__wrong-actions">
-              <button
-                type="button"
-                class="ink-button ink-button--ghost"
-                :disabled="isFirstWrongQuestion"
-                @click="goToPreviousWrongQuestion"
-              >
-                上一题
-              </button>
-              <button
-                type="button"
-                class="ink-button ink-button--secondary"
-                :disabled="isLastWrongQuestion"
-                @click="goToNextWrongQuestion"
-              >
-                下一题
-              </button>
-            </div>
-          </div>
-
-          <article v-else class="content-card content-card--soft">
-            <p class="eyebrow">满卷通明</p>
-            <h3>本次没有错题</h3>
-            <p>这一卷答得很稳。门风、门规与禁律都已记清，不必再走回头路。</p>
-          </article>
-        </section>
 
         <section class="content-section">
           <div class="section-heading">

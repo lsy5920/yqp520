@@ -166,12 +166,17 @@ export const rosterContent = {
   page: {
     eyebrow: '云栖名册',
     title: '线上登记入册，审核通过后正式归于云栖门籍',
-    lead: '线上递交入册文牒，执事批阅后再正式归档入册。公开页面与分享名帖始终遵循最克制的公开口径。',
+    lead: '通过问心考核后即可线上递交入册文牒，执事批阅后再正式归档入册。公开页面与分享名帖始终遵循最克制的公开口径。',
     note: '公开页只展示道号、性别、门中分工、堂口等最小公开信息；俗家姓名、生年与联系方式仅用于核验与联络。',
   },
   registration: {
     formTitle: '云栖派入门弟子录 · 入册文牒',
     formLead: '请按六段顺序如实填写。提交后会立即生成待审核回执名帖，可先保存或分享当前公开详情页。',
+    gateTitle: '需先通过入派考核，方可登记入册',
+    gateNoResultDescription: '当前还没有读到最近一次合格的问心考核记录。请先完成入派考核，通过后再来递交入册文牒。',
+    gateFailedDescription: '最近一次问心考核尚未合格。请先前往《立派全典》查阅原文，再回到入派考核页重新作答。',
+    gatePrimaryButton: '前往入派考核',
+    gateSecondaryButton: '去看立派全典',
     guardTip: '道号支持自由拟定，不强制“云”或“栖”开头。系统会自动去首尾空格并校验是否重名。',
     truthfulnessTitle: '真实信息提醒',
     truthfulnessHeading: '姓名、生年与联系方式请务必如实填写',

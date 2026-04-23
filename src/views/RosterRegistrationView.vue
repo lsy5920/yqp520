@@ -3,6 +3,10 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
 import {
+  ASSESSMENT_RESULT_STORAGE_KEY,
+  useAssessmentStorage,
+} from '@/composables/useAssessmentStorage'
+import {
   createDefaultRosterRegistrationForm,
   rosterContent,
   rosterFreeTimeOptions,
@@ -11,6 +15,7 @@ import {
 } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { checkRosterDaohaoAvailable, submitRosterEntry } from '@/services/roster'
+import type { AssessmentResult } from '@/types/assessment'
 import type { RosterFreeTimeSlot, RosterGender, RosterHallKey, RosterRegistrationFormValue } from '@/types/roster'
 import {
   getRosterDaohaoError,
@@ -25,8 +30,14 @@ const pageRef = ref<HTMLElement | null>(null)
 // 这里拿到路由实例，提交成功后要跳到公开详情页。
 const router = useRouter()
 
+// 这里接入考核存储工具，专门读取最近一次问心考核结果做登记门禁。
+const { safeReadJson } = useAssessmentStorage()
+
 // 这里保存登记表单的当前内容。
 const formValue = ref<RosterRegistrationFormValue>(createDefaultRosterRegistrationForm())
+
+// 这里保存最近一次问心考核结果，用来判断当前是否具备登记资格。
+const latestAssessmentResult = ref<AssessmentResult | null>(readLatestAssessmentResult())
 
 // 这里记录是否正在检查道号，避免用户不清楚当前状态。
 const isCheckingDaohao = ref<boolean>(false)
@@ -39,6 +50,62 @@ const actionMessage = ref<string>(rosterContent.registration.formLead)
 
 // 这里保存道号校验提示，失焦校验和提交前校验都写到这里。
 const daohaoMessage = ref<string>(rosterContent.registration.guardTip)
+
+/**
+ * 读取最近一次问心考核结果
+ * 用途：统一从本地记录中读取最近一次正式交卷结果，供登记门禁和提交兜底共用
+ * 入参：无
+ * 返回值：返回最近一次正式考核结果，没有则返回 null
+ */
+function readLatestAssessmentResult(): AssessmentResult | null {
+  return safeReadJson<AssessmentResult>(ASSESSMENT_RESULT_STORAGE_KEY)
+}
+
+/**
+ * 刷新登记资格
+ * 用途：进入页面和点击提交前都重新读取一次最近考核结果，避免残留旧状态绕过门禁
+ * 入参：无
+ * 返回值：无返回值
+ */
+function refreshAssessmentAccess(): void {
+  latestAssessmentResult.value = readLatestAssessmentResult()
+}
+
+/**
+ * 当前是否已通过问心考核
+ * 用途：统一控制登记页显示表单还是显示拦截引导
+ */
+const hasPassedAssessment = computed<boolean>(() => latestAssessmentResult.value?.passed === true)
+
+/**
+ * 当前是否已有考核记录
+ * 用途：给拦截卡片区分“未参加”与“未合格”两种提示
+ */
+const hasAssessmentResult = computed<boolean>(() => Boolean(latestAssessmentResult.value))
+
+/**
+ * 登记拦截说明
+ * 用途：未通过或没有考核结果时，给出更准确的中文引导
+ */
+const assessmentGateDescription = computed<string>(() => (
+  hasAssessmentResult.value
+    ? rosterContent.registration.gateFailedDescription
+    : rosterContent.registration.gateNoResultDescription
+))
+
+/**
+ * 最近一次考核成绩提示
+ * 用途：未合格时把最近一次成绩直接写在拦截卡片里，减少用户来回确认
+ */
+const assessmentGateScoreText = computed<string>(() => {
+  const result = latestAssessmentResult.value
+
+  if (!result || result.passed) {
+    return ''
+  }
+
+  return `最近一次问心考核成绩：${result.score} / ${result.totalScore} 分，合格线 ${result.passScore} 分。`
+})
 
 /**
  * 当前是否缺少 Supabase 配置
@@ -127,6 +194,13 @@ async function validateDaohao(showSuccessMessage = false): Promise<boolean> {
  * 返回值：无返回值
  */
 async function handleSubmit(): Promise<void> {
+  refreshAssessmentAccess()
+
+  if (!hasPassedAssessment.value) {
+    actionMessage.value = '需先通过入派考核后方可登记入册，请先前往入派考核。'
+    return
+  }
+
   const safeForm = normalizedForm.value
   const validationMessage = validateRosterRegistrationForm(safeForm)
 
@@ -196,7 +270,31 @@ function handleSelectGender(value: RosterGender): void {
       :note="rosterContent.page.note"
     />
 
-    <section class="roster-registration-alert content-card content-card--soft">
+    <section v-if="!hasPassedAssessment" class="roster-registration-gate content-card content-card--soft">
+      <div class="roster-registration-gate__head">
+        <p class="content-card__eyebrow">登记门槛</p>
+        <h2>{{ rosterContent.registration.gateTitle }}</h2>
+        <p>{{ assessmentGateDescription }}</p>
+      </div>
+
+      <p v-if="assessmentGateScoreText" class="roster-registration-gate__score">
+        {{ assessmentGateScoreText }}
+      </p>
+
+      <div class="roster-registration-gate__actions">
+        <RouterLink
+          class="ink-button ink-button--primary"
+          :to="{ path: '/join', hash: '#exam' }"
+        >
+          {{ rosterContent.registration.gatePrimaryButton }}
+        </RouterLink>
+        <RouterLink class="ink-button ink-button--ghost" to="/canon">
+          {{ rosterContent.registration.gateSecondaryButton }}
+        </RouterLink>
+      </div>
+    </section>
+
+    <section v-else class="roster-registration-alert content-card content-card--soft">
       <div class="roster-registration-alert__head">
         <div>
           <p class="content-card__eyebrow">{{ rosterContent.registration.truthfulnessTitle }}</p>
@@ -216,7 +314,7 @@ function handleSelectGender(value: RosterGender): void {
       </div>
     </section>
 
-    <section class="roster-registration-shell">
+    <section v-if="hasPassedAssessment" class="roster-registration-shell">
       <article class="roster-registration-form">
         <section class="roster-registration-card">
           <div class="roster-registration-card__head">
@@ -484,10 +582,55 @@ function handleSelectGender(value: RosterGender): void {
   gap: 30px;
 }
 
+.roster-registration-gate,
 .roster-registration-alert,
 .roster-registration-shell {
   display: grid;
   gap: 20px;
+}
+
+.roster-registration-gate {
+  padding: 24px;
+  border: 1px solid rgba(216, 185, 114, 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(216, 185, 114, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(29, 18, 12, 0.92), rgba(8, 24, 35, 0.96)),
+    rgba(8, 24, 35, 0.94);
+}
+
+.roster-registration-gate__head {
+  display: grid;
+  gap: 10px;
+}
+
+.roster-registration-gate__head h2,
+.roster-registration-gate__head p,
+.roster-registration-gate__score {
+  margin: 0;
+}
+
+.roster-registration-gate__head h2 {
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+  line-height: 1.32;
+}
+
+.roster-registration-gate__head p:last-child,
+.roster-registration-gate__score {
+  color: rgba(244, 239, 226, 0.78);
+  line-height: 1.84;
+}
+
+.roster-registration-gate__score {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(216, 185, 114, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.roster-registration-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .roster-registration-alert {
@@ -788,6 +931,7 @@ function handleSelectGender(value: RosterGender): void {
 }
 
 @media (max-width: 720px) {
+  .roster-registration-gate,
   .roster-registration-alert,
   .roster-registration-card,
   .roster-oath-panel {
@@ -795,16 +939,19 @@ function handleSelectGender(value: RosterGender): void {
     border-radius: 22px;
   }
 
+  .roster-registration-gate__actions,
   .roster-registration-submit__actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .roster-registration-gate__actions .ink-button,
   .roster-registration-submit__actions .ink-button,
   .roster-registration-choice {
     width: 100%;
   }
 
+  .roster-registration-gate__actions .ink-button:last-child:nth-child(odd),
   .roster-registration-submit__actions .ink-button:last-child:nth-child(odd) {
     grid-column: 1 / -1;
   }

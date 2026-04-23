@@ -89,7 +89,7 @@ export interface AssessmentSectionResult {
   questionCount: number
 }
 
-// 这里定义错题快照结构，方便结果页展示错题解析和原文出处。
+// 这里定义错题快照结构，当前主要用于保留正式交卷后的错题记录，便于后续扩展。
 export interface AssessmentWrongQuestionResult {
   questionId: string
   order: number

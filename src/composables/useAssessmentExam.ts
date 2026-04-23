@@ -1,5 +1,9 @@
 import { computed, onBeforeUnmount, readonly, ref } from 'vue'
-import { useAssessmentStorage } from '@/composables/useAssessmentStorage'
+import {
+  ASSESSMENT_DRAFT_STORAGE_KEY,
+  ASSESSMENT_RESULT_STORAGE_KEY,
+  useAssessmentStorage,
+} from '@/composables/useAssessmentStorage'
 import type {
   AssessmentAnswerMap,
   AssessmentDraft,
@@ -11,12 +15,6 @@ import type {
   AssessmentSectionResult,
   AssessmentWrongQuestionResult,
 } from '@/types/assessment'
-
-// 这里定义草稿本地存储键名，专门保存答题中的进度。
-const DRAFT_STORAGE_KEY = 'yunqi-assessment-draft'
-
-// 这里定义结果本地存储键名，只保存最近一次正式交卷结果。
-const RESULT_STORAGE_KEY = 'yunqi-assessment-result'
 
 // 这里定义同门称呼最大长度，避免结果页和结果海报排版被撑坏。
 const PARTICIPANT_TITLE_MAX_LENGTH = 12
@@ -342,7 +340,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
       deadlineTimestamp: deadlineTimestamp.value,
     }
 
-    safeWriteJson(DRAFT_STORAGE_KEY, draft)
+    safeWriteJson(ASSESSMENT_DRAFT_STORAGE_KEY, draft)
   }
 
   /**
@@ -352,7 +350,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
    * 返回值：无返回值
    */
   function clearDraft(): void {
-    safeRemove(DRAFT_STORAGE_KEY)
+    safeRemove(ASSESSMENT_DRAFT_STORAGE_KEY)
   }
 
   /**
@@ -362,7 +360,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
    * 返回值：无返回值
    */
   function persistResult(result: AssessmentResult): void {
-    safeWriteJson(RESULT_STORAGE_KEY, result)
+    safeWriteJson(ASSESSMENT_RESULT_STORAGE_KEY, result)
   }
 
   /**
@@ -382,7 +380,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
 
   /**
    * 生成正式结果
-   * 用途：统一计算总分、正确数、错题解析和章节结果
+   * 用途：统一计算总分、正确数、错题快照和章节结果
    * 入参：submitTimestampValue 为正式交卷时间戳
    * 返回值：返回一份完整的正式结果对象
    */
@@ -489,7 +487,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
    * 返回值：无返回值
    */
   function restoreLatestResult(): void {
-    const storedResult = safeReadJson<AssessmentResult>(RESULT_STORAGE_KEY)
+    const storedResult = safeReadJson<AssessmentResult>(ASSESSMENT_RESULT_STORAGE_KEY)
 
     if (!storedResult || storedResult.paperVersion !== options.paper.version) {
       latestResult.value = null
@@ -528,7 +526,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
   function initializeAssessment(): void {
     restoreLatestResult()
 
-    const storedDraft = safeReadJson<AssessmentDraft>(DRAFT_STORAGE_KEY)
+    const storedDraft = safeReadJson<AssessmentDraft>(ASSESSMENT_DRAFT_STORAGE_KEY)
 
     if (storedDraft && storedDraft.paperVersion === options.paper.version) {
       restoreDraft(storedDraft)
