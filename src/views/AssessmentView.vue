@@ -2069,6 +2069,18 @@ onBeforeUnmount(() => {
     grid-column: 1 / -1;
   }
 
+  /* 这里把结果统计和章节成绩收回双列，主标题区与总分牌仍保持单列，避免手机端层级失衡。 */
+  .assessment-result__stats,
+  .assessment-result__section-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  /* 这里让奇数结尾的章节成绩卡独占一整行，避免最后一张卡片半宽悬空。 */
+  .assessment-result__section-summary .assessment-result__section-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .assessment-exam__section-track {
     grid-auto-columns: minmax(140px, 78vw);
     gap: 8px;
@@ -2111,6 +2123,19 @@ onBeforeUnmount(() => {
   .assessment-result__section-card,
   .assessment-exam__section-pill {
     min-height: auto;
+  }
+
+  .assessment-result__stat-card {
+    gap: 6px;
+  }
+
+  .assessment-result__stat-card strong {
+    font-size: clamp(1.24rem, 5vw, 1.5rem);
+  }
+
+  .assessment-result__section-card strong {
+    font-size: 0.94rem;
+    line-height: 1.52;
   }
 
   .assessment-exam__section-pill {
