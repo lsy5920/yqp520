@@ -122,6 +122,7 @@ create table if not exists public.yunqi_roster_entries (
   entry_no integer unique,
   daohao text not null default '',
   secular_name text not null default '',
+  gender text not null default '' check (gender in ('male', 'female', 'other', '')),
   current_city text not null default '',
   birth_year text not null default '',
   profession text not null default '',
@@ -151,6 +152,7 @@ create table if not exists public.yunqi_roster_entries (
 
 -- 这里确保旧库升级后也拥有新版字段。
 alter table public.yunqi_roster_entries add column if not exists daohao text not null default '';
+alter table public.yunqi_roster_entries add column if not exists gender text not null default '';
 alter table public.yunqi_roster_entries add column if not exists referrer_name text not null default '自行登门';
 alter table public.yunqi_roster_entries add column if not exists hall_other_text text not null default '';
 alter table public.yunqi_roster_entries add column if not exists social_xiaohongshu_douyin text not null default '';
@@ -197,6 +199,11 @@ begin
   end if;
 end;
 $$;
+
+alter table public.yunqi_roster_entries drop constraint if exists yunqi_roster_entries_gender_check;
+alter table public.yunqi_roster_entries
+add constraint yunqi_roster_entries_gender_check
+check (gender in ('male', 'female', 'other', ''));
 
 -- 这里把非准予状态记录上的旧文牒号清掉，防止公开口径混乱。
 update public.yunqi_roster_entries
@@ -386,6 +393,7 @@ as $$
 declare
   normalized_daohao text := public.clean_yunqi_short_text(entry_payload ->> 'daohao');
   normalized_secular_name text := public.clean_yunqi_short_text(entry_payload ->> 'secular_name');
+  normalized_gender text := public.clean_yunqi_short_text(entry_payload ->> 'gender');
   normalized_current_city text := public.clean_yunqi_short_text(entry_payload ->> 'current_city');
   normalized_birth_year text := public.clean_yunqi_short_text(entry_payload ->> 'birth_year');
   normalized_profession text := public.clean_yunqi_short_text(entry_payload ->> 'profession');
@@ -428,6 +436,10 @@ begin
 
   if normalized_secular_name = '' then
     raise exception '请填写俗家姓名';
+  end if;
+
+  if normalized_gender not in ('male', 'female', 'other') then
+    raise exception '请选择性别';
   end if;
 
   if normalized_birth_year = '' then
@@ -501,6 +513,7 @@ begin
   insert into public.yunqi_roster_entries (
     daohao,
     secular_name,
+    gender,
     current_city,
     birth_year,
     profession,
@@ -523,6 +536,7 @@ begin
   values (
     normalized_daohao,
     normalized_secular_name,
+    normalized_gender,
     normalized_current_city,
     normalized_birth_year,
     normalized_profession,
@@ -695,6 +709,7 @@ declare
   target_entry_no integer := public.parse_yunqi_entry_no(entry_payload ->> 'entry_no');
   target_daohao text := public.clean_yunqi_short_text(entry_payload ->> 'daohao');
   target_secular_name text := public.clean_yunqi_short_text(entry_payload ->> 'secular_name');
+  target_gender text := public.clean_yunqi_short_text(entry_payload ->> 'gender');
   target_current_city text := public.clean_yunqi_short_text(entry_payload ->> 'current_city');
   target_birth_year text := public.clean_yunqi_short_text(entry_payload ->> 'birth_year');
   target_profession text := public.clean_yunqi_short_text(entry_payload ->> 'profession');
@@ -765,6 +780,10 @@ begin
 
   if target_secular_name = '' then
     raise exception '请填写俗家姓名';
+  end if;
+
+  if target_gender not in ('male', 'female', 'other') then
+    raise exception '请选择性别';
   end if;
 
   if target_birth_year = '' then
@@ -864,6 +883,7 @@ begin
     entry_no = final_entry_no,
     daohao = target_daohao,
     secular_name = target_secular_name,
+    gender = target_gender,
     current_city = target_current_city,
     birth_year = target_birth_year,
     profession = target_profession,

@@ -7,12 +7,13 @@ import {
   rosterContent,
   rosterContributionOptions,
   rosterFreeTimeOptions,
+  rosterGenderOptions,
   rosterHallOptions,
   rosterRegistrationSections,
 } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { checkRosterDaohaoAvailable, submitRosterEntry } from '@/services/roster'
-import type { RosterContributionLevel, RosterFreeTimeSlot, RosterHallKey, RosterRegistrationFormValue } from '@/types/roster'
+import type { RosterContributionLevel, RosterFreeTimeSlot, RosterGender, RosterHallKey, RosterRegistrationFormValue } from '@/types/roster'
 import {
   getRosterDaohaoError,
   mapRosterFormToSubmitPayload,
@@ -186,6 +187,16 @@ function handleSelectHall(hallKey: RosterHallKey): void {
 function handleSelectContribution(value: RosterContributionLevel): void {
   formValue.value.contributionLevel = value
 }
+
+/**
+ * 设置性别
+ * 用途：性别单选统一走这里，保证前后端字段始终只收一项
+ * 入参：value 为性别键名
+ * 返回值：无返回值
+ */
+function handleSelectGender(value: RosterGender): void {
+  formValue.value.gender = value
+}
 </script>
 
 <template>
@@ -272,6 +283,22 @@ function handleSelectContribution(value: RosterContributionLevel): void {
               <span>俗家姓名 *</span>
               <input v-model="formValue.secularName" class="roster-registration-input" maxlength="24" placeholder="请输入俗家姓名" type="text" />
             </label>
+
+            <div class="roster-registration-field">
+              <span>性别 *</span>
+              <div class="roster-registration-choice-row">
+                <button
+                  v-for="option in rosterGenderOptions"
+                  :key="option.key"
+                  type="button"
+                  class="roster-registration-choice"
+                  :class="{ 'roster-registration-choice--active': formValue.gender === option.key }"
+                  @click="handleSelectGender(option.key)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
 
             <label class="roster-registration-field">
               <span>现居洞府 *</span>

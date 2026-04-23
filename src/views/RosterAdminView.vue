@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
 import { useRosterAuth } from '@/composables/useRosterAuth'
-import { rosterContent, rosterContributionOptions, rosterFreeTimeOptions, rosterHallOptions, rosterStatusLabelMap } from '@/data/rosterContent'
+import { rosterContent, rosterContributionOptions, rosterFreeTimeOptions, rosterGenderOptions, rosterHallOptions, rosterStatusLabelMap } from '@/data/rosterContent'
 import {
   deleteAdminRosterEntry,
   getNextRosterEntryNo,
@@ -16,6 +16,7 @@ import type {
   AdminRosterEntryRecord,
   AdminRosterEntrySavePayload,
   RosterEntryStatus,
+  RosterGender,
   RosterHallKey,
   RosterReviewLogRecord,
 } from '@/types/roster'
@@ -27,6 +28,7 @@ import {
   getRosterContributionLabel,
   getRosterDaohaoError,
   getRosterFreeTimeLabels,
+  getRosterGenderLabel,
   getRosterHallLabel,
   normalizeRosterDaohao,
   normalizeRosterLongText,
@@ -45,6 +47,8 @@ interface AdminEditingFormState {
   daohao: string
   /** 用途：俗家姓名 */
   secularName: string
+  /** 用途：性别 */
+  gender: RosterGender | ''
   /** 用途：现居城市 */
   currentCity: string
   /** 用途：生年 */
@@ -190,6 +194,7 @@ const saveSummary = computed<string>(() => {
     entryNo: parsedEntryNo,
     daohao: normalizeRosterDaohao(editForm.value.daohao),
     secularName: normalizeRosterShortText(editForm.value.secularName),
+    gender: editForm.value.gender,
     currentCity: normalizeRosterShortText(editForm.value.currentCity),
     birthYear: normalizeRosterShortText(editForm.value.birthYear),
     profession: normalizeRosterShortText(editForm.value.profession),
@@ -245,6 +250,7 @@ function createEmptyEditingForm(): AdminEditingFormState {
     status: 'pending',
     daohao: '',
     secularName: '',
+    gender: '',
     currentCity: '',
     birthYear: '',
     profession: '',
@@ -313,6 +319,7 @@ function syncEditForm(entry: AdminRosterEntryRecord | null): void {
     status: entry.status,
     daohao: entry.daohao,
     secularName: entry.secularName,
+    gender: entry.gender,
     currentCity: entry.currentCity,
     birthYear: entry.birthYear,
     profession: entry.profession,
@@ -509,6 +516,7 @@ function buildSavePayload(): AdminRosterEntrySavePayload | null {
     entryNo: editForm.value.status === 'approved' ? extractRosterEntryNo(editEntryNoText.value) : null,
     daohao: normalizeRosterDaohao(editForm.value.daohao),
     secularName: normalizeRosterShortText(editForm.value.secularName),
+    gender: editForm.value.gender,
     currentCity: normalizeRosterShortText(editForm.value.currentCity),
     birthYear: normalizeRosterShortText(editForm.value.birthYear),
     profession: normalizeRosterShortText(editForm.value.profession),
@@ -835,26 +843,42 @@ onMounted(async () => {
                   <input v-model="editForm.daohao" class="roster-admin-review-input" maxlength="12" placeholder="请输入道号" type="text" />
                 </label>
                 <label class="roster-admin-form-field">
-                  <span>俗家姓名</span>
-                  <input v-model="editForm.secularName" class="roster-admin-review-input" maxlength="24" placeholder="选填" type="text" />
+                  <span>俗家姓名 *</span>
+                  <input v-model="editForm.secularName" class="roster-admin-review-input" maxlength="24" placeholder="请输入俗家姓名" type="text" />
                 </label>
+                <div class="roster-admin-form-field">
+                  <span>性别 *</span>
+                  <div class="roster-admin-choice-row">
+                    <button
+                      v-for="option in rosterGenderOptions"
+                      :key="option.key"
+                      type="button"
+                      class="roster-admin-choice-chip"
+                      :class="{ 'roster-admin-choice-chip--active': editForm.gender === option.key }"
+                      @click="editForm.gender = option.key"
+                    >
+                      {{ option.label }}
+                    </button>
+                  </div>
+                </div>
                 <label class="roster-admin-form-field">
                   <span>现居洞府 *</span>
                   <input v-model="editForm.currentCity" class="roster-admin-review-input" maxlength="32" placeholder="精确到市" type="text" />
                 </label>
                 <label class="roster-admin-form-field">
-                  <span>生年</span>
+                  <span>生年 *</span>
                   <input v-model="editForm.birthYear" class="roster-admin-review-input" maxlength="8" placeholder="例如：1998" type="text" />
                 </label>
                 <label class="roster-admin-form-field roster-admin-form-field--full">
-                  <span>俗务</span>
-                  <input v-model="editForm.profession" class="roster-admin-review-input" maxlength="40" placeholder="选填" type="text" />
+                  <span>俗务 *</span>
+                  <input v-model="editForm.profession" class="roster-admin-review-input" maxlength="40" placeholder="请输入俗务" type="text" />
                 </label>
               </div>
 
               <div v-else class="roster-admin-detail-card__grid">
                 <div><span>道号</span><strong>{{ activeEntry.daohao }}</strong></div>
                 <div><span>俗家姓名</span><strong>{{ activeEntry.secularName || '未填' }}</strong></div>
+                <div><span>性别</span><strong>{{ getRosterGenderLabel(activeEntry.gender) }}</strong></div>
                 <div><span>现居洞府</span><strong>{{ activeEntry.currentCity }}</strong></div>
                 <div><span>生年</span><strong>{{ activeEntry.birthYear || '未填' }}</strong></div>
                 <div><span>俗务</span><strong>{{ activeEntry.profession || '未填' }}</strong></div>
@@ -867,8 +891,8 @@ onMounted(async () => {
 
               <div v-if="isEditing" class="roster-admin-form-grid">
                 <label class="roster-admin-form-field">
-                  <span>引荐人</span>
-                  <input v-model="editForm.referrerName" class="roster-admin-review-input" maxlength="32" placeholder="默认：自行登门" type="text" />
+                  <span>引荐人 *</span>
+                  <input v-model="editForm.referrerName" class="roster-admin-review-input" maxlength="32" placeholder="无引荐人请填写：自行登门" type="text" />
                 </label>
 
                 <label class="roster-admin-form-field">
@@ -949,16 +973,16 @@ onMounted(async () => {
                   <input v-model="editForm.wechatId" class="roster-admin-review-input" maxlength="48" placeholder="请输入微信号" type="text" />
                 </label>
                 <label class="roster-admin-form-field">
-                  <span>小红书 / 抖音</span>
-                  <input v-model="editForm.socialXiaohongshuDouyin" class="roster-admin-review-input" maxlength="48" placeholder="选填" type="text" />
+                  <span>小红书 / 抖音 *</span>
+                  <input v-model="editForm.socialXiaohongshuDouyin" class="roster-admin-review-input" maxlength="48" placeholder="请输入小红书或抖音账号" type="text" />
                 </label>
                 <label class="roster-admin-form-field">
-                  <span>QQ</span>
-                  <input v-model="editForm.socialQq" class="roster-admin-review-input" maxlength="48" placeholder="选填" type="text" />
+                  <span>QQ *</span>
+                  <input v-model="editForm.socialQq" class="roster-admin-review-input" maxlength="48" placeholder="请输入 QQ" type="text" />
                 </label>
                 <label class="roster-admin-form-field">
-                  <span>其他</span>
-                  <input v-model="editForm.socialOther" class="roster-admin-review-input" maxlength="48" placeholder="选填" type="text" />
+                  <span>其他 *</span>
+                  <input v-model="editForm.socialOther" class="roster-admin-review-input" maxlength="48" placeholder="请输入其他传讯方式" type="text" />
                 </label>
                 <label class="roster-admin-form-check roster-admin-form-field--full">
                   <input v-model="editForm.allowContactPublic" type="checkbox" />
@@ -980,7 +1004,7 @@ onMounted(async () => {
 
               <div v-if="isEditing" class="roster-admin-form-grid">
                 <label class="roster-admin-form-field roster-admin-form-field--full">
-                  <span>身怀所长</span>
+                  <span>身怀所长 *</span>
                   <textarea
                     v-model="editForm.strengths"
                     class="roster-admin-review-input roster-admin-review-input--textarea"
@@ -991,7 +1015,7 @@ onMounted(async () => {
                 </label>
 
                 <label class="roster-admin-form-field roster-admin-form-field--full">
-                  <span>所好雅事</span>
+                  <span>所好雅事 *</span>
                   <textarea
                     v-model="editForm.hobbies"
                     class="roster-admin-review-input roster-admin-review-input--textarea"

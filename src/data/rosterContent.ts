@@ -2,6 +2,7 @@ import type {
   PublicRosterEntry,
   RosterContributionOption,
   RosterFreeTimeOption,
+  RosterGenderOption,
   RosterHallKey,
   RosterHallOption,
   RosterRegistrationFormValue,
@@ -16,6 +17,13 @@ export const rosterHallOptions: RosterHallOption[] = [
   { key: 'qiying', label: '栖影轩', description: '偏古风摄影、影像记录与视觉叙事。' },
   { key: 'yunce', label: '云策司', description: '偏活动策划、门派运营与同门联络。' },
   { key: 'other', label: '其他', description: '若所归未列，可自行补充更贴切的堂口说明。' },
+]
+
+// 这里定义性别选项，供登记页和后台编辑页统一使用。
+export const rosterGenderOptions: RosterGenderOption[] = [
+  { key: 'male', label: '男' },
+  { key: 'female', label: '女' },
+  { key: 'other', label: '其他' },
 ]
 
 // 这里定义空闲时段选项，供多选字段统一使用。
@@ -51,7 +59,7 @@ export const rosterRegistrationSections: RosterRegistrationSection[] = [
     key: 'identity',
     eyebrow: '弟子名籍',
     title: '先把名籍立稳',
-    description: '道号会成为公开页和分享名帖的唯一称呼，公开页面只展示最克制的字段。',
+    description: '道号会成为公开页和分享名帖的唯一称呼，性别会入库归档但不会公开展示。',
   },
   {
     key: 'duty',
@@ -128,7 +136,7 @@ export const rosterContent = {
     eyebrow: '云栖名册',
     title: '线上登记入册，审核通过后正式归于云栖门籍',
     lead: '这是一套独立于江湖名帖工作台的新流程。先线上递交文牒，执事审核后再正式入册，公开页面与分享名帖始终遵循最克制的公开口径。',
-    note: '俗家姓名、现居洞府、微信号等敏感信息只用于审核与联络，不会出现在公开名帖与公开名录里。',
+    note: '俗家姓名、性别、现居洞府、微信号等敏感信息只用于审核与联络，不会出现在公开名帖与公开名录里。',
   },
   registration: {
     formTitle: '云栖派入门弟子录 · 入册文牒',
@@ -169,7 +177,7 @@ export const rosterContent = {
     reviewButton: '保存档案',
   },
   privacyNotes: [
-    '公开名录、公开详情页与分享名帖一律不展示俗家姓名、现居洞府、生年、俗务、微信号、社交号与闲暇时辰。',
+    '公开名录、公开详情页与分享名帖一律不展示俗家姓名、性别、现居洞府、生年、俗务、微信号、社交号与闲暇时辰。',
     '待审核状态可分享回执名帖，但不会显示正式牒号。',
     '暂缓入册与不予收录的详情页会保留公开批语，但不再提供名帖导出。',
   ],
@@ -189,6 +197,7 @@ export function createDefaultRosterRegistrationForm(): RosterRegistrationFormVal
   return {
     daohao: '',
     secularName: '',
+    gender: '',
     currentCity: '',
     birthYear: '',
     profession: '',

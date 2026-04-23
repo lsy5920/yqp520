@@ -4,6 +4,9 @@ export type RosterEntryStatus = 'pending' | 'approved' | 'deferred' | 'rejected'
 // 这里定义堂口键名类型，避免前后端字段写错。
 export type RosterHallKey = 'yunyi' | 'qimo' | 'yunshao' | 'qiying' | 'yunce' | 'other'
 
+// 这里定义性别键名类型，方便前后端和数据库统一收口。
+export type RosterGender = 'male' | 'female' | 'other'
+
 // 这里定义空闲时段类型，方便多选值保持稳定。
 export type RosterFreeTimeSlot = 'weekday_evening' | 'weekend_all_day' | 'holiday' | 'other'
 
@@ -27,6 +30,14 @@ export interface RosterHallOption {
   label: string
   /** 用途：堂口简短说明 */
   description: string
+}
+
+// 这里定义性别选项类型，供登记页和后台编辑页统一复用。
+export interface RosterGenderOption {
+  /** 用途：性别键名 */
+  key: RosterGender
+  /** 用途：性别文案 */
+  label: string
 }
 
 // 这里定义空闲时段选项类型，方便多选配置统一管理。
@@ -65,6 +76,8 @@ export interface RosterRegistrationFormValue {
   daohao: string
   /** 用途：俗家姓名 */
   secularName: string
+  /** 用途：性别 */
+  gender: RosterGender | ''
   /** 用途：现居城市 */
   currentCity: string
   /** 用途：生年 */
@@ -109,6 +122,7 @@ export interface RosterRegistrationFormValue {
 export interface SubmitRosterEntryPayload {
   daohao: string
   secular_name: string
+  gender: RosterGender
   current_city: string
   birth_year: string | null
   profession: string
@@ -217,6 +231,8 @@ export interface AdminRosterEntryRecord {
   daohao: string
   /** 用途：俗家姓名 */
   secularName: string
+  /** 用途：性别 */
+  gender: RosterGender | ''
   /** 用途：现居城市 */
   currentCity: string
   /** 用途：生年 */
@@ -279,6 +295,8 @@ export interface AdminRosterEntrySavePayload {
   daohao: string
   /** 用途：俗家姓名 */
   secularName: string
+  /** 用途：性别 */
+  gender: RosterGender | ''
   /** 用途：现居城市 */
   currentCity: string
   /** 用途：生年 */

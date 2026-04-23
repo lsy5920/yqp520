@@ -1,5 +1,6 @@
 import {
   rosterContributionOptions,
+  rosterGenderOptions,
   rosterHallLabelMap,
   rosterStatusDescriptionMap,
   rosterStatusLabelMap,
@@ -11,6 +12,7 @@ import type {
   RosterContributionLevel,
   RosterEntryStatus,
   RosterFreeTimeSlot,
+  RosterGender,
   RosterHallKey,
   RosterRegistrationFormValue,
   RosterReviewLogRecord,
@@ -132,6 +134,7 @@ export function normalizeRosterFormValue(form: RosterRegistrationFormValue): Ros
   return {
     daohao: normalizeRosterDaohao(form.daohao),
     secularName: normalizeRosterShortText(form.secularName),
+    gender: form.gender,
     currentCity: normalizeRosterShortText(form.currentCity),
     birthYear: normalizeRosterShortText(form.birthYear),
     profession: normalizeRosterShortText(form.profession),
@@ -296,6 +299,7 @@ export function mapRosterFormToSubmitPayload(form: RosterRegistrationFormValue):
   return {
     daohao: form.daohao,
     secular_name: form.secularName,
+    gender: form.gender as RosterGender,
     current_city: form.currentCity,
     birth_year: form.birthYear || null,
     profession: form.profession,
@@ -325,6 +329,16 @@ export function mapRosterFormToSubmitPayload(form: RosterRegistrationFormValue):
  */
 export function getRosterContributionLabel(value: RosterContributionLevel | ''): string {
   return rosterContributionOptions.find((item) => item.key === value)?.label || '未填写'
+}
+
+/**
+ * 获取性别文案
+ * 用途：登记页和后台查看时统一显示性别中文名
+ * 入参：value 为性别键名
+ * 返回值：返回中文文案
+ */
+export function getRosterGenderLabel(value: RosterGender | ''): string {
+  return rosterGenderOptions.find((item) => item.key === value)?.label || '未填写'
 }
 
 /**
@@ -403,6 +417,10 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
 
   if (!form.secularName) {
     return '请填写俗家姓名'
+  }
+
+  if (!form.gender) {
+    return '请选择性别'
   }
 
   if (!form.currentCity) {
@@ -487,6 +505,10 @@ export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePay
 
   if (!payload.secularName) {
     return '请填写俗家姓名'
+  }
+
+  if (!payload.gender) {
+    return '请选择性别'
   }
 
   if (!payload.currentCity) {
@@ -615,6 +637,7 @@ export function mapAdminRosterEntry(record: Record<string, unknown>): AdminRoste
     entryNo: typeof record.entry_no === 'number' ? record.entry_no : null,
     daohao: resolveRosterDaohaoFromRecord(record),
     secularName: String(record.secular_name || ''),
+    gender: (record.gender as RosterGender) || '',
     currentCity: String(record.current_city || ''),
     birthYear: String(record.birth_year || ''),
     profession: String(record.profession || ''),
