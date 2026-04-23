@@ -594,6 +594,8 @@ onBeforeUnmount(() => {
 
       <div class="roster-poster-studio__meta">
         <p>公开道号：{{ entry.daohao }}</p>
+        <p>公开性别：{{ entry.genderLabel }}</p>
+        <p>门中分工：{{ entry.positionLabel }}</p>
         <p>当前状态：{{ entry.statusLabel }}</p>
         <p>归属堂口：{{ entry.hallLabel }}</p>
         <p>{{ entry.status === 'approved' ? `正式牒号：${entry.entryNo || '待定'}` : `回执编号：${entry.receiptCode || '待定'}` }}</p>

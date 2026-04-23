@@ -7,6 +7,9 @@ export type RosterHallKey = 'yunyi' | 'qimo' | 'yunshao' | 'qiying' | 'yunce' | 
 // 这里定义性别键名类型，方便前后端和数据库统一收口。
 export type RosterGender = 'male' | 'female' | 'other'
 
+// 这里定义门中分工键名类型，职位不分高低，只区分自愿承担的服务分工。
+export type RosterPositionKey = 'tongmen' | 'zongzhu' | 'yunsi_wen' | 'yunsi_shi' | 'yunsi_cai'
+
 // 这里定义空闲时段类型，方便多选值保持稳定。
 export type RosterFreeTimeSlot = 'weekday_evening' | 'weekend_all_day' | 'holiday' | 'other'
 
@@ -38,6 +41,16 @@ export interface RosterGenderOption {
   key: RosterGender
   /** 用途：性别文案 */
   label: string
+}
+
+// 这里定义门中分工选项类型，供后台编辑页统一复用。
+export interface RosterPositionOption {
+  /** 用途：职位键名 */
+  key: RosterPositionKey
+  /** 用途：职位文案 */
+  label: string
+  /** 用途：职位说明 */
+  description: string
 }
 
 // 这里定义空闲时段选项类型，方便多选配置统一管理。
@@ -157,6 +170,14 @@ export interface PublicRosterEntry {
   entryNoValue: number | null
   /** 用途：公开展示道号 */
   daohao: string
+  /** 用途：公开展示性别 */
+  gender: RosterGender | ''
+  /** 用途：公开展示性别文案 */
+  genderLabel: string
+  /** 用途：公开展示职位键名 */
+  positionKey: RosterPositionKey | ''
+  /** 用途：公开展示职位文案 */
+  positionLabel: string
   /** 用途：堂口键名 */
   hallKey: RosterHallKey
   /** 用途：堂口中文名 */
@@ -233,6 +254,8 @@ export interface AdminRosterEntryRecord {
   secularName: string
   /** 用途：性别 */
   gender: RosterGender | ''
+  /** 用途：职位键名 */
+  positionKey: RosterPositionKey | ''
   /** 用途：现居城市 */
   currentCity: string
   /** 用途：生年 */
@@ -297,6 +320,8 @@ export interface AdminRosterEntrySavePayload {
   secularName: string
   /** 用途：性别 */
   gender: RosterGender | ''
+  /** 用途：职位键名 */
+  positionKey: RosterPositionKey | ''
   /** 用途：现居城市 */
   currentCity: string
   /** 用途：生年 */

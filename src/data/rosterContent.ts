@@ -5,6 +5,7 @@ import type {
   RosterGenderOption,
   RosterHallKey,
   RosterHallOption,
+  RosterPositionOption,
   RosterRegistrationFormValue,
   RosterRegistrationSection,
 } from '@/types/roster'
@@ -24,6 +25,15 @@ export const rosterGenderOptions: RosterGenderOption[] = [
   { key: 'male', label: '男' },
   { key: 'female', label: '女' },
   { key: 'other', label: '其他' },
+]
+
+// 这里定义门中分工选项，只区分服务分工，不带上下级意味。
+export const rosterPositionOptions: RosterPositionOption[] = [
+  { key: 'tongmen', label: '同门', description: '所有入派之人皆为同门，人人平等，只是所担分工不同。' },
+  { key: 'zongzhu', label: '宗主', description: '创派之人，护一脉和气，定大方向，但不强迫任何人做任何事。' },
+  { key: 'yunsi_wen', label: '云司·文司', description: '自愿整理群内精华、活动记录，留存门派记忆。' },
+  { key: 'yunsi_shi', label: '云司·事司', description: '自愿策划组织线上聊天、线下聚会，安排活动事宜。' },
+  { key: 'yunsi_cai', label: '云司·财司', description: '自愿管理活动 AA 费用与信物制作费，并定期公开账目。' },
 ]
 
 // 这里定义空闲时段选项，供多选字段统一使用。
@@ -59,7 +69,7 @@ export const rosterRegistrationSections: RosterRegistrationSection[] = [
     key: 'identity',
     eyebrow: '弟子名籍',
     title: '先把名籍立稳',
-    description: '道号会成为公开页和分享名帖的唯一称呼，性别会入库归档但不会公开展示。',
+    description: '道号会成为公开页和云名帖的唯一称呼，性别会跟随公开信息一起展示。',
   },
   {
     key: 'duty',
@@ -136,7 +146,7 @@ export const rosterContent = {
     eyebrow: '云栖名册',
     title: '线上登记入册，审核通过后正式归于云栖门籍',
     lead: '这是一套独立于江湖名帖工作台的新流程。先线上递交文牒，执事审核后再正式入册，公开页面与分享名帖始终遵循最克制的公开口径。',
-    note: '俗家姓名、性别、现居洞府、微信号等敏感信息只用于审核与联络，不会出现在公开名帖与公开名录里。',
+    note: '俗家姓名、现居洞府、微信号等敏感信息只用于审核与联络，不会出现在公开名帖与公开名录里；性别与门中分工会随云名帖一并公开。',
   },
   registration: {
     formTitle: '云栖派入门弟子录 · 入册文牒',
@@ -149,7 +159,7 @@ export const rosterContent = {
   },
   list: {
     title: '已入册同门名录',
-    lead: '这里只展示已经准予入册的公开条目。所有字段都遵循最克制公开原则，只保留道号、堂口、同道缘起与正式牒号。',
+    lead: '这里只展示已经准予入册的公开条目。公开字段会展示道号、性别、门中分工、堂口、同道缘起与正式牒号。',
     searchPlaceholder: '输入道号或文牒号',
     allHallLabel: '全部堂口',
     emptyTitle: '当前还没有符合条件的入册条目',
@@ -163,7 +173,7 @@ export const rosterContent = {
     approvedTitle: '正式入册名帖',
     statusTitle: '当前状态',
     publicInfoTitle: '公开口径',
-    publicInfoLead: '公开详情页与分享名帖只展示道号、堂口、入派本心、所长雅事、状态标记、牒号或回执号、日期与二维码。',
+    publicInfoLead: '公开详情页与云名帖会展示道号、性别、门中分工、堂口、入派本心、所长雅事、状态标记、牒号或回执号、日期与二维码。',
     shareButton: '分享名帖',
     saveButton: '保存成图',
     copyLinkButton: '复制链接',
@@ -177,7 +187,8 @@ export const rosterContent = {
     reviewButton: '保存档案',
   },
   privacyNotes: [
-    '公开名录、公开详情页与分享名帖一律不展示俗家姓名、性别、现居洞府、生年、俗务、微信号、社交号与闲暇时辰。',
+    '公开名录、公开详情页与云名帖一律不展示俗家姓名、现居洞府、生年、俗务、微信号、社交号与闲暇时辰。',
+    '性别与门中分工会作为公开信息展示在公开名录、公开详情页与云名帖中。',
     '待审核状态可分享回执名帖，但不会显示正式牒号。',
     '暂缓入册与不予收录的详情页会保留公开批语，但不再提供名帖导出。',
   ],
@@ -229,6 +240,10 @@ export function createEmptyPublicRosterEntry(): PublicRosterEntry {
     entryNo: '',
     entryNoValue: null,
     daohao: '云栖新帖',
+    gender: '',
+    genderLabel: '未定',
+    positionKey: 'tongmen',
+    positionLabel: '同门',
     hallKey: 'other',
     hallLabel: '未定堂口',
     entryIntent: '尚未递交具体本心文案。',

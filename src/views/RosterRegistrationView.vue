@@ -5,7 +5,6 @@ import PageBanner from '@/components/common/PageBanner.vue'
 import {
   createDefaultRosterRegistrationForm,
   rosterContent,
-  rosterContributionOptions,
   rosterFreeTimeOptions,
   rosterGenderOptions,
   rosterHallOptions,
@@ -13,7 +12,7 @@ import {
 } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { checkRosterDaohaoAvailable, submitRosterEntry } from '@/services/roster'
-import type { RosterContributionLevel, RosterFreeTimeSlot, RosterGender, RosterHallKey, RosterRegistrationFormValue } from '@/types/roster'
+import type { RosterFreeTimeSlot, RosterGender, RosterHallKey, RosterRegistrationFormValue } from '@/types/roster'
 import {
   getRosterDaohaoError,
   mapRosterFormToSubmitPayload,
@@ -176,16 +175,6 @@ function handleSelectHall(hallKey: RosterHallKey): void {
   if (hallKey !== 'other') {
     formValue.value.otherHallText = ''
   }
-}
-
-/**
- * 设置效力意愿
- * 用途：单选组统一走这里，保持代码更清楚
- * 入参：value 为意愿键名
- * 返回值：无返回值
- */
-function handleSelectContribution(value: RosterContributionLevel): void {
-  formValue.value.contributionLevel = value
 }
 
 /**
@@ -404,7 +393,7 @@ function handleSelectGender(value: RosterGender): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">所长与愿</p>
             <h2>让同门知道你擅长什么、喜欢什么</h2>
-            <p>这些内容会在通过审核后进入公开名帖。当前文字填写框都为必填，请写你愿意公开分享的能力与雅事。</p>
+            <p>这些内容会在通过审核后进入公开云名帖。当前文字填写框都为必填，请写你愿意公开分享的能力与雅事。门中分工由后台统一设置，不在此处选择。</p>
           </div>
 
           <div class="roster-registration-grid">
@@ -443,23 +432,6 @@ function handleSelectGender(value: RosterGender): void {
                 @click="toggleFreeTimeSlot(option.key)"
               >
                 {{ option.label }}
-              </button>
-            </div>
-          </div>
-
-          <div class="roster-registration-field roster-registration-field--full">
-            <span>愿为门派效力</span>
-            <div class="roster-registration-option-grid roster-registration-option-grid--single">
-              <button
-                v-for="option in rosterContributionOptions"
-                :key="option.key"
-                type="button"
-                class="roster-registration-option"
-                :class="{ 'roster-registration-option--active': formValue.contributionLevel === option.key }"
-                @click="handleSelectContribution(option.key)"
-              >
-                <strong>{{ option.label }}</strong>
-                <span>{{ option.description }}</span>
               </button>
             </div>
           </div>

@@ -183,7 +183,7 @@ onMounted(() => {
       >
         <div class="roster-list-card__head">
           <div>
-            <p>{{ entry.hallLabel }}</p>
+            <p>{{ entry.genderLabel }} · {{ entry.positionLabel }}</p>
             <h3>{{ entry.daohao }}</h3>
           </div>
           <span>{{ entry.statusLabel }}</span>
@@ -191,7 +191,7 @@ onMounted(() => {
 
         <div class="roster-list-card__meta">
           <strong>{{ entry.entryNo || '牒号待定' }}</strong>
-          <small>公开道号：{{ entry.daohao }}</small>
+          <small>{{ entry.hallLabel }} · 公开道号：{{ entry.daohao }}</small>
         </div>
 
         <div class="roster-list-card__section">

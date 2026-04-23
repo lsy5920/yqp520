@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
 import { useRosterAuth } from '@/composables/useRosterAuth'
-import { rosterContent, rosterContributionOptions, rosterFreeTimeOptions, rosterGenderOptions, rosterHallOptions, rosterStatusLabelMap } from '@/data/rosterContent'
+import { rosterContent, rosterFreeTimeOptions, rosterGenderOptions, rosterHallOptions, rosterPositionOptions, rosterStatusLabelMap } from '@/data/rosterContent'
 import {
   deleteAdminRosterEntry,
   getNextRosterEntryNo,
@@ -25,11 +25,11 @@ import {
   extractRosterEntryNo,
   formatRosterDateTime,
   formatRosterEntryNo,
-  getRosterContributionLabel,
   getRosterDaohaoError,
   getRosterFreeTimeLabels,
   getRosterGenderLabel,
   getRosterHallLabel,
+  getRosterPositionLabel,
   normalizeRosterDaohao,
   normalizeRosterLongText,
   normalizeRosterShortText,
@@ -73,13 +73,15 @@ interface AdminEditingFormState {
   socialOther: string
   /** 用途：是否公开传讯号 */
   allowContactPublic: boolean
+  /** 用途：门中分工 */
+  positionKey: AdminRosterEntryRecord['positionKey']
   /** 用途：身怀所长 */
   strengths: string
   /** 用途：所好雅事 */
   hobbies: string
   /** 用途：闲暇时段 */
   freeTimeSlots: AdminRosterEntryRecord['freeTimeSlots']
-  /** 用途：效力意愿 */
+  /** 用途：旧版效力意愿，当前不再单独编辑，但保存时需要原样带回 */
   contributionLevel: AdminRosterEntryRecord['contributionLevel']
   /** 用途：弟子签押 */
   oathSignedName: string
@@ -156,6 +158,12 @@ const isDeleting = ref<boolean>(false)
 // 这里记录是否正在获取建议文牒号。
 const isLoadingNextEntryNo = ref<boolean>(false)
 
+// 这里记录后台为抽屉和编辑态压入的历史层级，让浏览器返回键优先收起面板而不是直接离开审核台。
+const adminHistoryDepth = ref<number>(0)
+
+// 这里标记当前是否是代码主动触发历史回退，避免 popstate 时重复执行收起逻辑。
+const isHandlingProgrammaticHistory = ref<boolean>(false)
+
 // 这里保存编辑表单。
 const editForm = ref<AdminEditingFormState>(createEmptyEditingForm())
 
@@ -207,6 +215,7 @@ const saveSummary = computed<string>(() => {
     socialQq: normalizeRosterShortText(editForm.value.socialQq),
     socialOther: normalizeRosterShortText(editForm.value.socialOther),
     allowContactPublic: editForm.value.allowContactPublic,
+    positionKey: editForm.value.positionKey,
     strengths: normalizeRosterLongText(editForm.value.strengths),
     hobbies: normalizeRosterLongText(editForm.value.hobbies),
     freeTimeSlots: [...new Set(editForm.value.freeTimeSlots)],
@@ -263,6 +272,7 @@ function createEmptyEditingForm(): AdminEditingFormState {
     socialQq: '',
     socialOther: '',
     allowContactPublic: false,
+    positionKey: 'tongmen',
     strengths: '',
     hobbies: '',
     freeTimeSlots: [],
@@ -271,6 +281,37 @@ function createEmptyEditingForm(): AdminEditingFormState {
     oathSignedDate: '',
     reviewComment: '',
   }
+}
+
+/**
+ * 压入后台历史层
+ * 用途：让浏览器返回键先退出编辑态或收起抽屉，而不是直接离开审核台
+ * 入参：无
+ * 返回值：无返回值
+ */
+function pushAdminHistoryLayer(): void {
+  if (typeof window === 'undefined' || typeof window.history === 'undefined') {
+    return
+  }
+
+  window.history.pushState({ rosterAdminLayer: true }, '', window.location.href)
+  adminHistoryDepth.value += 1
+}
+
+/**
+ * 收回一层编辑历史
+ * 用途：保存成功后界面已经退出编辑态，需要把多余的编辑历史层同步收回，避免返回层级错位
+ * 入参：无
+ * 返回值：无返回值
+ */
+function consumeEditingHistoryLayer(): void {
+  if (adminHistoryDepth.value <= 0 || typeof window === 'undefined') {
+    return
+  }
+
+  adminHistoryDepth.value -= 1
+  isHandlingProgrammaticHistory.value = true
+  window.history.back()
 }
 
 /**
@@ -332,6 +373,7 @@ function syncEditForm(entry: AdminRosterEntryRecord | null): void {
     socialQq: entry.socialQq,
     socialOther: entry.socialOther,
     allowContactPublic: entry.allowContactPublic,
+    positionKey: entry.positionKey,
     strengths: entry.strengths,
     hobbies: entry.hobbies,
     freeTimeSlots: [...entry.freeTimeSlots],
@@ -406,11 +448,16 @@ async function loadReviewLogs(entryId: string): Promise<void> {
  * 返回值：无返回值
  */
 function openEntryDrawer(entry: AdminRosterEntryRecord): void {
+  const hadActiveEntry = Boolean(activeEntryId.value)
   activeEntryId.value = entry.id
   isEditing.value = false
   syncEditForm(entry)
   setActionMessage(`已载入“${entry.daohao || '未命名档案'}”当前登记内容，切到编辑模式时会自动带出之前所填信息。`)
   void loadReviewLogs(entry.id)
+
+  if (!hadActiveEntry) {
+    pushAdminHistoryLayer()
+  }
 }
 
 /**
@@ -419,11 +466,19 @@ function openEntryDrawer(entry: AdminRosterEntryRecord): void {
  * 入参：无
  * 返回值：无返回值
  */
-function closeEntryDrawer(): void {
+function closeEntryDrawer(consumeHistory = true): void {
+  const wasEditing = isEditing.value
   activeEntryId.value = ''
   isEditing.value = false
   reviewLogs.value = []
   syncEditForm(null)
+
+  if (consumeHistory && adminHistoryDepth.value > 0 && typeof window !== 'undefined') {
+    const stepCount = Math.min(wasEditing ? 2 : 1, adminHistoryDepth.value)
+    adminHistoryDepth.value -= stepCount
+    isHandlingProgrammaticHistory.value = true
+    window.history.go(-stepCount)
+  }
 }
 
 /**
@@ -440,6 +495,7 @@ async function enterEditMode(): Promise<void> {
   isEditing.value = true
   syncEditForm(activeEntry.value)
   setActionMessage(`已自动带入“${activeEntry.value.daohao || '未命名档案'}”的原始内容，可直接修改后保存。`)
+  pushAdminHistoryLayer()
 
   if (editForm.value.status === 'approved' && !editEntryNoText.value) {
     await fillNextEntryNo()
@@ -452,10 +508,16 @@ async function enterEditMode(): Promise<void> {
  * 入参：无
  * 返回值：无返回值
  */
-function cancelEditing(): void {
+function cancelEditing(consumeHistory = true): void {
   isEditing.value = false
   syncEditForm(activeEntry.value)
   setActionMessage('已取消本次编辑，并恢复成当前档案最近一次保存的内容。')
+
+  if (consumeHistory && adminHistoryDepth.value > 0 && typeof window !== 'undefined') {
+    adminHistoryDepth.value -= 1
+    isHandlingProgrammaticHistory.value = true
+    window.history.back()
+  }
 }
 
 /**
@@ -529,6 +591,7 @@ function buildSavePayload(): AdminRosterEntrySavePayload | null {
     socialQq: normalizeRosterShortText(editForm.value.socialQq),
     socialOther: normalizeRosterShortText(editForm.value.socialOther),
     allowContactPublic: Boolean(editForm.value.allowContactPublic),
+    positionKey: editForm.value.positionKey,
     strengths: normalizeRosterLongText(editForm.value.strengths),
     hobbies: normalizeRosterLongText(editForm.value.hobbies),
     freeTimeSlots: [...new Set(editForm.value.freeTimeSlots)],
@@ -590,6 +653,7 @@ async function handleSaveEntry(): Promise<void> {
   try {
     await saveAdminRosterEntry(payload)
     isEditing.value = false
+    consumeEditingHistoryLayer()
     await loadEntryList()
 
     if (activeEntryId.value) {
@@ -637,6 +701,72 @@ async function handleDeleteEntry(): Promise<void> {
     setActionMessage(error instanceof Error ? error.message : '删除档案失败，请稍后再试', 'error')
   } finally {
     isDeleting.value = false
+  }
+}
+
+/**
+ * 处理顶部编辑按钮
+ * 用途：统一控制“编辑档案 / 取消编辑”这一组按钮行为
+ * 入参：无
+ * 返回值：无返回值
+ */
+function handleEditToggle(): void {
+  if (isEditing.value) {
+    cancelEditing()
+    return
+  }
+
+  void enterEditMode()
+}
+
+/**
+ * 处理抽屉返回上一步
+ * 用途：让顶部按钮、遮罩点击和浏览器返回都尽量保持一致，先退编辑，再收起详情
+ * 入参：无
+ * 返回值：无返回值
+ */
+function handleDrawerBackStep(): void {
+  if (isEditing.value) {
+    cancelEditing()
+    return
+  }
+
+  setActionMessage('已收起当前档案，仍停留在执事审核台列表。')
+  closeEntryDrawer()
+}
+
+/**
+ * 处理抽屉遮罩点击
+ * 用途：点到抽屉外层时也按“返回上一步”处理，避免一键丢掉当前上下文
+ * 入参：无
+ * 返回值：无返回值
+ */
+function handleDrawerBackdropClick(): void {
+  handleDrawerBackStep()
+}
+
+/**
+ * 处理浏览器返回事件
+ * 用途：移动端或浏览器直接点返回时，优先退出编辑态或收起抽屉
+ * 入参：无
+ * 返回值：无返回值
+ */
+function handleAdminPopState(): void {
+  if (isHandlingProgrammaticHistory.value) {
+    isHandlingProgrammaticHistory.value = false
+    return
+  }
+
+  if (isEditing.value) {
+    adminHistoryDepth.value = Math.max(adminHistoryDepth.value - 1, 0)
+    cancelEditing(false)
+    return
+  }
+
+  if (activeEntry.value) {
+    adminHistoryDepth.value = Math.max(adminHistoryDepth.value - 1, 0)
+    setActionMessage('已通过浏览器返回键收起当前档案，仍停留在执事审核台。')
+    closeEntryDrawer(false)
   }
 }
 
@@ -691,6 +821,10 @@ watch(
 )
 
 onMounted(async () => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', handleAdminPopState)
+  }
+
   await initializeRosterAuth()
 
   if (!isAdmin.value) {
@@ -699,6 +833,12 @@ onMounted(async () => {
   }
 
   await loadEntryList()
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('popstate', handleAdminPopState)
+  }
 })
 </script>
 
@@ -804,7 +944,7 @@ onMounted(async () => {
 
     <Transition name="drawer-fade">
       <div v-if="activeEntry" class="roster-admin-drawer">
-        <div class="roster-admin-drawer__backdrop" @click="closeEntryDrawer"></div>
+        <div class="roster-admin-drawer__backdrop" @click="handleDrawerBackdropClick"></div>
 
         <aside class="roster-admin-drawer__panel">
           <div class="roster-admin-drawer__head">
@@ -818,12 +958,12 @@ onMounted(async () => {
               <button
                 type="button"
                 class="roster-admin-drawer__close"
-                @click="isEditing ? cancelEditing() : enterEditMode()"
+                @click="handleEditToggle"
               >
                 {{ isEditing ? '取消编辑' : '编辑档案' }}
               </button>
-              <button type="button" class="roster-admin-drawer__close" @click="closeEntryDrawer">
-                收起
+              <button type="button" class="roster-admin-drawer__close" @click="handleDrawerBackStep">
+                {{ isEditing ? '返回详情' : '返回列表' }}
               </button>
             </div>
           </div>
@@ -918,6 +1058,23 @@ onMounted(async () => {
                 </label>
 
                 <div class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>门中分工 *</span>
+                  <div class="roster-admin-choice-grid">
+                    <button
+                      v-for="option in rosterPositionOptions"
+                      :key="option.key"
+                      type="button"
+                      class="roster-admin-choice-card"
+                      :class="{ 'roster-admin-choice-card--active': editForm.positionKey === option.key }"
+                      @click="editForm.positionKey = option.key"
+                    >
+                      <strong>{{ option.label }}</strong>
+                      <small>{{ option.description }}</small>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="roster-admin-form-field roster-admin-form-field--full">
                   <span>归属堂口 *</span>
                   <div class="roster-admin-choice-grid">
                     <button
@@ -954,6 +1111,7 @@ onMounted(async () => {
               <div v-else class="roster-admin-detail-card__grid">
                 <div><span>当前状态</span><strong>{{ rosterStatusLabelMap[activeEntry.status] }}</strong></div>
                 <div><span>正式文牒号</span><strong>{{ activeEntry.entryNo ? formatRosterEntryNo(activeEntry.entryNo) : '未分配' }}</strong></div>
+                <div><span>门中分工</span><strong>{{ getRosterPositionLabel(activeEntry.positionKey) }}</strong></div>
                 <div><span>归属堂口</span><strong>{{ getRosterHallLabel(activeEntry.hallKey) }}</strong></div>
                 <div><span>其他堂口说明</span><strong>{{ activeEntry.hallOtherText || '无' }}</strong></div>
               </div>
@@ -1040,23 +1198,6 @@ onMounted(async () => {
                     </button>
                   </div>
                 </div>
-
-                <div class="roster-admin-form-field roster-admin-form-field--full">
-                  <span>愿为门派效力</span>
-                  <div class="roster-admin-choice-grid roster-admin-choice-grid--single">
-                    <button
-                      v-for="option in rosterContributionOptions"
-                      :key="option.key"
-                      type="button"
-                      class="roster-admin-choice-card"
-                      :class="{ 'roster-admin-choice-card--active': editForm.contributionLevel === option.key }"
-                      @click="editForm.contributionLevel = option.key"
-                    >
-                      <strong>{{ option.label }}</strong>
-                      <small>{{ option.description }}</small>
-                    </button>
-                  </div>
-                </div>
               </div>
 
               <template v-else>
@@ -1070,7 +1211,6 @@ onMounted(async () => {
                 </div>
                 <div class="roster-admin-detail-card__grid">
                   <div><span>闲暇时辰</span><strong>{{ getRosterFreeTimeLabels(activeEntry.freeTimeSlots).join('、') || '未填' }}</strong></div>
-                  <div><span>效力意愿</span><strong>{{ getRosterContributionLabel(activeEntry.contributionLevel) }}</strong></div>
                 </div>
               </template>
             </section>
@@ -1131,7 +1271,7 @@ onMounted(async () => {
                     type="button"
                     class="ink-button ink-button--ghost"
                     :disabled="isSaving"
-                    @click="cancelEditing"
+                    @click="handleEditToggle"
                   >
                     取消编辑
                   </button>

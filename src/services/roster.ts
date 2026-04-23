@@ -529,6 +529,7 @@ export async function saveAdminRosterEntry(payload: AdminRosterEntrySavePayload)
       daohao: payload.daohao,
       secular_name: payload.secularName,
       gender: payload.gender,
+      position_key: payload.positionKey,
       current_city: payload.currentCity,
       birth_year: payload.birthYear,
       profession: payload.profession,

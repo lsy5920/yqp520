@@ -155,7 +155,8 @@ onMounted(() => {
 
         <article class="content-card content-card--serif">
           <p class="content-card__eyebrow">公开字段</p>
-          <h2>{{ entry.hallLabel }} · {{ entry.daohao }}</h2>
+          <h2>{{ entry.daohao }} · {{ entry.positionLabel }}</h2>
+          <p>{{ entry.genderLabel }} · {{ entry.hallLabel }}</p>
           <p>{{ rosterContent.detail.publicInfoLead }}</p>
         </article>
       </section>

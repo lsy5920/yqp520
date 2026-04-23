@@ -123,6 +123,7 @@ create table if not exists public.yunqi_roster_entries (
   daohao text not null default '',
   secular_name text not null default '',
   gender text not null default '' check (gender in ('male', 'female', 'other', '')),
+  position_key text not null default 'tongmen' check (position_key in ('tongmen', 'zongzhu', 'yunsi_wen', 'yunsi_shi', 'yunsi_cai')),
   current_city text not null default '',
   birth_year text not null default '',
   profession text not null default '',
@@ -153,6 +154,7 @@ create table if not exists public.yunqi_roster_entries (
 -- 这里确保旧库升级后也拥有新版字段。
 alter table public.yunqi_roster_entries add column if not exists daohao text not null default '';
 alter table public.yunqi_roster_entries add column if not exists gender text not null default '';
+alter table public.yunqi_roster_entries add column if not exists position_key text not null default 'tongmen';
 alter table public.yunqi_roster_entries add column if not exists referrer_name text not null default '自行登门';
 alter table public.yunqi_roster_entries add column if not exists hall_other_text text not null default '';
 alter table public.yunqi_roster_entries add column if not exists social_xiaohongshu_douyin text not null default '';
@@ -204,6 +206,15 @@ alter table public.yunqi_roster_entries drop constraint if exists yunqi_roster_e
 alter table public.yunqi_roster_entries
 add constraint yunqi_roster_entries_gender_check
 check (gender in ('male', 'female', 'other', ''));
+
+update public.yunqi_roster_entries
+set position_key = 'tongmen'
+where public.clean_yunqi_short_text(position_key) = '';
+
+alter table public.yunqi_roster_entries drop constraint if exists yunqi_roster_entries_position_key_check;
+alter table public.yunqi_roster_entries
+add constraint yunqi_roster_entries_position_key_check
+check (position_key in ('tongmen', 'zongzhu', 'yunsi_wen', 'yunsi_shi', 'yunsi_cai'));
 
 -- 这里把非准予状态记录上的旧文牒号清掉，防止公开口径混乱。
 update public.yunqi_roster_entries
@@ -514,6 +525,7 @@ begin
     daohao,
     secular_name,
     gender,
+    position_key,
     current_city,
     birth_year,
     profession,
@@ -537,6 +549,7 @@ begin
     normalized_daohao,
     normalized_secular_name,
     normalized_gender,
+    'tongmen',
     normalized_current_city,
     normalized_birth_year,
     normalized_profession,
@@ -578,6 +591,8 @@ returns table (
   entry_no integer,
   entry_no_text text,
   daohao text,
+  gender text,
+  position_key text,
   hall_key text,
   entry_intent text,
   strengths text,
@@ -599,6 +614,8 @@ as $$
     entry.entry_no,
     public.format_yunqi_entry_no(entry.entry_no) as entry_no_text,
     entry.daohao,
+    entry.gender,
+    entry.position_key,
     entry.hall_key,
     entry.entry_intent,
     entry.strengths,
@@ -636,6 +653,8 @@ returns table (
   entry_no integer,
   entry_no_text text,
   daohao text,
+  gender text,
+  position_key text,
   hall_key text,
   entry_intent text,
   strengths text,
@@ -657,6 +676,8 @@ as $$
     entry.entry_no,
     public.format_yunqi_entry_no(entry.entry_no) as entry_no_text,
     entry.daohao,
+    entry.gender,
+    entry.position_key,
     entry.hall_key,
     entry.entry_intent,
     entry.strengths,
@@ -710,6 +731,7 @@ declare
   target_daohao text := public.clean_yunqi_short_text(entry_payload ->> 'daohao');
   target_secular_name text := public.clean_yunqi_short_text(entry_payload ->> 'secular_name');
   target_gender text := public.clean_yunqi_short_text(entry_payload ->> 'gender');
+  target_position_key text := coalesce(nullif(public.clean_yunqi_short_text(entry_payload ->> 'position_key'), ''), 'tongmen');
   target_current_city text := public.clean_yunqi_short_text(entry_payload ->> 'current_city');
   target_birth_year text := public.clean_yunqi_short_text(entry_payload ->> 'birth_year');
   target_profession text := public.clean_yunqi_short_text(entry_payload ->> 'profession');
@@ -784,6 +806,10 @@ begin
 
   if target_gender not in ('male', 'female', 'other') then
     raise exception '请选择性别';
+  end if;
+
+  if target_position_key not in ('tongmen', 'zongzhu', 'yunsi_wen', 'yunsi_shi', 'yunsi_cai') then
+    raise exception '请选择正确的门中分工';
   end if;
 
   if target_birth_year = '' then
@@ -884,6 +910,7 @@ begin
     daohao = target_daohao,
     secular_name = target_secular_name,
     gender = target_gender,
+    position_key = target_position_key,
     current_city = target_current_city,
     birth_year = target_birth_year,
     profession = target_profession,

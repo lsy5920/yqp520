@@ -2,6 +2,7 @@ import {
   rosterContributionOptions,
   rosterGenderOptions,
   rosterHallLabelMap,
+  rosterPositionOptions,
   rosterStatusDescriptionMap,
   rosterStatusLabelMap,
 } from '@/data/rosterContent'
@@ -14,6 +15,7 @@ import type {
   RosterFreeTimeSlot,
   RosterGender,
   RosterHallKey,
+  RosterPositionKey,
   RosterRegistrationFormValue,
   RosterReviewLogRecord,
   SubmitRosterEntryPayload,
@@ -50,6 +52,22 @@ function resolveRosterDaohaoFromRecord(record: Record<string, unknown>): string 
   ].find((item) => typeof item === 'string' && item.trim())
 
   return normalizeRosterDaohao(typeof candidateValue === 'string' ? candidateValue : '')
+}
+
+/**
+ * 从记录里提取兼容后的门中分工
+ * 用途：新库优先读取 position_key，旧库没有该字段时退回为默认“同门”
+ * 入参：record 为数据库或 RPC 返回记录
+ * 返回值：返回统一后的职位键名
+ */
+function resolveRosterPositionKeyFromRecord(record: Record<string, unknown>): RosterPositionKey {
+  const rawPositionKey = String(record.position_key || '').trim() as RosterPositionKey
+
+  if (['tongmen', 'zongzhu', 'yunsi_wen', 'yunsi_shi', 'yunsi_cai'].includes(rawPositionKey)) {
+    return rawPositionKey
+  }
+
+  return 'tongmen'
 }
 
 /**
@@ -332,6 +350,16 @@ export function getRosterContributionLabel(value: RosterContributionLevel | ''):
 }
 
 /**
+ * 获取门中分工文案
+ * 用途：后台、公开详情与云名帖统一显示职位中文名
+ * 入参：value 为职位键名
+ * 返回值：返回中文文案
+ */
+export function getRosterPositionLabel(value: RosterPositionKey | ''): string {
+  return rosterPositionOptions.find((item) => item.key === value)?.label || '同门'
+}
+
+/**
  * 获取性别文案
  * 用途：登记页和后台查看时统一显示性别中文名
  * 入参：value 为性别键名
@@ -391,6 +419,8 @@ export function buildRosterPublicText(entry: PublicRosterEntry): string {
   return [
     '云栖名册 · 公开名帖',
     `道号：${entry.daohao}`,
+    `性别：${entry.genderLabel}`,
+    `门中分工：${entry.positionLabel}`,
     `归属堂口：${entry.hallLabel}`,
     `入派本心：${entry.entryIntent}`,
     `身怀所长：${entry.strengths || '暂未公开所长'}`,
@@ -511,6 +541,10 @@ export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePay
     return '请选择性别'
   }
 
+  if (!payload.positionKey) {
+    return '请选择门中分工'
+  }
+
   if (!payload.currentCity) {
     return '请填写现居洞府'
   }
@@ -608,6 +642,10 @@ export function mapPublicRosterEntry(record: Record<string, unknown>): PublicRos
     ),
     entryNoValue,
     daohao: resolveRosterDaohaoFromRecord(record),
+    gender: (record.gender as RosterGender) || '',
+    genderLabel: getRosterGenderLabel((record.gender as RosterGender) || ''),
+    positionKey: resolveRosterPositionKeyFromRecord(record),
+    positionLabel: getRosterPositionLabel(resolveRosterPositionKeyFromRecord(record)),
     hallKey: (record.hall_key as RosterHallKey) || 'other',
     hallLabel: getRosterHallLabel((record.hall_key as RosterHallKey) || 'other'),
     entryIntent: String(record.entry_intent || ''),
@@ -638,6 +676,7 @@ export function mapAdminRosterEntry(record: Record<string, unknown>): AdminRoste
     daohao: resolveRosterDaohaoFromRecord(record),
     secularName: String(record.secular_name || ''),
     gender: (record.gender as RosterGender) || '',
+    positionKey: resolveRosterPositionKeyFromRecord(record),
     currentCity: String(record.current_city || ''),
     birthYear: String(record.birth_year || ''),
     profession: String(record.profession || ''),
