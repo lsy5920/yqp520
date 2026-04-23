@@ -90,15 +90,8 @@ function releaseTappedOptionFocus(event?: Event): void {
     return
   }
 
-  // 这里放到下一帧再移除焦点，保证本次点击仍然能正常触发选项更新。
-  if (typeof window === 'undefined') {
-    currentButton.blur()
-    return
-  }
-
-  window.requestAnimationFrame(() => {
-    currentButton.blur()
-  })
+  // 这里直接同步移除焦点，尽量抢在浏览器为了保留焦点而自动滚动之前完成处理。
+  currentButton.blur()
 }
 
 /**
@@ -165,6 +158,7 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   display: grid;
   gap: 18px;
   padding: 28px;
+  overflow-anchor: none;
   border: 1px solid rgba(147, 203, 198, 0.16);
   border-radius: 30px;
   background:
@@ -231,6 +225,7 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 .assessment-question-card__options {
   display: grid;
   gap: 14px;
+  overflow-anchor: none;
 }
 
 .assessment-question-card__option {
@@ -245,6 +240,7 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   color: #f4efe2;
   text-align: left;
   cursor: pointer;
+  overflow-anchor: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   transition:

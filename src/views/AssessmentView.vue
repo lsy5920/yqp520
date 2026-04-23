@@ -53,6 +53,15 @@ const pendingExamQuestionId = ref<string>('')
 // 这里记录当前章节切换是由什么动作触发的，避免“下一题跨章”时误把弹窗滚回章节开头。
 const examSectionSwitchSource = ref<ExamSectionSwitchSource>('dialog-open')
 
+// 这里记录当前是否处于手机端答题布局，方便只在小屏启用折叠交互。
+const isExamMobileLayout = ref<boolean>(false)
+
+// 这里记录当前章作答情况卡片在手机端是否收起，默认进入答题时先收起。
+const isExamChapterCollapsed = ref<boolean>(false)
+
+// 这里记录题号速切区在手机端是否收起，默认进入答题时先收起。
+const isExamOrderCollapsed = ref<boolean>(false)
+
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
   rootRef: pageRef,
@@ -158,6 +167,26 @@ const activeExamQuestionSectionProgressText = computed<string>(() => {
 })
 
 /**
+ * 当前章节收起摘要
+ * 用途：手机端收起本章作答情况卡片时，仍保留一行关键进度信息
+ */
+const examChapterCollapsedSummaryText = computed<string>(() => {
+  if (!currentSection.value) {
+    return ''
+  }
+
+  const summaryParts = [
+    `本章已答 ${currentSectionAnsweredCount.value} / ${currentSection.value.questions.length} 题`,
+  ]
+
+  if (activeExamQuestionSectionProgressText.value) {
+    summaryParts.push(activeExamQuestionSectionProgressText.value)
+  }
+
+  return summaryParts.join(' · ')
+})
+
+/**
  * 当前是否已到整卷第一题
  * 用途：控制答题底部“上一题”按钮是否禁用
  */
@@ -190,6 +219,36 @@ const examQuestionOrderList = computed(() => flatExamQuestions.value.map((questi
     isAnswered,
   }
 }))
+
+/**
+ * 题号速切区收起摘要
+ * 用途：手机端默认收起题号区时，仍用一行摘要提示当前题号与整卷进度
+ */
+const examOrderCollapsedSummaryText = computed<string>(() => {
+  const summaryParts = [`已答 ${answeredCount.value} / ${totalQuestions.value} 题`]
+
+  if (activeExamQuestion.value) {
+    summaryParts.unshift(`当前第 ${activeExamQuestion.value.order} 题`)
+  }
+
+  return summaryParts.join(' · ')
+})
+
+/**
+ * 当前章作答情况区是否应显示完整内容
+ * 用途：电脑端始终展开，手机端按折叠开关决定显示详情还是摘要
+ */
+const shouldShowExamChapterDetails = computed<boolean>(() => (
+  !isExamMobileLayout.value || !isExamChapterCollapsed.value
+))
+
+/**
+ * 题号速切区是否应显示完整内容
+ * 用途：电脑端始终展开，手机端按折叠开关决定显示题号网格还是摘要
+ */
+const shouldShowExamOrderDetails = computed<boolean>(() => (
+  !isExamMobileLayout.value || !isExamOrderCollapsed.value
+))
 
 /**
  * 最近一次交卷时间文本
@@ -419,6 +478,79 @@ function resolveExamDialogScrollTop(target: HTMLElement, offset = 8): number {
 }
 
 /**
+ * 同步答题弹窗是否处于手机端布局
+ * 用途：根据当前窗口宽度决定是否启用手机端折叠交互，并在回到大屏时恢复完整展开
+ * 入参：无
+ * 返回值：无返回值
+ */
+function syncExamMobileLayout(): void {
+  if (typeof window === 'undefined') {
+    isExamMobileLayout.value = false
+    return
+  }
+
+  // 这里先记住调整前是否已经处于手机端，便于在桌面端切回手机端时补做默认收起。
+  const wasExamMobileLayout = isExamMobileLayout.value
+  isExamMobileLayout.value = window.innerWidth <= 720
+
+  if (!isExamMobileLayout.value) {
+    isExamChapterCollapsed.value = false
+    isExamOrderCollapsed.value = false
+    return
+  }
+
+  // 这里兼容旋转屏幕或浏览器改宽度的场景，只要从大屏切到手机端且正在答题，就恢复默认收起状态。
+  if (!wasExamMobileLayout && phase.value === 'exam') {
+    resetExamMobilePanels()
+  }
+}
+
+/**
+ * 重置手机端折叠面板
+ * 用途：每次正式进入答题阶段时，让手机端的章节区和题号区回到默认收起状态
+ * 入参：无
+ * 返回值：无返回值
+ */
+function resetExamMobilePanels(): void {
+  if (!isExamMobileLayout.value) {
+    isExamChapterCollapsed.value = false
+    isExamOrderCollapsed.value = false
+    return
+  }
+
+  isExamChapterCollapsed.value = true
+  isExamOrderCollapsed.value = true
+}
+
+/**
+ * 切换当前章作答情况区
+ * 用途：手机端点击后展开或收起当前章节说明与作答信息，桌面端保持始终展开
+ * 入参：无
+ * 返回值：无返回值
+ */
+function toggleExamChapterCollapsed(): void {
+  if (!isExamMobileLayout.value) {
+    return
+  }
+
+  isExamChapterCollapsed.value = !isExamChapterCollapsed.value
+}
+
+/**
+ * 切换题号速切区
+ * 用途：手机端点击后展开或收起整卷题号网格，减少答题时的垂直占用
+ * 入参：无
+ * 返回值：无返回值
+ */
+function toggleExamOrderCollapsed(): void {
+  if (!isExamMobileLayout.value) {
+    return
+  }
+
+  isExamOrderCollapsed.value = !isExamOrderCollapsed.value
+}
+
+/**
  * 滚到当前章节起始位置
  * 用途：进入答题弹窗或切换章节后，只在弹窗内部回到当前章开头
  * 入参：behavior 为滚动方式
@@ -541,6 +673,8 @@ watch(
   phase,
   async (nextPhase) => {
     if (nextPhase === 'exam') {
+      syncExamMobileLayout()
+      resetExamMobilePanels()
       syncActiveExamQuestion(pendingExamQuestionId.value)
       pendingExamQuestionId.value = ''
       await openExamDialog(false)
@@ -600,11 +734,21 @@ watch(
 )
 
 onMounted(() => {
+  syncExamMobileLayout()
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', syncExamMobileLayout, { passive: true })
+  }
+
   initializeAssessment()
 })
 
 onBeforeUnmount(() => {
   syncExamDialogLock(false)
+
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', syncExamMobileLayout)
+  }
 })
 </script>
 
@@ -862,15 +1006,36 @@ onBeforeUnmount(() => {
 
               <div ref="examBodyRef" class="assessment-exam__body">
                 <article v-if="currentSection" class="content-card assessment-exam__chapter-card">
-                  <p class="eyebrow">{{ currentSection.eyebrow }}</p>
-                  <h2>{{ currentSection.title }}</h2>
-                  <p>{{ currentSection.description }}</p>
-                  <div class="assessment-exam__chapter-meta">
-                    <span>本章题数：{{ currentSection.questions.length }}</span>
-                    <span>本章已答：{{ currentSectionAnsweredCount }}</span>
-                    <span v-if="activeExamQuestion">当前题号：第 {{ activeExamQuestion.order }} 题</span>
-                    <span v-if="activeExamQuestionSectionProgressText">{{ activeExamQuestionSectionProgressText }}</span>
+                  <div class="assessment-exam__chapter-head">
+                    <div class="assessment-exam__chapter-title">
+                      <p class="eyebrow">{{ currentSection.eyebrow }}</p>
+                      <h2>{{ currentSection.title }}</h2>
+                    </div>
+
+                    <button
+                      v-if="isExamMobileLayout"
+                      type="button"
+                      class="assessment-exam__compact-toggle"
+                      :aria-expanded="shouldShowExamChapterDetails ? 'true' : 'false'"
+                      @click="toggleExamChapterCollapsed"
+                    >
+                      {{ shouldShowExamChapterDetails ? '收起本章' : '展开本章' }}
+                    </button>
                   </div>
+
+                  <p v-if="isExamMobileLayout && !shouldShowExamChapterDetails" class="assessment-exam__compact-summary">
+                    {{ examChapterCollapsedSummaryText }}
+                  </p>
+
+                  <template v-if="shouldShowExamChapterDetails">
+                    <p>{{ currentSection.description }}</p>
+                    <div class="assessment-exam__chapter-meta">
+                      <span>本章题数：{{ currentSection.questions.length }}</span>
+                      <span>本章已答：{{ currentSectionAnsweredCount }}</span>
+                      <span v-if="activeExamQuestion">当前题号：第 {{ activeExamQuestion.order }} 题</span>
+                      <span v-if="activeExamQuestionSectionProgressText">{{ activeExamQuestionSectionProgressText }}</span>
+                    </div>
+                  </template>
                 </article>
 
                 <div ref="examQuestionListRef" class="assessment-exam__question-workspace">
@@ -881,14 +1046,30 @@ onBeforeUnmount(() => {
                         <h3>按题号直接切换，整卷三十题一眼可见</h3>
                       </div>
 
-                      <div class="assessment-exam__order-legend">
-                        <span class="assessment-exam__legend-chip assessment-exam__legend-chip--active">当前题</span>
-                        <span class="assessment-exam__legend-chip assessment-exam__legend-chip--answered">已作答</span>
-                        <span class="assessment-exam__legend-chip assessment-exam__legend-chip--pending">未作答</span>
+                      <div class="assessment-exam__order-side">
+                        <div v-if="shouldShowExamOrderDetails" class="assessment-exam__order-legend">
+                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--active">当前题</span>
+                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--answered">已作答</span>
+                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--pending">未作答</span>
+                        </div>
+
+                        <button
+                          v-if="isExamMobileLayout"
+                          type="button"
+                          class="assessment-exam__compact-toggle"
+                          :aria-expanded="shouldShowExamOrderDetails ? 'true' : 'false'"
+                          @click="toggleExamOrderCollapsed"
+                        >
+                          {{ shouldShowExamOrderDetails ? '收起题号' : '展开题号' }}
+                        </button>
                       </div>
                     </div>
 
-                    <div class="assessment-exam__order-grid">
+                    <p v-if="isExamMobileLayout && !shouldShowExamOrderDetails" class="assessment-exam__compact-summary">
+                      {{ examOrderCollapsedSummaryText }}
+                    </p>
+
+                    <div v-if="shouldShowExamOrderDetails" class="assessment-exam__order-grid">
                       <button
                         v-for="question in examQuestionOrderList"
                         :key="question.id"
@@ -901,10 +1082,10 @@ onBeforeUnmount(() => {
                         }"
                         :aria-pressed="question.isActive ? 'true' : 'false'"
                         @click="handleSelectExamQuestion(question.id)"
-                      >
-                        {{ question.order }}
-                      </button>
-                    </div>
+                        >
+                          {{ question.order }}
+                        </button>
+                      </div>
                   </article>
 
                   <AssessmentQuestionCard
@@ -1155,6 +1336,11 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
+.assessment-exam__chapter-card {
+  display: grid;
+  gap: 16px;
+}
+
 .assessment-exam__question-workspace,
 .assessment-result__wrong-workspace {
   display: grid;
@@ -1175,6 +1361,23 @@ onBeforeUnmount(() => {
   align-items: start;
 }
 
+.assessment-exam__chapter-head {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.assessment-exam__chapter-title {
+  display: grid;
+  gap: 6px;
+}
+
+.assessment-exam__chapter-title .eyebrow,
+.assessment-exam__chapter-title h2 {
+  margin: 0;
+}
+
 .assessment-exam__order-head h3,
 .assessment-result__wrong-nav-head h3 {
   margin: 6px 0 0;
@@ -1182,11 +1385,58 @@ onBeforeUnmount(() => {
   line-height: 1.5;
 }
 
+.assessment-exam__order-side {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
 .assessment-exam__order-legend {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.assessment-exam__compact-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(216, 185, 114, 0.18);
+  border-radius: 999px;
+  background: rgba(5, 19, 28, 0.48);
+  color: rgba(241, 217, 160, 0.94);
+  cursor: pointer;
+  transition:
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.assessment-exam__compact-toggle:hover {
+  border-color: rgba(216, 185, 114, 0.3);
+  background: rgba(10, 31, 42, 0.72);
+}
+
+.assessment-exam__compact-toggle:focus-visible {
+  outline: 2px solid rgba(241, 217, 160, 0.72);
+  outline-offset: 2px;
+}
+
+.assessment-exam__compact-summary {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(216, 185, 114, 0.12);
+  border-radius: 18px;
+  background: rgba(5, 19, 28, 0.4);
+  color: rgba(244, 239, 226, 0.74);
+  font-size: 0.92rem;
+  line-height: 1.74;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .assessment-exam__legend-chip {
@@ -1915,6 +2165,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 920px) {
   .assessment-ready,
+  .assessment-exam__chapter-head,
   .assessment-exam__overview-head,
   .assessment-exam__order-head,
   .assessment-result__summary-head,
@@ -1970,6 +2221,10 @@ onBeforeUnmount(() => {
 
   .assessment-exam__order-legend {
     justify-content: flex-start;
+  }
+
+  .assessment-exam__order-side {
+    justify-items: start;
   }
 
   .assessment-result__wrong-count {
@@ -2029,6 +2284,11 @@ onBeforeUnmount(() => {
   .assessment-exam__chapter-card p {
     line-height: 1.7;
     font-size: 0.92rem;
+  }
+
+  .assessment-exam__chapter-head,
+  .assessment-exam__order-head {
+    gap: 12px;
   }
 
   .assessment-ready__intro-card,
@@ -2170,6 +2430,20 @@ onBeforeUnmount(() => {
 
   .assessment-exam__order-legend {
     gap: 8px;
+  }
+
+  .assessment-exam__compact-toggle {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 0.82rem;
+  }
+
+  .assessment-exam__compact-summary {
+    padding: 10px 12px;
+    border-radius: 16px;
+    font-size: 0.84rem;
+    line-height: 1.68;
   }
 
   .assessment-exam__legend-chip {
