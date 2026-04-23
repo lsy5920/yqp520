@@ -1,7 +1,5 @@
 import type {
   CanonSection,
-  FaqItem,
-  FlowStep,
   HighlightItem,
   MusicLyricLine,
   MusicTrack,
@@ -57,7 +55,6 @@ const navItems: NavItem[] = [
   { label: '门规与禁律', path: '/discipline', hint: '共守风气' },
   { label: '宗门日常', path: '/life', hint: '同门相处' },
   { label: '入派指引', path: '/join', hint: '来去随缘' },
-  { label: '入派考核', path: '/assessment', hint: '问心入门' },
   { label: '云栖海报', path: '/poster', hint: '分享门面' },
 ]
 
@@ -290,59 +287,27 @@ const lifeRoutines: RoutineItem[] = [
   { title: '相助与同贺', description: '有人遇难处，同门量力相助；有人有喜事，众人一同庆贺。' },
 ]
 
-// 这里定义入派流程，供入派页面逐步展示。
-const joinSteps: FlowStep[] = [
+// 这里定义合并后的入派页要点卡片，统一收口入门说明与问心考核前提。
+const joinKeyPoints = [
   {
-    title: '认同宗旨',
-    description: '先认同云栖派“以诚为先、来去随缘、同道相守”的总旨，这是入派的第一步。',
+    eyebrow: '认同宗旨',
+    title: '先看心意是否相合',
+    description: '认同云栖“以诚为先、来去随缘、同道相守”的总旨，便已走在入门路上。',
   },
   {
-    title: '同门引荐',
-    description: '由一位正式同门引荐入群，避免陌生人硬闯，也让新同门有人照应。',
+    eyebrow: '入门方式',
+    title: '入群自介，便算见礼',
+    description: '入群后做一个简短自我介绍，彼此知道你是谁、为何而来，便算正式见过同门。',
   },
   {
-    title: '简单自介',
-    description: '入群后做一个轻松的自我介绍，不求华丽，只求彼此知道你是谁、为何而来。',
+    eyebrow: '来去自由',
+    title: '不强留，也不设高墙',
+    description: '想来可来，想退可退；情谊重在自在相守，不靠规矩和身份去压人。',
   },
   {
-    title: '自在相处',
-    description: '自我介绍完成，即为云栖弟子。之后说话、潜水、参加活动，都按自己的节奏来。',
-  },
-]
-
-// 这里定义退派说明，让用户知道云栖派重在情谊而非束缚。
-const leaveSteps: FlowStep[] = [
-  {
-    title: '随时可退',
-    description: '退派不问缘由，不做追问，不作挽留上的情感绑架。',
-  },
-  {
-    title: '情谊仍在',
-    description: '离开宗门不等于情谊断绝，曾经同行的缘分依旧值得珍惜。',
-  },
-  {
-    title: '日后可归',
-    description: '若有一日想回来，仍可回到云栖之中，再续旧缘。',
-  },
-]
-
-// 这里定义常见问题，帮助新同门快速理解门派风格。
-const joinFaqs: FaqItem[] = [
-  {
-    question: '云栖派是不是必须天天发言？',
-    answer: '不是。想说话就说，想潜水就潜，安静陪伴也是同门的一种方式。',
-  },
-  {
-    question: '参加线下活动是不是强制的？',
-    answer: '不是。所有活动都以自愿为前提，费用 AA，想来就来，不想来也完全没关系。',
-  },
-  {
-    question: '云栖铜章一定要领吗？',
-    answer: '不是。铜章是身份信物，重在仪式感，是否申领由个人自愿决定。',
-  },
-  {
-    question: '如果和部分同门处不来怎么办？',
-    answer: '云栖讲究“守和”与“守缘”，先求同存异，若确实合不来也可保持距离，互不勉强。',
+    eyebrow: '问心考核',
+    title: '读明白之后，再答这一卷',
+    description: '固定三十题、十分钟作答，不为难人，只核对门风、门规与禁律是否已经读明白。',
   },
 ]
 
@@ -432,10 +397,8 @@ export const siteContent = {
     note: '这里没有森严等级，只有愿意多做一点事的人。分工是为了让大家更轻松，不是为了让谁拥有高位。',
   },
   join: {
-    steps: joinSteps,
-    leaves: leaveSteps,
-    faqs: joinFaqs,
-    note: '认同宗旨、品行端正、愿与同门真诚相待，便是踏入云栖最重要的门槛。',
+    keyPoints: joinKeyPoints,
+    note: '认同宗旨 · 来去自由 · 固定三十题 · 十分钟问心卷',
   },
   assessment: assessmentContent,
   poster: {

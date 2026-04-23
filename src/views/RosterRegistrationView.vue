@@ -197,6 +197,26 @@ function handleSelectGender(value: RosterGender): void {
       :note="rosterContent.page.note"
     />
 
+    <section class="roster-registration-alert content-card content-card--soft">
+      <div class="roster-registration-alert__head">
+        <div>
+          <p class="content-card__eyebrow">{{ rosterContent.registration.truthfulnessTitle }}</p>
+          <h2>{{ rosterContent.registration.truthfulnessHeading }}</h2>
+          <p>{{ rosterContent.registration.truthfulnessLead }}</p>
+        </div>
+      </div>
+
+      <div class="roster-registration-alert__grid">
+        <article
+          v-for="line in rosterContent.registration.truthfulnessNotes"
+          :key="line"
+          class="roster-registration-alert__item"
+        >
+          <p>{{ line }}</p>
+        </article>
+      </div>
+    </section>
+
     <section class="roster-registration-outline content-card">
       <div class="roster-registration-outline__head">
         <div>
@@ -251,7 +271,7 @@ function handleSelectGender(value: RosterGender): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">弟子名籍</p>
             <h2>先把道号与来处写清</h2>
-            <p>当前登记页里的所有填写框都需要补全后才能递交。俗家姓名仅用于线下大型活动实名备案，不会进入公开名帖。</p>
+            <p>俗家姓名与生年用于核验名籍，道号会成为公开云名帖上的主要称呼。</p>
           </div>
 
           <div class="roster-registration-grid">
@@ -271,6 +291,7 @@ function handleSelectGender(value: RosterGender): void {
             <label class="roster-registration-field">
               <span>俗家姓名 *</span>
               <input v-model="formValue.secularName" class="roster-registration-input" maxlength="24" placeholder="请输入俗家姓名" type="text" />
+              <small>{{ rosterContent.registration.secularNameHint }}</small>
             </label>
 
             <div class="roster-registration-field">
@@ -295,8 +316,9 @@ function handleSelectGender(value: RosterGender): void {
             </label>
 
             <label class="roster-registration-field">
-              <span>生年 *</span>
+              <span>生年（用于核对年龄） *</span>
               <input v-model="formValue.birthYear" class="roster-registration-input" maxlength="8" placeholder="例如：1998" type="text" />
+              <small>{{ rosterContent.registration.birthYearHint }}</small>
             </label>
 
             <label class="roster-registration-field roster-registration-field--full">
@@ -310,7 +332,7 @@ function handleSelectGender(value: RosterGender): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">门派司职</p>
             <h2>再把堂口与来意定下来</h2>
-            <p>道号不再强制以“云”或“栖”开头。当前所有填写框都按必填处理，堂口仍只做归类和同好联络。</p>
+            <p>引荐人、堂口与入派本心都会随档案归档，请按实际情况填写。</p>
           </div>
 
           <div class="roster-registration-grid">
@@ -358,13 +380,14 @@ function handleSelectGender(value: RosterGender): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">传讯方式</p>
             <h2>留下正式联络方式</h2>
-            <p>微信号为门派唯一正式联络渠道。当前这里的所有填写框都需要补全，但都不会进入公开页面与分享名帖。</p>
+            <p>核心传讯用于审核与后续联络，请填写本人长期使用、能稳定联系到你的真实账号。</p>
           </div>
 
           <div class="roster-registration-grid">
             <label class="roster-registration-field">
               <span>核心传讯 *</span>
               <input v-model="formValue.wechatId" class="roster-registration-input" maxlength="48" placeholder="请填写微信号" type="text" />
+              <small>{{ rosterContent.registration.wechatHint }}</small>
             </label>
 
             <label class="roster-registration-field">
@@ -393,7 +416,7 @@ function handleSelectGender(value: RosterGender): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">所长与愿</p>
             <h2>让同门知道你擅长什么、喜欢什么</h2>
-            <p>这些内容会在通过审核后进入公开云名帖。当前文字填写框都为必填，请写你愿意公开分享的能力与雅事。门中分工由后台统一设置，不在此处选择。</p>
+            <p>这里只写你愿意公开分享给同门看的所长与雅事。门中分工由后台统一设置，不在此处选择。</p>
           </div>
 
           <div class="roster-registration-grid">
@@ -471,10 +494,15 @@ function handleSelectGender(value: RosterGender): void {
           <div class="roster-registration-card__head">
             <p class="eyebrow">提交确认</p>
             <h2>递上文牒，系统会立刻生成待审核名帖</h2>
-            <p>提交成功后会跳转到公开详情页。待审核状态可以先分享与保存；审核通过后自动切换为正式入册名帖。</p>
+            <p>提交成功后会跳转到公开详情页；审核通过后会自动切换为正式入册名帖。</p>
           </div>
 
           <div class="roster-registration-submit">
+            <label class="roster-registration-check roster-registration-check--alert">
+              <input v-model="formValue.confirmedTruthfulInfo" type="checkbox" />
+              <span>{{ rosterContent.registration.truthfulnessConfirmLabel }}</span>
+            </label>
+
             <div class="roster-registration-submit__message">
               <p>{{ hasSupabaseError ? supabaseErrorText : actionMessage }}</p>
               <small>{{ rosterContent.registration.successDescription }}</small>
@@ -505,10 +533,59 @@ function handleSelectGender(value: RosterGender): void {
   gap: 30px;
 }
 
+.roster-registration-alert,
 .roster-registration-outline,
 .roster-registration-shell {
   display: grid;
   gap: 20px;
+}
+
+.roster-registration-alert {
+  padding: 22px;
+  border: 1px solid rgba(212, 154, 114, 0.26);
+  background:
+    radial-gradient(circle at top right, rgba(216, 185, 114, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(42, 18, 14, 0.86), rgba(11, 25, 35, 0.96)),
+    rgba(11, 25, 35, 0.94);
+}
+
+.roster-registration-alert__head {
+  display: grid;
+  gap: 8px;
+}
+
+.roster-registration-alert__head h2,
+.roster-registration-alert__head p:last-child,
+.roster-registration-alert__item p {
+  margin: 0;
+}
+
+.roster-registration-alert__head h2 {
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+  line-height: 1.28;
+}
+
+.roster-registration-alert__head p:last-child {
+  color: rgba(244, 239, 226, 0.78);
+  line-height: 1.8;
+}
+
+.roster-registration-alert__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.roster-registration-alert__item {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(216, 185, 114, 0.16);
+  background: rgba(56, 20, 18, 0.24);
+}
+
+.roster-registration-alert__item p {
+  color: rgba(244, 239, 226, 0.84);
+  line-height: 1.78;
 }
 
 .roster-registration-outline__head {
@@ -750,6 +827,13 @@ function handleSelectGender(value: RosterGender): void {
   margin-top: 4px;
 }
 
+.roster-registration-check--alert {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(212, 154, 114, 0.22);
+  background: rgba(56, 20, 18, 0.18);
+}
+
 .roster-oath-panel {
   display: grid;
   gap: 12px;
@@ -796,6 +880,7 @@ function handleSelectGender(value: RosterGender): void {
 }
 
 @media (max-width: 1180px) {
+  .roster-registration-alert__grid,
   .roster-registration-outline__grid,
   .roster-registration-shell {
     grid-template-columns: 1fr;
@@ -815,6 +900,7 @@ function handleSelectGender(value: RosterGender): void {
 }
 
 @media (max-width: 720px) {
+  .roster-registration-alert,
   .roster-registration-card,
   .roster-oath-panel {
     padding: 16px 14px;

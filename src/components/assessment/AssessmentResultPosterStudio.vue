@@ -68,7 +68,7 @@ interface AssessmentResultPosterStudioEmits {
 
 const props = withDefaults(defineProps<AssessmentResultPosterStudioProps>(), {
   participantTitle: '云中同门',
-  title: '云栖派入派考核',
+  title: '云栖派问心考核',
   subtitle: '问心而入 · 以诚为先',
   signature: '云栖派 · 问心录',
   passHeadline: '考核已过',
@@ -76,7 +76,7 @@ const props = withDefaults(defineProps<AssessmentResultPosterStudioProps>(), {
   passCopy: '已知门风，可从容入云栖。',
   failCopy: '未过不急，先读原文，再来问心。',
   qrLabel: '扫码赴考',
-  qrTargetPath: 'assessment',
+  qrTargetPath: 'join#exam',
   exportWidth: 1080,
   exportHeight: 1920,
   reduceMotion: false,
@@ -124,7 +124,7 @@ const officialCopy = computed<string>(() => (props.passed ? props.passCopy : pro
  */
 const qrHint = computed<string>(() => {
   if (!qrTargetUrl.value) {
-    return '云栖入派考核页'
+    return '云栖入派指引页'
   }
 
   return qrTargetUrl.value.replace(/^https?:\/\//, '')
@@ -150,7 +150,7 @@ const previewSourceStyle = computed<Record<string, string>>(() => ({
 
 /**
  * 解析二维码目标地址
- * 用途：让结果海报扫码后固定跳到入派考核页，并兼容 GitHub Pages 子路径部署
+ * 用途：让结果海报扫码后固定跳到入派指引页的问心考核区，并兼容 GitHub Pages 子路径部署
  * 入参：无
  * 返回值：返回二维码应跳转的完整网址
  */
@@ -350,7 +350,7 @@ async function waitForPosterReady(target: HTMLElement): Promise<void> {
 
 /**
  * 生成结果海报二维码
- * 用途：让结果海报扫码后直接跳回入派考核页
+ * 用途：让结果海报扫码后直接跳回入派指引页的问心考核区
  * 入参：无
  * 返回值：无返回值
  */
@@ -458,7 +458,7 @@ async function exportPosterImage(): Promise<{ dataUrl: string; fileName: string 
       canvasHeight: props.exportHeight,
     })
 
-    const fileName = `云栖派入派考核结果-${Date.now()}.png`
+    const fileName = `云栖派问心考核结果-${Date.now()}.png`
     actionMessage.value = '结果海报生成成功'
     emit('export-success', { fileName })
     return { dataUrl, fileName }
@@ -541,7 +541,7 @@ async function handleShare(): Promise<void> {
     ) {
       await navigator.share({
         title: props.title,
-        text: `${props.participantTitle} 的云栖派入派考核结果海报`,
+        text: `${props.participantTitle} 的云栖派问心考核结果海报`,
         files: [shareFile],
       })
       actionMessage.value = '结果海报分享成功'
@@ -601,7 +601,7 @@ onBeforeUnmount(() => {
         <p>同门称呼：{{ participantTitle }}</p>
         <p>本次成绩：{{ score }} / {{ totalScore }}</p>
         <p>状态结果：{{ passed ? '已合格' : '未合格' }}</p>
-        <p>二维码落点：入派考核页</p>
+        <p>二维码落点：入派指引页问心考核区</p>
       </div>
 
       <div class="assessment-result-poster-studio__actions">

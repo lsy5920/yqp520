@@ -793,10 +793,10 @@ onBeforeUnmount(() => {
     :aria-hidden="isExamDialogOpen ? 'true' : undefined"
   >
     <PageBanner
-      eyebrow="入派考核"
-      title="问心而入，先明云栖门风"
-      lead="此卷不为难人，只为让新同门先把门风、门规、禁律与来去之义读明白，再从容入门。"
-      :note="siteContent.assessment.paper.note"
+      eyebrow="入派指引"
+      title="先明门风，再答问心卷"
+      lead="认同宗旨、愿守门风、能与同门真诚相待，便可循此页看清入门之路，再从容答完这一卷。"
+      :note="siteContent.join.note"
     >
       <template #actions>
         <button
@@ -805,7 +805,7 @@ onBeforeUnmount(() => {
           class="ink-button ink-button--primary"
           @click="startExam"
         >
-          开始考核
+          开始问心考核
         </button>
         <template v-else-if="phase === 'exam'">
           <button
@@ -838,9 +838,35 @@ onBeforeUnmount(() => {
     </PageBanner>
 
     <section v-if="phase === 'ready'" class="content-section" data-reveal>
+      <div class="section-heading">
+        <p class="eyebrow">入门要点</p>
+        <h2>先把真正需要知道的几件事看清</h2>
+        <p>这里不设高墙，也不靠繁复流程压人。看明白宗旨、相处底线与来去之义，再答问心卷即可。</p>
+      </div>
+
+      <div class="card-grid card-grid--two assessment-guide-grid">
+        <article
+          v-for="item in siteContent.join.keyPoints"
+          :key="item.title"
+          class="content-card assessment-guide-card"
+          data-reveal
+        >
+          <p class="content-card__eyebrow">{{ item.eyebrow }}</p>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section
+      v-if="phase === 'ready'"
+      id="exam"
+      class="content-section"
+      data-reveal
+    >
       <div class="assessment-ready">
         <article class="assessment-ready__main content-card content-card--soft">
-          <p class="eyebrow">开考前说明</p>
+          <p class="eyebrow">问心考核</p>
           <h2>{{ siteContent.assessment.paper.title }}</h2>
           <p class="assessment-ready__lead">{{ siteContent.assessment.paper.lead }}</p>
 
@@ -869,17 +895,17 @@ onBeforeUnmount(() => {
 
           <div class="assessment-ready__actions">
             <button type="button" class="ink-button ink-button--primary" @click="startExam">
-              正式开考
+              正式答卷
             </button>
-            <RouterLink to="/join" class="ink-button ink-button--ghost">
-              回入派指引
+            <RouterLink to="/canon" class="ink-button ink-button--ghost">
+              先阅立派全典
             </RouterLink>
           </div>
         </article>
 
         <article class="content-card">
-          <p class="eyebrow">考核规则</p>
-          <h3>固定三十题，分七章作答</h3>
+          <p class="eyebrow">答卷规则</p>
+          <h3>固定三十题，分七章问心</h3>
 
           <div class="assessment-ready__score-grid">
             <article
@@ -1293,7 +1319,7 @@ onBeforeUnmount(() => {
           <div class="section-heading">
             <p class="eyebrow">结果海报</p>
             <h2>把这张成绩帖留下来，也可直接分享出去</h2>
-            <p>结果海报会自动带上入派考核页二维码，别人扫码后可直接进入同一套考核。</p>
+            <p>结果海报会自动带上入派指引页二维码，别人扫码后可直接进入问心考核区。</p>
           </div>
 
           <AssessmentResultPosterStudio
@@ -1326,6 +1352,25 @@ onBeforeUnmount(() => {
 <style scoped>
 .page--assessment {
   gap: 36px;
+}
+
+.assessment-guide-grid {
+  align-items: stretch;
+}
+
+.assessment-guide-card {
+  display: grid;
+  gap: 10px;
+}
+
+.assessment-guide-card h3,
+.assessment-guide-card p:last-child {
+  margin: 0;
+}
+
+.assessment-guide-card p:last-child {
+  color: rgba(244, 239, 226, 0.74);
+  line-height: 1.84;
 }
 
 .assessment-ready,

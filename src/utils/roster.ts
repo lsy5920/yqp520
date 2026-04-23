@@ -143,6 +143,67 @@ export function getRosterDaohaoError(daohao: string): string {
 }
 
 /**
+ * 校验俗家姓名
+ * 用途：登记页和后台编辑页统一拦截明显无效的姓名输入
+ * 入参：value 为原始姓名
+ * 返回值：没有错误时返回空字符串
+ */
+function getRosterRealNameError(value: string): string {
+  const normalizedValue = normalizeRosterShortText(value)
+
+  if (!normalizedValue) {
+    return '请填写俗家姓名'
+  }
+
+  if (!/[A-Za-z\u4e00-\u9fa5]/.test(normalizedValue) || /^[0-9]+$/.test(normalizedValue)) {
+    return '俗家姓名需填写真实姓名，不能只写数字或无效符号'
+  }
+
+  return ''
+}
+
+/**
+ * 校验生年
+ * 用途：统一限制生年必须是合理范围内的四位数字
+ * 入参：value 为原始生年
+ * 返回值：没有错误时返回空字符串
+ */
+function getRosterBirthYearError(value: string): string {
+  const normalizedValue = normalizeRosterShortText(value)
+
+  if (!normalizedValue) {
+    return '请填写生年'
+  }
+
+  if (!/^\d{4}$/.test(normalizedValue)) {
+    return '生年需填写四位数字，例如 1998'
+  }
+
+  const birthYear = Number.parseInt(normalizedValue, 10)
+  const currentYear = new Date().getFullYear()
+
+  if (birthYear < 1900 || birthYear > currentYear) {
+    return `生年需填写 1900 至 ${currentYear} 之间的四位数字`
+  }
+
+  return ''
+}
+
+/**
+ * 校验核心联系方式
+ * 用途：统一要求正式联络方式必须填写，避免审核后仍无法联系
+ * 入参：value 为原始联系方式
+ * 返回值：没有错误时返回空字符串
+ */
+function getRosterWechatIdError(value: string): string {
+  if (!normalizeRosterShortText(value)) {
+    return '请填写核心传讯微信号'
+  }
+
+  return ''
+}
+
+/**
  * 清洗登记表单
  * 用途：提交、预览和草稿回显前统一清洗表单值
  * 入参：form 为原始表单
@@ -172,6 +233,7 @@ export function normalizeRosterFormValue(form: RosterRegistrationFormValue): Ros
     oathSignedName: normalizeRosterShortText(form.oathSignedName),
     oathSignedDate: normalizeRosterShortText(form.oathSignedDate),
     agreedToOath: Boolean(form.agreedToOath),
+    confirmedTruthfulInfo: Boolean(form.confirmedTruthfulInfo),
   }
 }
 
@@ -476,8 +538,10 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
     return daohaoError
   }
 
-  if (!form.secularName) {
-    return '请填写俗家姓名'
+  const realNameError = getRosterRealNameError(form.secularName)
+
+  if (realNameError) {
+    return realNameError
   }
 
   if (!form.gender) {
@@ -488,8 +552,10 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
     return '请填写现居洞府，至少精确到市'
   }
 
-  if (!form.birthYear) {
-    return '请填写生年'
+  const birthYearError = getRosterBirthYearError(form.birthYear)
+
+  if (birthYearError) {
+    return birthYearError
   }
 
   if (!form.profession) {
@@ -512,8 +578,10 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
     return '请填写入派本心'
   }
 
-  if (!form.wechatId) {
-    return '请填写核心传讯微信号'
+  const wechatIdError = getRosterWechatIdError(form.wechatId)
+
+  if (wechatIdError) {
+    return wechatIdError
   }
 
   if (!form.socialXiaohongshuDouyin) {
@@ -548,6 +616,10 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
     return '请先勾选“已通读门规并同意誓约”'
   }
 
+  if (!form.confirmedTruthfulInfo) {
+    return '请先确认俗家姓名、生年与联系方式均为真实有效信息'
+  }
+
   return ''
 }
 
@@ -564,8 +636,10 @@ export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePay
     return daohaoError
   }
 
-  if (!payload.secularName) {
-    return '请填写俗家姓名'
+  const realNameError = getRosterRealNameError(payload.secularName)
+
+  if (realNameError) {
+    return realNameError
   }
 
   if (!payload.gender) {
@@ -580,8 +654,10 @@ export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePay
     return '请填写现居洞府'
   }
 
-  if (!payload.birthYear) {
-    return '请填写生年'
+  const birthYearError = getRosterBirthYearError(payload.birthYear)
+
+  if (birthYearError) {
+    return birthYearError
   }
 
   if (!payload.profession) {
@@ -604,7 +680,7 @@ export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePay
     return '请填写入派本心'
   }
 
-  if (!payload.wechatId) {
+  if (getRosterWechatIdError(payload.wechatId)) {
     return '请填写核心传讯'
   }
 

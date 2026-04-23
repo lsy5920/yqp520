@@ -165,6 +165,8 @@ export interface RosterRegistrationFormValue {
   oathSignedDate: string
   /** 用途：是否同意誓约 */
   agreedToOath: boolean
+  /** 用途：是否确认姓名、生年与联系方式真实有效 */
+  confirmedTruthfulInfo: boolean
 }
 
 // 这里定义前台提交给 Supabase RPC 的载荷类型，字段名改成数据库口径。

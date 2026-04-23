@@ -4,7 +4,6 @@ import AssessmentView from '@/views/AssessmentView.vue'
 import CanonView from '@/views/CanonView.vue'
 import DisciplineView from '@/views/DisciplineView.vue'
 import HomeView from '@/views/HomeView.vue'
-import JoinView from '@/views/JoinView.vue'
 import LifeView from '@/views/LifeView.vue'
 import MemberCardView from '@/views/MemberCardView.vue'
 import PosterView from '@/views/PosterView.vue'
@@ -43,14 +42,14 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/join',
     name: 'join',
-    component: JoinView,
+    component: AssessmentView,
     meta: { title: '入派指引' },
   },
   {
     path: '/assessment',
     name: 'assessment',
-    component: AssessmentView,
-    meta: { title: '入派考核' },
+    redirect: '/join#exam',
+    meta: { title: '入派指引' },
   },
   {
     path: '/poster',

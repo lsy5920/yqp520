@@ -582,8 +582,8 @@ export const assessmentQuestions: AssessmentQuestion[] = [
 // 这里定义整套考核规则与页面文案，页面展示和结果海报都会从这里读取。
 export const assessmentPaperConfig: AssessmentPaperConfig = {
   version: 'assessment-v1',
-  title: '云栖派入派考核',
-  lead: '问心而入，知其所以然。三十题读懂云栖门风，也让入门多一分仪式感。',
+  title: '云栖派问心考核',
+  lead: '这一卷不为难人，只核对门风、门规、禁律与来去之义是否已经看明白。',
   note: '固定标准题卷 · 满分一百 · 八十分合格 · 限时十分钟',
   durationMinutes: 10,
   totalQuestions: 30,
@@ -609,16 +609,16 @@ export const assessmentPaperConfig: AssessmentPaperConfig = {
     },
   ],
   introLines: [
-    '本卷采用固定三十题标准题卷，不做随机抽题，方便新同门先学后考、反复对照。',
-    '答题开始后即进入十分钟倒计时，途中刷新页面会恢复进度与剩余时间，不会重新计时。',
-    '多选题必须全对才得分，少选、错选均不得分，请特别留意边界与原文表述。',
-    '交卷后会自动展示成绩、错题解析和原文出处，并可生成专属考核结果海报。',
+    '本卷固定三十题，不做随机抽题，方便先学后考、反复对照。',
+    '开考后即进入十分钟倒计时；刷新页面会恢复进度与剩余时间，不会重新计时。',
+    '多选题必须全对才得分，少选、错选均不得分，请特别留意原文边界。',
+    '交卷后会自动展示成绩、错题解析与原文出处，并可生成结果海报。',
   ],
   retakeNotice: '首版仅展示“建议三日后补考”的提醒，不做本地强锁，方便同门先复盘再重考。',
   passResultLead: '此卷已过，说明你已明白云栖门风与相处底线，可以从容入门。',
   failResultLead: '此卷未过，不必着急。先看错题解析与原文出处，沉住气再来一遍，门风会更扎实。',
   resultPoster: {
-    title: '云栖派入派考核',
+    title: '云栖派问心考核',
     subtitle: '问心而入 · 以诚为先',
     signature: '云栖派 · 问心录',
     qrLabel: '扫码赴考',

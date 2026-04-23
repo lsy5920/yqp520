@@ -166,13 +166,26 @@ export const rosterContent = {
   page: {
     eyebrow: '云栖名册',
     title: '线上登记入册，审核通过后正式归于云栖门籍',
-    lead: '这是一套独立于江湖名帖工作台的新流程。先线上递交文牒，执事审核后再正式入册，公开页面与分享名帖始终遵循最克制的公开口径。',
-    note: '俗家姓名、现居洞府、微信号等敏感信息只用于审核与联络，不会出现在公开名帖与公开名录里；性别与门中分工会随云名帖一并公开。',
+    lead: '线上递交入册文牒，执事批阅后再正式归档入册。公开页面与分享名帖始终遵循最克制的公开口径。',
+    note: '公开页只展示道号、性别、门中分工、堂口等最小公开信息；俗家姓名、生年与联系方式仅用于核验与联络。',
   },
   registration: {
     formTitle: '云栖派入门弟子录 · 入册文牒',
-    formLead: '请按六段顺序填写。提交后会立即生成待审核回执名帖，可先保存或分享当前公开详情页。',
+    formLead: '请按六段顺序如实填写。提交后会立即生成待审核回执名帖，可先保存或分享当前公开详情页。',
     guardTip: '道号支持自由拟定，不强制“云”或“栖”开头。系统会自动去首尾空格并校验是否重名。',
+    truthfulnessTitle: '真实信息提醒',
+    truthfulnessHeading: '姓名、生年与联系方式请务必如实填写',
+    truthfulnessLead: '这些信息会用于审核核验、活动联络与后续归档，若失实，可能影响入册审核与后续同门联络。',
+    truthfulnessNotes: [
+      '俗家姓名须填写本人真实姓名，用于实名核验与必要时的线下活动备案。',
+      '生年用于核对年龄信息，请按真实年份填写，不要故意模糊或乱填。',
+      '核心传讯请填写本人长期使用、能稳定联系到你的真实账号。',
+      '公开名帖与公开名录不会展示这些敏感信息，但审核时会按真实信息核对。',
+    ],
+    truthfulnessConfirmLabel: '我确认俗家姓名、生年与联系方式均为本人真实有效信息，如失实将影响入册审核',
+    secularNameHint: '用于实名核验，请填写本人真实姓名。',
+    birthYearHint: '用于核对年龄信息，请填写真实四位生年。',
+    wechatHint: '请填写本人长期使用、可稳定联系到你的真实账号。',
     submitButton: '递交入册文牒',
     submittingButton: '文牒递交中...',
     successTitle: '文牒已递入档案司',
@@ -249,6 +262,7 @@ export function createDefaultRosterRegistrationForm(): RosterRegistrationFormVal
     oathSignedName: '',
     oathSignedDate: currentDate,
     agreedToOath: false,
+    confirmedTruthfulInfo: false,
   }
 }
 

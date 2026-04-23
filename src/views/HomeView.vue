@@ -76,7 +76,7 @@ function handleMusicEntry(): void {
             <li>阅全典，看完整立派精神。</li>
             <li>观门规，知相处底线与禁律。</li>
             <li>览日常，感受门中烟火与温度。</li>
-            <li>赴考核，完成问心入门卷。</li>
+            <li>循指引，完成问心入门卷。</li>
             <li>入海报，生成专属分享图。</li>
           </ul>
         </div>
@@ -127,7 +127,7 @@ function handleMusicEntry(): void {
     <section class="content-section" data-reveal>
       <div class="section-heading">
         <p class="eyebrow">一站览尽</p>
-        <h2>七大板块，完整呈现云栖派的门风、气韵、日常与入门考核</h2>
+        <h2>几大板块，完整呈现云栖派的门风、气韵、日常与入门之路</h2>
       </div>
 
       <div class="quick-grid">

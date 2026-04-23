@@ -45,7 +45,7 @@ interface AssessmentResultPosterCardProps {
 }
 
 const props = withDefaults(defineProps<AssessmentResultPosterCardProps>(), {
-  title: '云栖派入派考核',
+  title: '云栖派问心考核',
   subtitle: '问心而入 · 以诚为先',
   participantTitle: '云中同门',
   score: 0,
@@ -60,7 +60,7 @@ const props = withDefaults(defineProps<AssessmentResultPosterCardProps>(), {
   passScore: 80,
   qrCodeUrl: '',
   qrLabel: '扫码赴考',
-  qrHint: '云栖入派考核页',
+  qrHint: '云栖入派指引页',
   signature: '云栖派 · 问心录',
   reduceMotion: false,
 })
@@ -159,7 +159,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
           <div class="assessment-result-poster-card__url-strip">
             <div class="assessment-result-poster-card__url-head">
               <span class="assessment-result-poster-card__url-label">赴考山门</span>
-              <span class="assessment-result-poster-card__url-tip">扫码后默认直达入派考核页</span>
+              <span class="assessment-result-poster-card__url-tip">扫码后默认直达入派指引页问心考核区</span>
             </div>
             <p class="assessment-result-poster-card__url-text">{{ qrHint }}</p>
           </div>
@@ -171,7 +171,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
               v-if="qrCodeUrl"
               class="assessment-result-poster-card__qr-image"
               :src="qrCodeUrl"
-              alt="入派考核二维码"
+              alt="入派指引二维码"
             />
             <div v-else class="assessment-result-poster-card__qr-placeholder" aria-hidden="true">
               考
@@ -181,7 +181,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
           <div class="assessment-result-poster-card__qr-copy">
             <p class="assessment-result-poster-card__section-label">山门引路</p>
             <strong>{{ qrLabel }}</strong>
-            <span>把这张成绩帖分享出去，也可让同道直接扫码赴考。</span>
+            <span>把这张成绩帖分享出去，也可让同道扫码直达问心考核区。</span>
           </div>
         </div>
       </footer>
