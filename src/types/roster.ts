@@ -83,6 +83,42 @@ export interface RosterRegistrationSection {
   description: string
 }
 
+// 这里定义名册登记招募海报模板类型，方便固定海报的文案和尺寸统一管理。
+export interface RosterRegistrationPosterTemplate {
+  /** 用途：海报眉题 */
+  eyebrow: string
+  /** 用途：海报主标题 */
+  title: string
+  /** 用途：海报副标题 */
+  subtitle: string
+  /** 用途：海报主召唤文案 */
+  lead: string
+  /** 用途：流程区标题 */
+  processTitle: string
+  /** 用途：固定流程文案 */
+  processList: string[]
+  /** 用途：二维码标题 */
+  qrLabel: string
+  /** 用途：二维码引导文案 */
+  qrCaption: string
+  /** 用途：收束题记标题 */
+  closingTitle: string
+  /** 用途：收束题记正文 */
+  closingCopy: string
+  /** 用途：右上角印记文字 */
+  sealText: string
+  /** 用途：底部落款 */
+  signature: string
+  /** 用途：分享标题 */
+  shareTitle: string
+  /** 用途：分享文案 */
+  shareText: string
+  /** 用途：导出宽度 */
+  exportWidth: number
+  /** 用途：导出高度 */
+  exportHeight: number
+}
+
 // 这里定义前台登记表单类型，统一约束提交、草稿回显和后台编辑口径。
 export interface RosterRegistrationFormValue {
   /** 用途：道号 */

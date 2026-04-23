@@ -387,17 +387,48 @@ export function getRosterFreeTimeLabels(value: RosterFreeTimeSlot[]): string[] {
 }
 
 /**
+ * 获取名册站点基础地址
+ * 用途：统一兼容 GitHub Pages 子路径，给公开名录页和公开详情页拼完整链接
+ * 入参：无
+ * 返回值：浏览器环境返回基础地址，否则返回 null
+ */
+function resolveRosterSiteBaseUrl(): URL | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  return new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+}
+
+/**
+ * 生成公开名录链接
+ * 用途：招募海报二维码和后续分享统一落到公开名录页
+ * 入参：无
+ * 返回值：返回完整公开链接
+ */
+export function resolveRosterListUrl(): string {
+  const siteBaseUrl = resolveRosterSiteBaseUrl()
+
+  if (!siteBaseUrl) {
+    return ''
+  }
+
+  return new URL('roster/list', siteBaseUrl).href
+}
+
+/**
  * 生成公开详情链接
  * 用途：名帖二维码、复制链接和分享都共用同一份地址
  * 入参：publicSlug 为详情 slug
  * 返回值：返回完整公开链接
  */
 export function resolveRosterEntryUrl(publicSlug: string): string {
-  if (typeof window === 'undefined') {
+  const siteBaseUrl = resolveRosterSiteBaseUrl()
+
+  if (!siteBaseUrl) {
     return ''
   }
 
-  const siteBaseUrl = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
   return new URL(`roster/entry/${publicSlug}`, siteBaseUrl).href
 }
 

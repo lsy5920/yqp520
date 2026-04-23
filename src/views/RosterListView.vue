@@ -2,8 +2,9 @@
 import { onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
+import RosterRegistrationPosterStudio from '@/components/roster/RosterRegistrationPosterStudio.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
-import { rosterContent, rosterHallOptions } from '@/data/rosterContent'
+import { rosterContent, rosterHallOptions, rosterRegistrationPosterTemplate } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { listPublicRosterEntries } from '@/services/roster'
 import type { PublicRosterEntry, RosterHallKey } from '@/types/roster'
@@ -156,6 +157,10 @@ onMounted(() => {
       </div>
     </section>
 
+    <section class="roster-list-poster" data-reveal>
+      <RosterRegistrationPosterStudio :template="rosterRegistrationPosterTemplate" />
+    </section>
+
     <section v-if="isLoading" class="content-card roster-list-state" data-reveal>
       <p class="content-card__eyebrow">加载中</p>
       <h3>公开名录正在整理，请稍候</h3>
@@ -224,9 +229,14 @@ onMounted(() => {
 }
 
 .roster-list-toolbar,
+.roster-list-poster,
 .roster-list-grid {
   display: grid;
   gap: 18px;
+}
+
+.roster-list-poster {
+  align-items: start;
 }
 
 .roster-list-toolbar__head {

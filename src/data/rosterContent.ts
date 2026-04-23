@@ -6,6 +6,7 @@ import type {
   RosterHallKey,
   RosterHallOption,
   RosterPositionOption,
+  RosterRegistrationPosterTemplate,
   RosterRegistrationFormValue,
   RosterRegistrationSection,
 } from '@/types/roster'
@@ -138,6 +139,26 @@ export const rosterPosterTemplate = {
   approvedSeal: '准予入册',
   deferredSeal: '暂缓入册',
   rejectedSeal: '不予收录',
+}
+
+// 这里定义名册登记招募海报模板，统一控制公开名录页固定海报的文案与尺寸。
+export const rosterRegistrationPosterTemplate: RosterRegistrationPosterTemplate = {
+  eyebrow: '云栖派门籍',
+  title: '云栖名册',
+  subtitle: '云海留名，先观同道，再入册留帖',
+  lead: '线上递帖，执事批阅，牒成之后自入云栖门籍。若你也愿在喧尘之外留下一笔温柔江湖，可循此帖先观同门，再递入册文牒。',
+  processTitle: '入册行程',
+  processList: ['线上登记', '执事批阅', '准予入册', '生成云名帖'],
+  qrLabel: '扫码阅名录',
+  qrCaption: '先看名录，再入册留名',
+  closingTitle: '山门题记',
+  closingCopy: '云深有栖处，名牒待君题。若愿与同道并肩而行，便循此帖缓步入山，先阅同门风骨，再留自己一页门籍。',
+  sealText: '招募印',
+  signature: '云栖派档案司 制',
+  shareTitle: '云栖名册登记招募海报',
+  shareText: '云栖名册公开名录已备好，先观同门，再递入册文牒。',
+  exportWidth: 1080,
+  exportHeight: 1350,
 }
 
 // 这里定义整套名册页面的核心文案，方便页面和组件统一取词。
