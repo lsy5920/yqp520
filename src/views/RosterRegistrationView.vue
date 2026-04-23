@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
-import { useRevealMotion } from '@/composables/useRevealMotion'
 import {
   createDefaultRosterRegistrationForm,
   rosterContent,
@@ -24,11 +23,6 @@ import {
 
 // 这里保存页面根节点，供整页做统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
-
-// 这里接入页面显现动效，让长表单不至于显得生硬。
-useRevealMotion({
-  rootRef: pageRef,
-})
 
 // 这里拿到路由实例，提交成功后要跳到公开详情页。
 const router = useRouter()
@@ -227,7 +221,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
       :note="rosterContent.page.note"
     />
 
-    <section class="roster-registration-outline content-card" data-reveal>
+    <section class="roster-registration-outline content-card">
       <div class="roster-registration-outline__head">
         <div>
           <p class="content-card__eyebrow">登记分段</p>
@@ -251,7 +245,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
       </div>
     </section>
 
-    <section class="roster-registration-shell" data-reveal>
+    <section class="roster-registration-shell">
       <aside class="roster-registration-side">
         <article class="content-card content-card--soft">
           <p class="content-card__eyebrow">填写说明</p>
@@ -277,7 +271,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
       </aside>
 
       <article class="roster-registration-form">
-        <section class="roster-registration-card" data-reveal>
+        <section class="roster-registration-card">
           <div class="roster-registration-card__head">
             <p class="eyebrow">弟子名籍</p>
             <h2>先把名字与来处写清</h2>
@@ -312,7 +306,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           </div>
         </section>
 
-        <section class="roster-registration-card" data-reveal>
+        <section class="roster-registration-card">
           <div class="roster-registration-card__head">
             <p class="eyebrow">门派司职</p>
             <h2>再把法号与堂口定下来</h2>
@@ -436,7 +430,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           </div>
         </section>
 
-        <section class="roster-registration-card" data-reveal>
+        <section class="roster-registration-card">
           <div class="roster-registration-card__head">
             <p class="eyebrow">传讯方式</p>
             <h2>留下正式联络方式</h2>
@@ -471,7 +465,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           </label>
         </section>
 
-        <section class="roster-registration-card" data-reveal>
+        <section class="roster-registration-card">
           <div class="roster-registration-card__head">
             <p class="eyebrow">所长与愿</p>
             <h2>让同门知道你擅长什么、喜欢什么</h2>
@@ -536,7 +530,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           </div>
         </section>
 
-        <section class="roster-registration-card" data-reveal>
+        <section class="roster-registration-card">
           <div class="roster-registration-card__head">
             <p class="eyebrow">入派誓约</p>
             <h2>立誓之后，再请执事批阅</h2>
@@ -566,7 +560,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           </label>
         </section>
 
-        <section class="roster-registration-card roster-registration-card--submit" data-reveal>
+        <section class="roster-registration-card roster-registration-card--submit">
           <div class="roster-registration-card__head">
             <p class="eyebrow">提交确认</p>
             <h2>递上文牒，系统会立刻生成待审核名帖</h2>
