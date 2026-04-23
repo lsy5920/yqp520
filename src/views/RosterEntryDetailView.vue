@@ -86,7 +86,7 @@ async function loadEntryDetail(): Promise<void> {
     const record = await getPublicRosterEntryBySlug(publicSlug)
 
     if (!record) {
-      errorMessage.value = '没有找到这张公开名帖，可能是地址有误或记录尚未开放查看'
+      errorMessage.value = '这条记录不存在或已移除，请返回公开名录重新查看'
       return
     }
 
@@ -114,7 +114,7 @@ onMounted(() => {
   <div ref="pageRef" class="page roster-entry-page">
     <PageBanner
       eyebrow="云栖名册"
-      :title="errorMessage ? '公开详情暂不可读' : `${entry.jianghuName} · ${detailTitle}`"
+      :title="errorMessage ? '公开详情暂不可读' : `${entry.daohao} · ${detailTitle}`"
       :lead="errorMessage || getRosterStatusDescription(entry.status)"
       :note="rosterContent.detail.publicInfoLead"
     />
@@ -155,7 +155,7 @@ onMounted(() => {
 
         <article class="content-card content-card--serif">
           <p class="content-card__eyebrow">公开字段</p>
-          <h2>{{ entry.hallLabel }} · {{ entry.styleName }}</h2>
+          <h2>{{ entry.hallLabel }} · {{ entry.daohao }}</h2>
           <p>{{ rosterContent.detail.publicInfoLead }}</p>
         </article>
       </section>

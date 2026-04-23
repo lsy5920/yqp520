@@ -9,13 +9,12 @@ import {
   rosterFreeTimeOptions,
   rosterHallOptions,
   rosterRegistrationSections,
-  rosterStyleNameBranches,
 } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
-import { checkRosterStyleNameAvailable, submitRosterEntry } from '@/services/roster'
+import { checkRosterDaohaoAvailable, submitRosterEntry } from '@/services/roster'
 import type { RosterContributionLevel, RosterFreeTimeSlot, RosterHallKey, RosterRegistrationFormValue } from '@/types/roster'
 import {
-  getRosterStyleNameError,
+  getRosterDaohaoError,
   mapRosterFormToSubmitPayload,
   normalizeRosterFormValue,
   validateRosterRegistrationForm,
@@ -30,8 +29,8 @@ const router = useRouter()
 // 这里保存登记表单的当前内容。
 const formValue = ref<RosterRegistrationFormValue>(createDefaultRosterRegistrationForm())
 
-// 这里记录是否正在检查法号，避免用户不清楚当前状态。
-const isCheckingStyleName = ref<boolean>(false)
+// 这里记录是否正在检查道号，避免用户不清楚当前状态。
+const isCheckingDaohao = ref<boolean>(false)
 
 // 这里记录是否正在提交文牒，防止重复提交。
 const isSubmitting = ref<boolean>(false)
@@ -39,11 +38,8 @@ const isSubmitting = ref<boolean>(false)
 // 这里保存当前动作提示，给用户更明确的反馈。
 const actionMessage = ref<string>(rosterContent.registration.formLead)
 
-// 这里保存法号校验提示，失焦校验和提交前校验都写到这里。
-const styleNameMessage = ref<string>(rosterContent.registration.guardTip)
-
-// 这里保存法号推荐列表，遇到重名时优先推荐同字辈近邻字号。
-const styleNameSuggestions = ref<string[]>([])
+// 这里保存道号校验提示，失焦校验和提交前校验都写到这里。
+const daohaoMessage = ref<string>(rosterContent.registration.guardTip)
 
 /**
  * 当前是否缺少 Supabase 配置
@@ -56,12 +52,6 @@ const hasSupabaseError = computed<boolean>(() => !isSupabaseConfigured())
  * 用途：缺少环境变量时直接给用户和维护者明确说明
  */
 const supabaseErrorText = computed<string>(() => getSupabaseConfigErrorText())
-
-/**
- * 选中的堂口键名
- * 用途：字号参考清单会根据堂口高亮更贴近的分组
- */
-const selectedHallKey = computed<RosterHallKey | ''>(() => formValue.value.hallKey)
 
 /**
  * 当前是否选中了“其他堂口”
@@ -94,54 +84,40 @@ function toggleFreeTimeSlot(slot: RosterFreeTimeSlot): void {
 }
 
 /**
- * 选择字号参考项
- * 用途：用户点字号清单时一键带入法号输入框
- * 入参：styleName 为点击的字号
- * 返回值：无返回值
- */
-async function handlePickStyleName(styleName: string): Promise<void> {
-  formValue.value.requestedStyleName = styleName
-  styleNameSuggestions.value = []
-  await validateStyleName(true)
-}
-
-/**
- * 校验云栖法号
+ * 校验道号
  * 用途：失焦时先做格式校验，再调用后端做重名检查
  * 入参：showSuccessMessage 表示可用时是否显示成功提示
  * 返回值：可用返回 true，否则返回 false
  */
-async function validateStyleName(showSuccessMessage = false): Promise<boolean> {
-  const localError = getRosterStyleNameError(formValue.value.requestedStyleName)
+async function validateDaohao(showSuccessMessage = false): Promise<boolean> {
+  const localError = getRosterDaohaoError(formValue.value.daohao)
 
   if (localError) {
-    styleNameMessage.value = localError
-    styleNameSuggestions.value = []
+    daohaoMessage.value = localError
     return false
   }
 
   if (hasSupabaseError.value) {
-    styleNameMessage.value = supabaseErrorText.value
+    daohaoMessage.value = supabaseErrorText.value
     return false
   }
 
-  isCheckingStyleName.value = true
+  isCheckingDaohao.value = true
 
   try {
-    const result = await checkRosterStyleNameAvailable(formValue.value.requestedStyleName)
-    styleNameSuggestions.value = result.available ? [] : result.suggestions
-    styleNameMessage.value = result.message || rosterContent.registration.guardTip
+    const result = await checkRosterDaohaoAvailable(formValue.value.daohao)
+    daohaoMessage.value = result.message || rosterContent.registration.guardTip
 
     if (result.available && showSuccessMessage) {
-      styleNameMessage.value = '此法号当前可用，可继续递交文牒'
+      daohaoMessage.value = '此道号当前可用，可继续递交文牒'
     }
 
     return result.available
   } catch (error) {
-    styleNameMessage.value = error instanceof Error ? error.message : '法号校验失败，请稍后再试'
+    daohaoMessage.value = error instanceof Error ? error.message : '道号校验失败，请稍后再试'
     return false
   } finally {
-    isCheckingStyleName.value = false
+    isCheckingDaohao.value = false
   }
 }
 
@@ -169,10 +145,10 @@ async function handleSubmit(): Promise<void> {
   actionMessage.value = '正在递交文牒并生成待审核名帖，请稍候...'
 
   try {
-    const isStyleNameAvailable = await validateStyleName()
+    const isDaohaoAvailable = await validateDaohao()
 
-    if (!isStyleNameAvailable) {
-      actionMessage.value = '当前法号无法递交，请先改用可用字号'
+    if (!isDaohaoAvailable) {
+      actionMessage.value = '当前道号无法递交，请先改用可用道号'
       return
     }
 
@@ -256,10 +232,10 @@ function handleSelectContribution(value: RosterContributionLevel): void {
         </article>
 
         <article class="content-card content-card--serif">
-          <p class="content-card__eyebrow">字号小贴士</p>
-          <h3>法号会进入正式门籍，提交前请先想稳</h3>
+          <p class="content-card__eyebrow">道号提示</p>
+          <h3>道号会成为公开页与名帖的唯一称呼</h3>
           <ul class="list-column">
-            <li v-for="line in rosterContent.styleTips" :key="line">{{ line }}</li>
+            <li v-for="line in rosterContent.daohaoTips" :key="line">{{ line }}</li>
           </ul>
         </article>
 
@@ -274,14 +250,22 @@ function handleSelectContribution(value: RosterContributionLevel): void {
         <section class="roster-registration-card">
           <div class="roster-registration-card__head">
             <p class="eyebrow">弟子名籍</p>
-            <h2>先把名字与来处写清</h2>
-            <p>江湖名号和现居洞府为必填项。俗家姓名仅用于线下大型活动实名备案，不会进入公开名帖。</p>
+            <h2>先把道号与来处写清</h2>
+            <p>道号为必填项，会成为公开详情页与分享名帖的唯一称呼。俗家姓名仅用于线下大型活动实名备案，不会进入公开名帖。</p>
           </div>
 
           <div class="roster-registration-grid">
             <label class="roster-registration-field">
-              <span>江湖名号 *</span>
-              <input v-model="formValue.jianghuName" class="roster-registration-input" maxlength="24" placeholder="例如：栖月、云川、闻溪" type="text" />
+              <span>道号 *</span>
+              <input
+                v-model="formValue.daohao"
+                class="roster-registration-input"
+                maxlength="12"
+                placeholder="例如：闻溪、松照、栖月行者"
+                type="text"
+                @blur="validateDaohao(true)"
+              />
+              <small>{{ isCheckingDaohao ? '正在校验道号...' : daohaoMessage }}</small>
             </label>
 
             <label class="roster-registration-field">
@@ -309,24 +293,11 @@ function handleSelectContribution(value: RosterContributionLevel): void {
         <section class="roster-registration-card">
           <div class="roster-registration-card__head">
             <p class="eyebrow">门派司职</p>
-            <h2>再把法号与堂口定下来</h2>
-            <p>云栖法号必须以“云”或“栖”开头，固定两字。堂口只做归类和同好联络，不分高低。</p>
+            <h2>再把堂口与来意定下来</h2>
+            <p>道号不再强制以“云”或“栖”开头。堂口只做归类和同好联络，不分高低。</p>
           </div>
 
           <div class="roster-registration-grid">
-            <label class="roster-registration-field">
-              <span>云栖法号 *</span>
-              <input
-                v-model="formValue.requestedStyleName"
-                class="roster-registration-input"
-                maxlength="2"
-                placeholder="例如：云川、栖月"
-                type="text"
-                @blur="validateStyleName(true)"
-              />
-              <small>{{ isCheckingStyleName ? '正在校验法号...' : styleNameMessage }}</small>
-            </label>
-
             <label class="roster-registration-field">
               <span>引荐人</span>
               <input v-model="formValue.referrerName" class="roster-registration-input" maxlength="32" placeholder="默认：自行登门" type="text" />
@@ -365,69 +336,6 @@ function handleSelectContribution(value: RosterContributionLevel): void {
               placeholder="三两言即可，说清你为何想入云栖、愿与怎样的同门共处"
             ></textarea>
           </label>
-
-          <div class="roster-style-guide">
-            <div class="roster-style-guide__head">
-              <div>
-                <p class="eyebrow">字号参考清单</p>
-                <h3>点一下就能直接带入法号输入框</h3>
-              </div>
-              <span>当前堂口：{{ selectedHallKey ? rosterHallOptions.find((item) => item.key === selectedHallKey)?.label : '未选择' }}</span>
-            </div>
-
-            <div class="roster-style-guide__branch-list">
-              <section
-                v-for="branch in rosterStyleNameBranches"
-                :key="branch.key"
-                class="roster-style-guide__branch"
-              >
-                <div class="roster-style-guide__branch-head">
-                  <p>{{ branch.title }}</p>
-                  <span>{{ branch.lead }}</span>
-                </div>
-
-                <div class="roster-style-guide__category-list">
-                  <article
-                    v-for="category in branch.categories"
-                    :key="category.key"
-                    class="roster-style-guide__category"
-                  >
-                    <strong>{{ category.title }}</strong>
-                    <small>{{ category.description }}</small>
-
-                    <div class="roster-style-guide__chips">
-                      <button
-                        v-for="item in category.items"
-                        :key="item.value"
-                        type="button"
-                        class="roster-style-guide__chip"
-                        :class="{
-                          'roster-style-guide__chip--picked': formValue.requestedStyleName === item.value,
-                          'roster-style-guide__chip--highlight': selectedHallKey && item.hallKeys.includes(selectedHallKey),
-                        }"
-                        @click="handlePickStyleName(item.value)"
-                      >
-                        {{ item.value }}
-                      </button>
-                    </div>
-                  </article>
-                </div>
-              </section>
-            </div>
-
-            <div v-if="styleNameSuggestions.length > 0" class="roster-style-guide__suggestions">
-              <p>近邻推荐：</p>
-              <button
-                v-for="item in styleNameSuggestions"
-                :key="item"
-                type="button"
-                class="roster-style-guide__chip roster-style-guide__chip--suggestion"
-                @click="handlePickStyleName(item)"
-              >
-                {{ item }}
-              </button>
-            </div>
-          </div>
         </section>
 
         <section class="roster-registration-card">
@@ -545,7 +453,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
           <div class="roster-registration-grid">
             <label class="roster-registration-field">
               <span>弟子签押 *</span>
-              <input v-model="formValue.oathSignedName" class="roster-registration-input" maxlength="32" placeholder="可签法号或名号" type="text" />
+              <input v-model="formValue.oathSignedName" class="roster-registration-input" maxlength="32" placeholder="可签道号或名号" type="text" />
             </label>
 
             <label class="roster-registration-field">
@@ -687,15 +595,13 @@ function handleSelectContribution(value: RosterContributionLevel): void {
   gap: 8px;
 }
 
-.roster-registration-card__head h2,
-.roster-style-guide__head h3 {
+.roster-registration-card__head h2 {
   margin: 0;
   font-size: clamp(1.34rem, 2.8vw, 1.9rem);
   line-height: 1.28;
 }
 
 .roster-registration-card__head p:last-child,
-.roster-style-guide__head span,
 .roster-registration-submit__message small {
   color: var(--color-text-soft);
   line-height: 1.76;
@@ -799,8 +705,7 @@ function handleSelectContribution(value: RosterContributionLevel): void {
 }
 
 .roster-registration-option:hover,
-.roster-registration-choice:hover,
-.roster-style-guide__chip:hover {
+.roster-registration-choice:hover {
   transform: translateY(-2px);
 }
 
@@ -812,77 +717,12 @@ function handleSelectContribution(value: RosterContributionLevel): void {
     rgba(8, 25, 35, 0.86);
 }
 
-.roster-style-guide {
-  display: grid;
-  gap: 16px;
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(139, 208, 203, 0.14);
-  background: rgba(7, 27, 37, 0.48);
-}
-
-.roster-style-guide__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.roster-style-guide__head span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(216, 185, 114, 0.08);
-  font-size: 0.84rem;
-}
-
-.roster-style-guide__branch-list,
-.roster-style-guide__category-list {
-  display: grid;
-  gap: 14px;
-}
-
-.roster-style-guide__branch {
-  display: grid;
-  gap: 14px;
-}
-
-.roster-style-guide__branch-head,
-.roster-style-guide__category {
-  display: grid;
-  gap: 8px;
-}
-
-.roster-style-guide__branch-head p,
-.roster-style-guide__branch-head span,
-.roster-style-guide__category strong,
-.roster-style-guide__category small {
-  margin: 0;
-}
-
-.roster-style-guide__branch-head p {
-  color: var(--color-gold-strong);
-  font-size: 1rem;
-  letter-spacing: 0.08em;
-}
-
-.roster-style-guide__branch-head span,
-.roster-style-guide__category small {
-  color: var(--color-text-faint);
-  line-height: 1.7;
-}
-
-.roster-style-guide__chips,
-.roster-style-guide__suggestions,
 .roster-registration-choice-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.roster-style-guide__chip,
 .roster-registration-choice {
   display: inline-flex;
   align-items: center;
@@ -897,33 +737,6 @@ function handleSelectContribution(value: RosterContributionLevel): void {
     border-color var(--transition-base),
     background-color var(--transition-base),
     color var(--transition-base);
-}
-
-.roster-style-guide__chip {
-  cursor: pointer;
-}
-
-.roster-style-guide__chip--highlight {
-  border-color: rgba(139, 208, 203, 0.24);
-  color: rgba(209, 241, 238, 0.96);
-}
-
-.roster-style-guide__chip--picked,
-.roster-style-guide__chip--suggestion {
-  border-color: rgba(216, 185, 114, 0.32);
-  background:
-    linear-gradient(180deg, rgba(216, 185, 114, 0.14), rgba(35, 25, 9, 0.76)),
-    rgba(23, 17, 8, 0.88);
-  color: rgba(248, 237, 204, 0.98);
-}
-
-.roster-style-guide__suggestions {
-  align-items: center;
-}
-
-.roster-style-guide__suggestions p {
-  margin: 0;
-  color: var(--color-cyan);
 }
 
 .roster-registration-check {
@@ -997,15 +810,13 @@ function handleSelectContribution(value: RosterContributionLevel): void {
     grid-template-columns: 1fr;
   }
 
-  .roster-registration-outline__head,
-  .roster-style-guide__head {
+  .roster-registration-outline__head {
     flex-direction: column;
   }
 }
 
 @media (max-width: 720px) {
   .roster-registration-card,
-  .roster-style-guide,
   .roster-oath-panel {
     padding: 16px 14px;
     border-radius: 22px;
@@ -1019,16 +830,6 @@ function handleSelectContribution(value: RosterContributionLevel): void {
   .roster-registration-submit__actions .ink-button,
   .roster-registration-choice {
     width: 100%;
-  }
-
-  .roster-style-guide__chips {
-    gap: 8px;
-  }
-
-  .roster-style-guide__chip {
-    min-height: 36px;
-    padding: 0 12px;
-    font-size: 0.86rem;
   }
 }
 </style>

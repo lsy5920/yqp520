@@ -2,21 +2,26 @@ import type { Session } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase'
 import type {
   AdminRosterEntryRecord,
+  AdminRosterEntrySavePayload,
+  DaohaoAvailabilityResult,
   PublicRosterEntry,
-  ReviewRosterEntryPayload,
   RosterAdminProfile,
   RosterHallKey,
-  StyleNameAvailabilityResult,
+  RosterReviewLogRecord,
   SubmitRosterEntryPayload,
   SubmitRosterEntryResult,
 } from '@/types/roster'
 import {
+  extractRosterEntryNo,
   mapAdminRosterEntry,
   mapPublicRosterEntry,
+  mapRosterReviewLogRecord,
+  normalizeRosterDaohao,
+  normalizeRosterSearchKeyword,
   normalizeRosterShortText,
 } from '@/utils/roster'
 
-// 这里定义公开名录查询条件，方便列表页传参更清晰。
+// 这里定义公开名录查询条件，方便名录页传参更清楚。
 export interface ListPublicRosterEntriesOptions {
   /** 用途：搜索关键字 */
   keyword?: string
@@ -28,7 +33,7 @@ export interface ListPublicRosterEntriesOptions {
   pageOffset?: number
 }
 
-// 这里定义审核台查询条件，方便管理员列表筛选复用。
+// 这里定义后台查询条件，方便执事筛选与搜索复用。
 export interface ListAdminRosterEntriesOptions {
   /** 用途：搜索关键字 */
   keyword?: string
@@ -68,9 +73,9 @@ function waitForRosterDelay(ms: number): Promise<void> {
 
 /**
  * 按用户 id 读取管理员资料
- * 用途：登录成功后直接按当前用户 id 查白名单，避免再额外依赖会话读取时序
+ * 用途：登录成功后按当前用户 id 查询白名单资料
  * 入参：userId 为 Supabase 用户 id
- * 返回值：返回管理员资料，没有资料时返回 null
+ * 返回值：返回管理员资料，没有时返回 null
  */
 async function getRosterAdminProfileByUserId(userId: string): Promise<RosterAdminProfile | null> {
   const supabase = getSupabaseClient()
@@ -104,7 +109,7 @@ async function getRosterAdminProfileByUserId(userId: string): Promise<RosterAdmi
 
 /**
  * 读取当前登录会话
- * 用途：审核台入口和路由守卫都需要先判断会话状态
+ * 用途：审核台入口和页面初始化都需要先判断会话状态
  * 入参：无
  * 返回值：返回当前会话，没有登录时返回 null
  */
@@ -137,9 +142,9 @@ export async function getCurrentRosterAdminProfile(): Promise<RosterAdminProfile
 
 /**
  * 确认当前账号具备执事权限
- * 用途：路由守卫和审核页进入前统一做白名单检查
+ * 用途：后台页面进入前统一做白名单检查
  * 入参：无
- * 返回值：有权限返回管理员资料，无权限时抛出错误
+ * 返回值：有权限时返回管理员资料
  */
 export async function requireRosterAdminProfile(): Promise<RosterAdminProfile> {
   const profile = await getCurrentRosterAdminProfile()
@@ -155,7 +160,7 @@ export async function requireRosterAdminProfile(): Promise<RosterAdminProfile> {
  * 执事邮箱密码登录
  * 用途：审核台登录页提交账号密码后调用
  * 入参：email 为邮箱，password 为密码
- * 返回值：返回管理员资料
+ * 返回值：返回管理员资料与会话
  */
 export async function signInRosterAdmin(
   email: string,
@@ -223,17 +228,17 @@ export async function signOutRosterAdmin(): Promise<void> {
 }
 
 /**
- * 检查法号可用性
+ * 检查道号可用性
  * 用途：登记页失焦校验和提交前校验共用
- * 入参：styleName 为法号
+ * 入参：daohao 为道号
  * 返回值：返回可用性结果
  */
-export async function checkRosterStyleNameAvailable(styleName: string): Promise<StyleNameAvailabilityResult> {
+export async function checkRosterDaohaoAvailable(daohao: string): Promise<DaohaoAvailabilityResult> {
   const supabase = getSupabaseClient()
-  const normalizedStyleName = normalizeRosterShortText(styleName)
+  const normalizedDaohao = normalizeRosterDaohao(daohao)
 
-  const { data, error } = await supabase.rpc('check_roster_style_name_available', {
-    input_style_name: normalizedStyleName,
+  const { data, error } = await supabase.rpc('check_roster_daohao_available', {
+    input_daohao: normalizedDaohao,
   })
 
   if (error) {
@@ -244,8 +249,7 @@ export async function checkRosterStyleNameAvailable(styleName: string): Promise<
 
   return {
     available: Boolean(firstRecord?.available),
-    styleName: String(firstRecord?.style_name || normalizedStyleName),
-    suggestions: Array.isArray(firstRecord?.suggestions) ? firstRecord.suggestions.map(String) : [],
+    daohao: String(firstRecord?.daohao || normalizedDaohao),
     message: String(firstRecord?.message || ''),
   }
 }
@@ -253,7 +257,7 @@ export async function checkRosterStyleNameAvailable(styleName: string): Promise<
 /**
  * 提交入册登记
  * 用途：登记页点击递交文牒时调用
- * 入参：payload 为已经按数据库字段名整理好的载荷
+ * 入参：payload 为已整理好的载荷
  * 返回值：返回公开 slug、回执号与状态
  */
 export async function submitRosterEntry(payload: SubmitRosterEntryPayload): Promise<SubmitRosterEntryResult> {
@@ -286,7 +290,7 @@ export async function listPublicRosterEntries(options: ListPublicRosterEntriesOp
   const supabase = getSupabaseClient()
 
   const { data, error } = await supabase.rpc('list_public_roster_entries', {
-    search_keyword: normalizeRosterShortText(options.keyword || ''),
+    search_keyword: normalizeRosterSearchKeyword(options.keyword || ''),
     hall_filter: options.hallKey || '',
     page_size: options.pageSize || 24,
     page_offset: options.pageOffset || 0,
@@ -326,8 +330,8 @@ export async function getPublicRosterEntryBySlug(publicSlug: string): Promise<Pu
 }
 
 /**
- * 读取审核台全部记录
- * 用途：审核台按关键字和堂口筛选所有状态记录
+ * 读取后台全部记录
+ * 用途：审核台按关键字和堂口筛选所有状态的条目
  * 入参：options 为查询条件
  * 返回值：返回管理员可见的原始记录
  */
@@ -341,7 +345,8 @@ export async function listAdminRosterEntries(options: ListAdminRosterEntriesOpti
     .order('created_at', { ascending: false })
     .limit(300)
 
-  const normalizedKeyword = normalizeRosterShortText(options.keyword || '')
+  const normalizedKeyword = normalizeRosterSearchKeyword(options.keyword || '')
+  const parsedEntryNo = extractRosterEntryNo(normalizedKeyword)
 
   if (options.hallKey) {
     query = query.eq('hall_key', options.hallKey)
@@ -349,15 +354,17 @@ export async function listAdminRosterEntries(options: ListAdminRosterEntriesOpti
 
   if (normalizedKeyword) {
     const safeKeyword = normalizedKeyword.replace(/,/g, ' ')
-    query = query.or(
-      [
-        `jianghu_name.ilike.%${safeKeyword}%`,
-        `requested_style_name.ilike.%${safeKeyword}%`,
-        `effective_style_name.ilike.%${safeKeyword}%`,
-        `receipt_code.ilike.%${safeKeyword}%`,
-        `wechat_id.ilike.%${safeKeyword}%`,
-      ].join(','),
-    )
+    const orConditions = [
+      `daohao.ilike.%${safeKeyword}%`,
+      `receipt_code.ilike.%${safeKeyword}%`,
+      `wechat_id.ilike.%${safeKeyword}%`,
+    ]
+
+    if (parsedEntryNo !== null) {
+      orConditions.push(`entry_no.eq.${parsedEntryNo}`)
+    }
+
+    query = query.or(orConditions.join(','))
   }
 
   const { data, error } = await query
@@ -371,11 +378,11 @@ export async function listAdminRosterEntries(options: ListAdminRosterEntriesOpti
 
 /**
  * 读取审核日志
- * 用途：审核台详情抽屉里展示审批历史
+ * 用途：后台详情抽屉里展示档案历史
  * 入参：entryId 为记录 id
- * 返回值：返回日志原始列表
+ * 返回值：返回日志列表
  */
-export async function listRosterReviewLogs(entryId: string): Promise<Array<Record<string, unknown>>> {
+export async function listRosterReviewLogs(entryId: string): Promise<RosterReviewLogRecord[]> {
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
@@ -389,16 +396,42 @@ export async function listRosterReviewLogs(entryId: string): Promise<Array<Recor
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  return (data || []) as Array<Record<string, unknown>>
+  return (data || []).map((item) => mapRosterReviewLogRecord(item as Record<string, unknown>))
 }
 
 /**
- * 提交审核动作
- * 用途：审核台点击准予、暂缓或不予收录时调用
- * 入参：payload 为审核动作载荷
- * 返回值：返回审核结果简要信息
+ * 获取下一个建议文牒号
+ * 用途：后台切到准予入册时，给执事一个默认建议号
+ * 入参：无
+ * 返回值：返回建议文牒号
  */
-export async function reviewRosterEntry(payload: ReviewRosterEntryPayload): Promise<{
+export async function getNextRosterEntryNo(): Promise<number> {
+  await requireRosterAdminProfile()
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc('get_next_roster_entry_no')
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  const firstRecord = Array.isArray(data) ? data[0] : data
+  const nextEntryNo = Number(firstRecord?.next_entry_no || 0)
+
+  if (!Number.isFinite(nextEntryNo) || nextEntryNo <= 0) {
+    throw new Error('默认文牒号获取失败，请稍后再试')
+  }
+
+  return nextEntryNo
+}
+
+/**
+ * 保存后台档案
+ * 用途：后台统一处理全字段编辑、状态修改与文牒号调整
+ * 入参：payload 为后台保存载荷
+ * 返回值：返回保存后的关键结果
+ */
+export async function saveAdminRosterEntry(payload: AdminRosterEntrySavePayload): Promise<{
   entryId: string
   status: string
   entryNoText: string
@@ -407,11 +440,33 @@ export async function reviewRosterEntry(payload: ReviewRosterEntryPayload): Prom
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.rpc('review_roster_entry', {
-    target_entry_id: payload.entryId,
-    target_status: payload.nextStatus,
-    target_effective_style_name: payload.effectiveStyleName,
-    target_review_comment: payload.reviewComment,
+  const { data, error } = await supabase.rpc('admin_save_roster_entry', {
+    entry_payload: {
+      entry_id: payload.entryId,
+      status: payload.status,
+      entry_no: payload.entryNo,
+      daohao: payload.daohao,
+      secular_name: payload.secularName,
+      current_city: payload.currentCity,
+      birth_year: payload.birthYear,
+      profession: payload.profession,
+      referrer_name: payload.referrerName,
+      hall_key: payload.hallKey,
+      hall_other_text: payload.hallOtherText,
+      entry_intent: payload.entryIntent,
+      wechat_id: payload.wechatId,
+      social_xiaohongshu_douyin: payload.socialXiaohongshuDouyin,
+      social_qq: payload.socialQq,
+      social_other: payload.socialOther,
+      allow_contact_public: payload.allowContactPublic,
+      strengths: payload.strengths,
+      hobbies: payload.hobbies,
+      free_time_slots: payload.freeTimeSlots,
+      contribution_level: payload.contributionLevel,
+      oath_signed_name: payload.oathSignedName,
+      oath_signed_date: payload.oathSignedDate,
+      review_comment: payload.reviewComment,
+    },
   })
 
   if (error) {
@@ -422,8 +477,30 @@ export async function reviewRosterEntry(payload: ReviewRosterEntryPayload): Prom
 
   return {
     entryId: String(firstRecord?.entry_id || payload.entryId),
-    status: String(firstRecord?.status || payload.nextStatus),
+    status: String(firstRecord?.status || payload.status),
     entryNoText: String(firstRecord?.entry_no_text || ''),
     reviewedAt: String(firstRecord?.reviewed_at || ''),
   }
+}
+
+/**
+ * 删除后台档案
+ * 用途：后台删除任意一条记录
+ * 入参：entryId 为记录 id
+ * 返回值：返回删除后的记录 id
+ */
+export async function deleteAdminRosterEntry(entryId: string): Promise<string> {
+  await requireRosterAdminProfile()
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc('admin_delete_roster_entry', {
+    target_entry_id: entryId,
+  })
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  const firstRecord = Array.isArray(data) ? data[0] : data
+  return String(firstRecord?.entry_id || entryId)
 }

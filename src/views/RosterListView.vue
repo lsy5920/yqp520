@@ -76,6 +76,7 @@ watch(
       window.clearTimeout(searchTimer)
     }
 
+    // 这里做一个轻量防抖，避免用户输入时频繁请求公开列表。
     searchTimer = window.setTimeout(() => {
       void loadEntryList()
     }, 220)
@@ -101,7 +102,7 @@ onMounted(() => {
         <div>
           <p class="content-card__eyebrow">公开名录</p>
           <h2>只展示已经准予入册的公开条目</h2>
-          <p>{{ errorMessage || `当前共收录 ${entryList.length} 条公开记录，可按名号、法号或堂口筛选。` }}</p>
+          <p>{{ errorMessage || `当前共收录 ${entryList.length} 条公开记录，可按道号、文牒号或堂口筛选。` }}</p>
         </div>
 
         <div class="roster-list-toolbar__actions">
@@ -120,7 +121,7 @@ onMounted(() => {
 
       <div class="roster-list-toolbar__controls">
         <label class="roster-list-toolbar__search">
-          <span>搜索名号 / 法号</span>
+          <span>搜索道号 / 文牒号</span>
           <input
             v-model="keyword"
             class="roster-list-toolbar__input"
@@ -183,14 +184,14 @@ onMounted(() => {
         <div class="roster-list-card__head">
           <div>
             <p>{{ entry.hallLabel }}</p>
-            <h3>{{ entry.jianghuName }}</h3>
+            <h3>{{ entry.daohao }}</h3>
           </div>
           <span>{{ entry.statusLabel }}</span>
         </div>
 
         <div class="roster-list-card__meta">
-          <strong>{{ entry.styleName }}</strong>
-          <small>{{ entry.entryNo }}</small>
+          <strong>{{ entry.entryNo || '牒号待定' }}</strong>
+          <small>公开道号：{{ entry.daohao }}</small>
         </div>
 
         <div class="roster-list-card__section">

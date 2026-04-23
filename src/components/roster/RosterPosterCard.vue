@@ -161,9 +161,9 @@ const commentText = computed<string>(() => {
       <header class="roster-poster-card__header">
         <div class="roster-poster-card__title-group">
           <p class="roster-poster-card__eyebrow">云栖派入册名帖</p>
-          <h3 class="roster-poster-card__name">{{ entry.jianghuName }}</h3>
+          <h3 class="roster-poster-card__name">{{ entry.daohao }}</h3>
           <div class="roster-poster-card__title-meta">
-            <span>{{ entry.styleName }}</span>
+            <span>道号正帖</span>
             <span>{{ entry.hallLabel }}</span>
             <span>{{ entry.statusLabel }}</span>
           </div>
@@ -186,6 +186,11 @@ const commentText = computed<string>(() => {
         </article>
 
         <aside class="roster-poster-card__meta-column">
+          <section class="roster-poster-card__meta-card">
+            <p class="roster-poster-card__section-label">公开道号</p>
+            <strong>{{ entry.daohao }}</strong>
+          </section>
+
           <section class="roster-poster-card__meta-card">
             <p class="roster-poster-card__section-label">{{ numberLabel }}</p>
             <strong>{{ numberText }}</strong>

@@ -433,7 +433,7 @@ async function exportPosterImage(): Promise<{ dataUrl: string; fileName: string 
       canvasHeight: props.exportHeight,
     })
 
-    const fileName = `云栖名帖-${props.entry.jianghuName || '同门'}-${Date.now()}.png`
+    const fileName = `云栖名帖-${props.entry.daohao || '同门'}-${Date.now()}.png`
     actionMessage.value = '名帖生成成功'
     return { dataUrl, fileName }
   } catch (error) {
@@ -510,8 +510,8 @@ async function handleShare(): Promise<void> {
       && navigator.canShare({ files: [shareFile] })
     ) {
       await navigator.share({
-        title: `${props.entry.jianghuName} 的云栖名帖`,
-        text: `${props.entry.jianghuName} 的云栖名册公开详情`,
+        title: `${props.entry.daohao} 的云栖名帖`,
+        text: `${props.entry.daohao} 的云栖名册公开详情`,
         files: [shareFile],
         url: shareUrl.value,
       })
@@ -593,9 +593,9 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="roster-poster-studio__meta">
-        <p>江湖名号：{{ entry.jianghuName }}</p>
-        <p>云栖法号：{{ entry.styleName }}</p>
+        <p>公开道号：{{ entry.daohao }}</p>
         <p>当前状态：{{ entry.statusLabel }}</p>
+        <p>归属堂口：{{ entry.hallLabel }}</p>
         <p>{{ entry.status === 'approved' ? `正式牒号：${entry.entryNo || '待定'}` : `回执编号：${entry.receiptCode || '待定'}` }}</p>
       </div>
 

@@ -4,17 +4,86 @@ import { useRouter } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
 import { useRosterAuth } from '@/composables/useRosterAuth'
-import { rosterContent, rosterHallOptions, rosterStatusLabelMap } from '@/data/rosterContent'
-import { listAdminRosterEntries, listRosterReviewLogs, reviewRosterEntry } from '@/services/roster'
-import type { AdminRosterEntryRecord, ReviewRosterEntryPayload, RosterEntryStatus, RosterHallKey } from '@/types/roster'
+import { rosterContent, rosterContributionOptions, rosterFreeTimeOptions, rosterHallOptions, rosterStatusLabelMap } from '@/data/rosterContent'
 import {
-  buildReviewActionSummary,
+  deleteAdminRosterEntry,
+  getNextRosterEntryNo,
+  listAdminRosterEntries,
+  listRosterReviewLogs,
+  saveAdminRosterEntry,
+} from '@/services/roster'
+import type {
+  AdminRosterEntryRecord,
+  AdminRosterEntrySavePayload,
+  RosterEntryStatus,
+  RosterHallKey,
+  RosterReviewLogRecord,
+} from '@/types/roster'
+import {
+  buildAdminSaveSummary,
+  extractRosterEntryNo,
   formatRosterDateTime,
+  formatRosterEntryNo,
   getRosterContributionLabel,
+  getRosterDaohaoError,
   getRosterFreeTimeLabels,
   getRosterHallLabel,
-  getRosterStyleNameError,
+  normalizeRosterDaohao,
+  normalizeRosterLongText,
+  normalizeRosterShortText,
+  validateAdminRosterEntryPayload,
 } from '@/utils/roster'
+
+/**
+ * 后台编辑表单类型
+ * 用途：在抽屉里统一维护一份可编辑状态
+ */
+interface AdminEditingFormState {
+  /** 用途：状态 */
+  status: RosterEntryStatus
+  /** 用途：道号 */
+  daohao: string
+  /** 用途：俗家姓名 */
+  secularName: string
+  /** 用途：现居城市 */
+  currentCity: string
+  /** 用途：生年 */
+  birthYear: string
+  /** 用途：俗务 */
+  profession: string
+  /** 用途：引荐人 */
+  referrerName: string
+  /** 用途：堂口键名 */
+  hallKey: RosterHallKey
+  /** 用途：其他堂口说明 */
+  hallOtherText: string
+  /** 用途：入派本心 */
+  entryIntent: string
+  /** 用途：微信号 */
+  wechatId: string
+  /** 用途：小红书或抖音 */
+  socialXiaohongshuDouyin: string
+  /** 用途：QQ */
+  socialQq: string
+  /** 用途：其他社交号 */
+  socialOther: string
+  /** 用途：是否公开传讯号 */
+  allowContactPublic: boolean
+  /** 用途：身怀所长 */
+  strengths: string
+  /** 用途：所好雅事 */
+  hobbies: string
+  /** 用途：闲暇时段 */
+  freeTimeSlots: AdminRosterEntryRecord['freeTimeSlots']
+  /** 用途：效力意愿 */
+  contributionLevel: AdminRosterEntryRecord['contributionLevel']
+  /** 用途：弟子签押 */
+  oathSignedName: string
+  /** 用途：立誓日期 */
+  oathSignedDate: string
+  /** 用途：公开批语 */
+  reviewComment: string
+}
 
 // 这里保存页面根节点，供审核台静态区块使用统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
@@ -57,22 +126,28 @@ const errorMessage = ref<string>('')
 const activeEntryId = ref<string>('')
 
 // 这里保存当前记录的审核日志。
-const reviewLogs = ref<Array<Record<string, unknown>>>([])
+const reviewLogs = ref<RosterReviewLogRecord[]>([])
 
 // 这里记录日志加载状态，方便抽屉里展示提示。
 const isLoadingLogs = ref<boolean>(false)
 
-// 这里记录是否正在提交审核动作，避免重复点击。
-const isSubmittingReview = ref<boolean>(false)
+// 这里记录当前是否处于编辑模式。
+const isEditing = ref<boolean>(false)
 
-// 这里保存抽屉里选中的目标状态。
-const reviewStatus = ref<Extract<RosterEntryStatus, 'approved' | 'deferred' | 'rejected'>>('approved')
+// 这里记录后台保存状态，避免重复点击。
+const isSaving = ref<boolean>(false)
 
-// 这里保存抽屉里的最终法号。
-const reviewStyleName = ref<string>('')
+// 这里记录后台删除状态，避免重复删档。
+const isDeleting = ref<boolean>(false)
 
-// 这里保存抽屉里的公开批语。
-const reviewComment = ref<string>('')
+// 这里记录是否正在获取建议文牒号。
+const isLoadingNextEntryNo = ref<boolean>(false)
+
+// 这里保存编辑表单。
+const editForm = ref<AdminEditingFormState>(createEmptyEditingForm())
+
+// 这里单独保存文牒号输入框文本，方便支持手输数字和自动预填。
+const editEntryNoText = ref<string>('')
 
 // 这里保存搜索防抖定时器，避免输入时疯狂请求。
 let searchTimer: number | null = null
@@ -84,6 +159,49 @@ let searchTimer: number | null = null
 const activeEntry = computed<AdminRosterEntryRecord | null>(() => (
   entryList.value.find((item) => item.id === activeEntryId.value) ?? null
 ))
+
+/**
+ * 当前是否选中了“其他堂口”
+ * 用途：编辑时决定是否显示“其他堂口说明”
+ */
+const isOtherHallSelected = computed<boolean>(() => editForm.value.hallKey === 'other')
+
+/**
+ * 后台保存摘要
+ * 用途：编辑模式下给执事一眼看清保存结果
+ */
+const saveSummary = computed<string>(() => {
+  const parsedEntryNo = editForm.value.status === 'approved'
+    ? extractRosterEntryNo(editEntryNoText.value)
+    : null
+
+  return buildAdminSaveSummary({
+    entryId: activeEntry.value?.id || '',
+    status: editForm.value.status,
+    entryNo: parsedEntryNo,
+    daohao: normalizeRosterDaohao(editForm.value.daohao),
+    secularName: normalizeRosterShortText(editForm.value.secularName),
+    currentCity: normalizeRosterShortText(editForm.value.currentCity),
+    birthYear: normalizeRosterShortText(editForm.value.birthYear),
+    profession: normalizeRosterShortText(editForm.value.profession),
+    referrerName: normalizeRosterShortText(editForm.value.referrerName, '自行登门'),
+    hallKey: editForm.value.hallKey,
+    hallOtherText: normalizeRosterShortText(editForm.value.hallOtherText),
+    entryIntent: normalizeRosterLongText(editForm.value.entryIntent),
+    wechatId: normalizeRosterShortText(editForm.value.wechatId),
+    socialXiaohongshuDouyin: normalizeRosterShortText(editForm.value.socialXiaohongshuDouyin),
+    socialQq: normalizeRosterShortText(editForm.value.socialQq),
+    socialOther: normalizeRosterShortText(editForm.value.socialOther),
+    allowContactPublic: editForm.value.allowContactPublic,
+    strengths: normalizeRosterLongText(editForm.value.strengths),
+    hobbies: normalizeRosterLongText(editForm.value.hobbies),
+    freeTimeSlots: [...new Set(editForm.value.freeTimeSlots)],
+    contributionLevel: editForm.value.contributionLevel,
+    oathSignedName: normalizeRosterShortText(editForm.value.oathSignedName),
+    oathSignedDate: normalizeRosterShortText(editForm.value.oathSignedDate),
+    reviewComment: normalizeRosterLongText(editForm.value.reviewComment),
+  })
+})
 
 /**
  * 按状态分组后的记录
@@ -108,22 +226,94 @@ const columnList = computed<Array<{ status: RosterEntryStatus; title: string }>>
 ]))
 
 /**
- * 同步抽屉表单
- * 用途：切换不同记录时，把审核动作默认值一起切过去
+ * 创建空编辑表单
+ * 用途：抽屉关闭或记录切换时重置编辑态
+ * 入参：无
+ * 返回值：返回空表单
+ */
+function createEmptyEditingForm(): AdminEditingFormState {
+  return {
+    status: 'pending',
+    daohao: '',
+    secularName: '',
+    currentCity: '',
+    birthYear: '',
+    profession: '',
+    referrerName: '自行登门',
+    hallKey: 'other',
+    hallOtherText: '',
+    entryIntent: '',
+    wechatId: '',
+    socialXiaohongshuDouyin: '',
+    socialQq: '',
+    socialOther: '',
+    allowContactPublic: false,
+    strengths: '',
+    hobbies: '',
+    freeTimeSlots: [],
+    contributionLevel: 'focus_on_learning',
+    oathSignedName: '',
+    oathSignedDate: '',
+    reviewComment: '',
+  }
+}
+
+/**
+ * 格式化日志动作名称
+ * 用途：让后台日志展示更容易读懂
+ * 入参：actionType 为日志动作类型
+ * 返回值：返回中文动作名
+ */
+function formatLogActionType(actionType: string): string {
+  if (actionType === 'delete') {
+    return '删除档案'
+  }
+
+  if (actionType === 'status_change') {
+    return '状态变更'
+  }
+
+  return '档案保存'
+}
+
+/**
+ * 同步编辑表单
+ * 用途：切换不同记录时，把抽屉里的表单一起切过去
  * 入参：entry 为当前记录
  * 返回值：无返回值
  */
-function syncReviewForm(entry: AdminRosterEntryRecord | null): void {
+function syncEditForm(entry: AdminRosterEntryRecord | null): void {
   if (!entry) {
-    reviewStatus.value = 'approved'
-    reviewStyleName.value = ''
-    reviewComment.value = ''
+    editForm.value = createEmptyEditingForm()
+    editEntryNoText.value = ''
     return
   }
 
-  reviewStatus.value = entry.status === 'approved' ? 'approved' : 'approved'
-  reviewStyleName.value = entry.effectiveStyleName || entry.requestedStyleName
-  reviewComment.value = entry.reviewComment
+  editForm.value = {
+    status: entry.status,
+    daohao: entry.daohao,
+    secularName: entry.secularName,
+    currentCity: entry.currentCity,
+    birthYear: entry.birthYear,
+    profession: entry.profession,
+    referrerName: entry.referrerName || '自行登门',
+    hallKey: entry.hallKey,
+    hallOtherText: entry.hallOtherText,
+    entryIntent: entry.entryIntent,
+    wechatId: entry.wechatId,
+    socialXiaohongshuDouyin: entry.socialXiaohongshuDouyin,
+    socialQq: entry.socialQq,
+    socialOther: entry.socialOther,
+    allowContactPublic: entry.allowContactPublic,
+    strengths: entry.strengths,
+    hobbies: entry.hobbies,
+    freeTimeSlots: [...entry.freeTimeSlots],
+    contributionLevel: entry.contributionLevel,
+    oathSignedName: entry.oathSignedName,
+    oathSignedDate: entry.oathSignedDate,
+    reviewComment: entry.reviewComment,
+  }
+  editEntryNoText.value = entry.entryNo ? String(entry.entryNo) : ''
 }
 
 /**
@@ -147,6 +337,7 @@ async function loadEntryList(): Promise<void> {
 
       if (!stillExists) {
         activeEntryId.value = ''
+        isEditing.value = false
       }
     }
   } catch (error) {
@@ -189,7 +380,8 @@ async function loadReviewLogs(entryId: string): Promise<void> {
  */
 function openEntryDrawer(entry: AdminRosterEntryRecord): void {
   activeEntryId.value = entry.id
-  syncReviewForm(entry)
+  isEditing.value = false
+  syncEditForm(entry)
   void loadReviewLogs(entry.id)
 }
 
@@ -201,7 +393,121 @@ function openEntryDrawer(entry: AdminRosterEntryRecord): void {
  */
 function closeEntryDrawer(): void {
   activeEntryId.value = ''
+  isEditing.value = false
   reviewLogs.value = []
+  syncEditForm(null)
+}
+
+/**
+ * 进入编辑模式
+ * 用途：执事在抽屉里切到可编辑状态
+ * 入参：无
+ * 返回值：无返回值
+ */
+async function enterEditMode(): Promise<void> {
+  if (!activeEntry.value) {
+    return
+  }
+
+  isEditing.value = true
+  syncEditForm(activeEntry.value)
+
+  if (editForm.value.status === 'approved' && !editEntryNoText.value) {
+    await fillNextEntryNo()
+  }
+}
+
+/**
+ * 退出编辑模式
+ * 用途：取消当前未保存的编辑
+ * 入参：无
+ * 返回值：无返回值
+ */
+function cancelEditing(): void {
+  isEditing.value = false
+  syncEditForm(activeEntry.value)
+}
+
+/**
+ * 获取默认文牒号
+ * 用途：进入准予状态时自动带出建议号
+ * 入参：无
+ * 返回值：无返回值
+ */
+async function fillNextEntryNo(): Promise<void> {
+  if (isLoadingNextEntryNo.value || editForm.value.status !== 'approved' || editEntryNoText.value) {
+    return
+  }
+
+  isLoadingNextEntryNo.value = true
+
+  try {
+    const nextEntryNo = await getNextRosterEntryNo()
+    editEntryNoText.value = String(nextEntryNo)
+  } catch (error) {
+    actionMessage.value = error instanceof Error ? error.message : '默认文牒号获取失败，请稍后再试'
+  } finally {
+    isLoadingNextEntryNo.value = false
+  }
+}
+
+/**
+ * 切换空闲时段
+ * 用途：后台编辑时统一处理多选时段
+ * 入参：slot 为时段键名
+ * 返回值：无返回值
+ */
+function toggleFreeTimeSlot(slot: AdminEditingFormState['freeTimeSlots'][number]): void {
+  const currentList = new Set(editForm.value.freeTimeSlots)
+
+  if (currentList.has(slot)) {
+    currentList.delete(slot)
+  } else {
+    currentList.add(slot)
+  }
+
+  editForm.value.freeTimeSlots = Array.from(currentList)
+}
+
+/**
+ * 组装后台保存载荷
+ * 用途：提交前把编辑表单统一清洗成服务层需要的结构
+ * 入参：无
+ * 返回值：返回保存载荷
+ */
+function buildSavePayload(): AdminRosterEntrySavePayload | null {
+  if (!activeEntry.value) {
+    return null
+  }
+
+  const payload: AdminRosterEntrySavePayload = {
+    entryId: activeEntry.value.id,
+    status: editForm.value.status,
+    entryNo: editForm.value.status === 'approved' ? extractRosterEntryNo(editEntryNoText.value) : null,
+    daohao: normalizeRosterDaohao(editForm.value.daohao),
+    secularName: normalizeRosterShortText(editForm.value.secularName),
+    currentCity: normalizeRosterShortText(editForm.value.currentCity),
+    birthYear: normalizeRosterShortText(editForm.value.birthYear),
+    profession: normalizeRosterShortText(editForm.value.profession),
+    referrerName: normalizeRosterShortText(editForm.value.referrerName, '自行登门'),
+    hallKey: editForm.value.hallKey,
+    hallOtherText: normalizeRosterShortText(editForm.value.hallOtherText),
+    entryIntent: normalizeRosterLongText(editForm.value.entryIntent),
+    wechatId: normalizeRosterShortText(editForm.value.wechatId),
+    socialXiaohongshuDouyin: normalizeRosterShortText(editForm.value.socialXiaohongshuDouyin),
+    socialQq: normalizeRosterShortText(editForm.value.socialQq),
+    socialOther: normalizeRosterShortText(editForm.value.socialOther),
+    allowContactPublic: Boolean(editForm.value.allowContactPublic),
+    strengths: normalizeRosterLongText(editForm.value.strengths),
+    hobbies: normalizeRosterLongText(editForm.value.hobbies),
+    freeTimeSlots: [...new Set(editForm.value.freeTimeSlots)],
+    contributionLevel: editForm.value.contributionLevel,
+    oathSignedName: normalizeRosterShortText(editForm.value.oathSignedName),
+    oathSignedDate: normalizeRosterShortText(editForm.value.oathSignedDate),
+    reviewComment: normalizeRosterLongText(editForm.value.reviewComment),
+  }
+
+  return payload
 }
 
 /**
@@ -220,50 +526,84 @@ async function handleLogout(): Promise<void> {
 }
 
 /**
- * 提交审核动作
- * 用途：抽屉里的审核按钮统一走这里
+ * 保存后台档案
+ * 用途：把编辑后的全部字段、状态和文牒号一次提交
  * 入参：无
  * 返回值：无返回值
  */
-async function handleSubmitReview(): Promise<void> {
-  if (!activeEntry.value) {
-    actionMessage.value = '请先选择一条记录再提交审核'
+async function handleSaveEntry(): Promise<void> {
+  const payload = buildSavePayload()
+
+  if (!payload) {
+    actionMessage.value = '请先选择一条记录再保存'
     return
   }
 
-  if (reviewStatus.value === 'approved') {
-    const styleNameError = getRosterStyleNameError(reviewStyleName.value)
+  const daohaoError = getRosterDaohaoError(payload.daohao)
 
-    if (styleNameError) {
-      actionMessage.value = styleNameError
+  if (daohaoError) {
+    actionMessage.value = daohaoError
+    return
+  }
+
+  const validationMessage = validateAdminRosterEntryPayload(payload)
+
+  if (validationMessage) {
+    actionMessage.value = validationMessage
+    return
+  }
+
+  isSaving.value = true
+  actionMessage.value = saveSummary.value
+
+  try {
+    await saveAdminRosterEntry(payload)
+    actionMessage.value = '档案已保存，列表、详情与公开页会同步刷新。'
+    isEditing.value = false
+    await loadEntryList()
+
+    if (activeEntryId.value) {
+      await loadReviewLogs(activeEntryId.value)
+    }
+  } catch (error) {
+    actionMessage.value = error instanceof Error ? error.message : '档案保存失败，请稍后再试'
+  } finally {
+    isSaving.value = false
+  }
+}
+
+/**
+ * 删除后台档案
+ * 用途：执事确认后彻底删除一条记录
+ * 入参：无
+ * 返回值：无返回值
+ */
+async function handleDeleteEntry(): Promise<void> {
+  if (!activeEntry.value) {
+    actionMessage.value = '请先选择一条记录再删除'
+    return
+  }
+
+  if (typeof window !== 'undefined') {
+    const confirmed = window.confirm(`确定要彻底删除“${activeEntry.value.daohao}”这条档案吗？删除后无法恢复。`)
+
+    if (!confirmed) {
       return
     }
   }
 
-  const payload: ReviewRosterEntryPayload = {
-    entryId: activeEntry.value.id,
-    nextStatus: reviewStatus.value,
-    effectiveStyleName: reviewStyleName.value,
-    reviewComment: reviewComment.value,
-  }
-
-  isSubmittingReview.value = true
-  actionMessage.value = buildReviewActionSummary(payload)
+  isDeleting.value = true
+  actionMessage.value = '正在删除档案，请稍候...'
 
   try {
-    await reviewRosterEntry(payload)
-    actionMessage.value = '审核动作已提交，当前列表与抽屉信息正在刷新。'
+    await deleteAdminRosterEntry(activeEntry.value.id)
+    actionMessage.value = '档案已彻底删除，公开页与后台都不会再显示这条记录。'
+    closeEntryDrawer()
     await loadEntryList()
-
-    if (activeEntry.value) {
-      const refreshedEntry = entryList.value.find((item) => item.id === payload.entryId) ?? null
-      syncReviewForm(refreshedEntry)
-      await loadReviewLogs(payload.entryId)
-    }
   } catch (error) {
-    actionMessage.value = error instanceof Error ? error.message : '审核提交失败，请稍后再试'
+    actionMessage.value = error instanceof Error ? error.message : '删除档案失败，请稍后再试'
   } finally {
-    isSubmittingReview.value = false
+    isDeleting.value = false
   }
 }
 
@@ -278,6 +618,7 @@ watch(
       window.clearTimeout(searchTimer)
     }
 
+    // 这里做轻量防抖，避免执事输入搜索词时频繁打请求。
     searchTimer = window.setTimeout(() => {
       void loadEntryList()
     }, 220)
@@ -287,7 +628,32 @@ watch(
 watch(
   activeEntry,
   (entry) => {
-    syncReviewForm(entry)
+    if (!entry) {
+      syncEditForm(null)
+      return
+    }
+
+    if (!isEditing.value) {
+      syncEditForm(entry)
+    }
+  },
+)
+
+watch(
+  () => editForm.value.status,
+  async (status) => {
+    if (!isEditing.value) {
+      return
+    }
+
+    if (status !== 'approved') {
+      editEntryNoText.value = ''
+      return
+    }
+
+    if (!editEntryNoText.value) {
+      await fillNextEntryNo()
+    }
   },
 )
 
@@ -308,7 +674,7 @@ onMounted(async () => {
     <PageBanner
       eyebrow="云栖名册"
       title="执事审核台"
-      :lead="`当前登录执事：${adminProfile?.displayName || '未识别'}。公开前台与审核台共用同一套名册数据，这里可查看全部原始字段并执行审核。`"
+      :lead="`当前登录执事：${adminProfile?.displayName || '未识别'}。这里可按道号或文牒号检索档案、编辑全部字段、调整牒号并彻底删除记录。`"
       :note="actionMessage"
     />
 
@@ -316,8 +682,8 @@ onMounted(async () => {
       <div class="roster-admin-toolbar__head">
         <div>
           <p class="content-card__eyebrow">筛选与检索</p>
-          <h2>按关键词、堂口和状态快速翻卷</h2>
-          <p>{{ errorMessage || '点击任意记录可打开详情抽屉，查看完整原始字段与审核历史。' }}</p>
+          <h2>按道号、文牒号和堂口快速翻卷</h2>
+          <p>{{ errorMessage || '点击任意记录可打开详情抽屉，查看完整原始字段并切换编辑模式。' }}</p>
         </div>
 
         <button type="button" class="ink-button ink-button--ghost" @click="handleLogout">
@@ -389,10 +755,10 @@ onMounted(async () => {
             @click="openEntryDrawer(entry)"
           >
             <div class="roster-admin-entry__head">
-              <strong>{{ entry.jianghuName }}</strong>
-              <span>{{ entry.status === 'approved' ? entry.effectiveStyleName || entry.requestedStyleName : entry.requestedStyleName }}</span>
+              <strong>{{ entry.daohao }}</strong>
+              <span>{{ entry.status === 'approved' ? formatRosterEntryNo(entry.entryNo) : entry.receiptCode }}</span>
             </div>
-            <p>{{ getRosterHallLabel(entry.hallKey) }} · {{ entry.receiptCode }}</p>
+            <p>{{ getRosterHallLabel(entry.hallKey) }} · {{ rosterStatusLabelMap[entry.status] }}</p>
             <small>{{ formatRosterDateTime(entry.createdAt) }}</small>
           </button>
 
@@ -411,20 +777,53 @@ onMounted(async () => {
           <div class="roster-admin-drawer__head">
             <div>
               <p class="eyebrow">文牒详情</p>
-              <h2>{{ activeEntry.jianghuName }} · {{ activeEntry.effectiveStyleName || activeEntry.requestedStyleName }}</h2>
+              <h2>{{ activeEntry.daohao }}</h2>
               <p>{{ getRosterHallLabel(activeEntry.hallKey) }} · {{ activeEntry.receiptCode }} · {{ rosterStatusLabelMap[activeEntry.status] }}</p>
             </div>
 
-            <button type="button" class="roster-admin-drawer__close" @click="closeEntryDrawer">
-              收起
-            </button>
+            <div class="roster-admin-drawer__head-actions">
+              <button
+                type="button"
+                class="roster-admin-drawer__close"
+                @click="isEditing ? cancelEditing() : enterEditMode()"
+              >
+                {{ isEditing ? '取消编辑' : '编辑档案' }}
+              </button>
+              <button type="button" class="roster-admin-drawer__close" @click="closeEntryDrawer">
+                收起
+              </button>
+            </div>
           </div>
 
           <div class="roster-admin-drawer__body">
             <section class="roster-admin-detail-card">
               <p class="roster-admin-detail-card__eyebrow">弟子名籍</p>
-              <div class="roster-admin-detail-card__grid">
-                <div><span>江湖名号</span><strong>{{ activeEntry.jianghuName }}</strong></div>
+
+              <div v-if="isEditing" class="roster-admin-form-grid">
+                <label class="roster-admin-form-field">
+                  <span>道号 *</span>
+                  <input v-model="editForm.daohao" class="roster-admin-review-input" maxlength="12" placeholder="请输入道号" type="text" />
+                </label>
+                <label class="roster-admin-form-field">
+                  <span>俗家姓名</span>
+                  <input v-model="editForm.secularName" class="roster-admin-review-input" maxlength="24" placeholder="选填" type="text" />
+                </label>
+                <label class="roster-admin-form-field">
+                  <span>现居洞府 *</span>
+                  <input v-model="editForm.currentCity" class="roster-admin-review-input" maxlength="32" placeholder="精确到市" type="text" />
+                </label>
+                <label class="roster-admin-form-field">
+                  <span>生年</span>
+                  <input v-model="editForm.birthYear" class="roster-admin-review-input" maxlength="8" placeholder="例如：1998" type="text" />
+                </label>
+                <label class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>俗务</span>
+                  <input v-model="editForm.profession" class="roster-admin-review-input" maxlength="40" placeholder="选填" type="text" />
+                </label>
+              </div>
+
+              <div v-else class="roster-admin-detail-card__grid">
+                <div><span>道号</span><strong>{{ activeEntry.daohao }}</strong></div>
                 <div><span>俗家姓名</span><strong>{{ activeEntry.secularName || '未填' }}</strong></div>
                 <div><span>现居洞府</span><strong>{{ activeEntry.currentCity }}</strong></div>
                 <div><span>生年</span><strong>{{ activeEntry.birthYear || '未填' }}</strong></div>
@@ -435,13 +834,77 @@ onMounted(async () => {
 
             <section class="roster-admin-detail-card">
               <p class="roster-admin-detail-card__eyebrow">门派司职</p>
-              <div class="roster-admin-detail-card__grid">
-                <div><span>申请法号</span><strong>{{ activeEntry.requestedStyleName }}</strong></div>
-                <div><span>最终法号</span><strong>{{ activeEntry.effectiveStyleName || activeEntry.requestedStyleName }}</strong></div>
+
+              <div v-if="isEditing" class="roster-admin-form-grid">
+                <label class="roster-admin-form-field">
+                  <span>引荐人</span>
+                  <input v-model="editForm.referrerName" class="roster-admin-review-input" maxlength="32" placeholder="默认：自行登门" type="text" />
+                </label>
+
+                <label class="roster-admin-form-field">
+                  <span>状态 *</span>
+                  <select v-model="editForm.status" class="roster-admin-review-input">
+                    <option value="pending">待审核</option>
+                    <option value="approved">准予入册</option>
+                    <option value="deferred">暂缓入册</option>
+                    <option value="rejected">不予收录</option>
+                  </select>
+                </label>
+
+                <label v-if="editForm.status === 'approved'" class="roster-admin-form-field">
+                  <span>正式文牒号 *</span>
+                  <input
+                    v-model="editEntryNoText"
+                    class="roster-admin-review-input"
+                    maxlength="12"
+                    placeholder="只填数字，例如：12"
+                    type="text"
+                  />
+                  <small>{{ isLoadingNextEntryNo ? '正在获取建议文牒号...' : '只需填写数字，系统会自动渲染为“云栖-第0001号”' }}</small>
+                </label>
+
+                <div class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>归属堂口 *</span>
+                  <div class="roster-admin-choice-grid">
+                    <button
+                      v-for="hall in rosterHallOptions"
+                      :key="hall.key"
+                      type="button"
+                      class="roster-admin-choice-card"
+                      :class="{ 'roster-admin-choice-card--active': editForm.hallKey === hall.key }"
+                      @click="editForm.hallKey = hall.key"
+                    >
+                      <strong>{{ hall.label }}</strong>
+                      <small>{{ hall.description }}</small>
+                    </button>
+                  </div>
+                </div>
+
+                <label v-if="isOtherHallSelected" class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>其他堂口说明 *</span>
+                  <input v-model="editForm.hallOtherText" class="roster-admin-review-input" maxlength="32" placeholder="请补充堂口方向" type="text" />
+                </label>
+
+                <label class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>入派本心 *</span>
+                  <textarea
+                    v-model="editForm.entryIntent"
+                    class="roster-admin-review-input roster-admin-review-input--textarea"
+                    maxlength="220"
+                    rows="4"
+                    placeholder="请输入入派本心"
+                  ></textarea>
+                </label>
+              </div>
+
+              <div v-else class="roster-admin-detail-card__grid">
+                <div><span>当前状态</span><strong>{{ rosterStatusLabelMap[activeEntry.status] }}</strong></div>
+                <div><span>正式文牒号</span><strong>{{ activeEntry.entryNo ? formatRosterEntryNo(activeEntry.entryNo) : '未分配' }}</strong></div>
                 <div><span>归属堂口</span><strong>{{ getRosterHallLabel(activeEntry.hallKey) }}</strong></div>
                 <div><span>其他堂口说明</span><strong>{{ activeEntry.hallOtherText || '无' }}</strong></div>
               </div>
-              <div class="roster-admin-detail-card__text-block">
+
+              <div v-if="!isEditing" class="roster-admin-detail-card__text-block">
                 <span>入派本心</span>
                 <p>{{ activeEntry.entryIntent }}</p>
               </div>
@@ -449,7 +912,31 @@ onMounted(async () => {
 
             <section class="roster-admin-detail-card">
               <p class="roster-admin-detail-card__eyebrow">传讯方式</p>
-              <div class="roster-admin-detail-card__grid">
+
+              <div v-if="isEditing" class="roster-admin-form-grid">
+                <label class="roster-admin-form-field">
+                  <span>核心传讯 *</span>
+                  <input v-model="editForm.wechatId" class="roster-admin-review-input" maxlength="48" placeholder="请输入微信号" type="text" />
+                </label>
+                <label class="roster-admin-form-field">
+                  <span>小红书 / 抖音</span>
+                  <input v-model="editForm.socialXiaohongshuDouyin" class="roster-admin-review-input" maxlength="48" placeholder="选填" type="text" />
+                </label>
+                <label class="roster-admin-form-field">
+                  <span>QQ</span>
+                  <input v-model="editForm.socialQq" class="roster-admin-review-input" maxlength="48" placeholder="选填" type="text" />
+                </label>
+                <label class="roster-admin-form-field">
+                  <span>其他</span>
+                  <input v-model="editForm.socialOther" class="roster-admin-review-input" maxlength="48" placeholder="选填" type="text" />
+                </label>
+                <label class="roster-admin-form-check roster-admin-form-field--full">
+                  <input v-model="editForm.allowContactPublic" type="checkbox" />
+                  <span>同意核心传讯号在同门间公开，用于活动联络</span>
+                </label>
+              </div>
+
+              <div v-else class="roster-admin-detail-card__grid">
                 <div><span>微信号</span><strong>{{ activeEntry.wechatId }}</strong></div>
                 <div><span>小红书 / 抖音</span><strong>{{ activeEntry.socialXiaohongshuDouyin || '未填' }}</strong></div>
                 <div><span>QQ</span><strong>{{ activeEntry.socialQq || '未填' }}</strong></div>
@@ -460,94 +947,167 @@ onMounted(async () => {
 
             <section class="roster-admin-detail-card">
               <p class="roster-admin-detail-card__eyebrow">所长与愿</p>
-              <div class="roster-admin-detail-card__text-block">
-                <span>身怀所长</span>
-                <p>{{ activeEntry.strengths || '未填' }}</p>
+
+              <div v-if="isEditing" class="roster-admin-form-grid">
+                <label class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>身怀所长</span>
+                  <textarea
+                    v-model="editForm.strengths"
+                    class="roster-admin-review-input roster-admin-review-input--textarea"
+                    maxlength="160"
+                    rows="3"
+                    placeholder="请输入身怀所长"
+                  ></textarea>
+                </label>
+
+                <label class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>所好雅事</span>
+                  <textarea
+                    v-model="editForm.hobbies"
+                    class="roster-admin-review-input roster-admin-review-input--textarea"
+                    maxlength="160"
+                    rows="3"
+                    placeholder="请输入所好雅事"
+                  ></textarea>
+                </label>
+
+                <div class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>闲暇时辰</span>
+                  <div class="roster-admin-choice-row">
+                    <button
+                      v-for="option in rosterFreeTimeOptions"
+                      :key="option.key"
+                      type="button"
+                      class="roster-admin-choice-chip"
+                      :class="{ 'roster-admin-choice-chip--active': editForm.freeTimeSlots.includes(option.key) }"
+                      @click="toggleFreeTimeSlot(option.key)"
+                    >
+                      {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>愿为门派效力</span>
+                  <div class="roster-admin-choice-grid roster-admin-choice-grid--single">
+                    <button
+                      v-for="option in rosterContributionOptions"
+                      :key="option.key"
+                      type="button"
+                      class="roster-admin-choice-card"
+                      :class="{ 'roster-admin-choice-card--active': editForm.contributionLevel === option.key }"
+                      @click="editForm.contributionLevel = option.key"
+                    >
+                      <strong>{{ option.label }}</strong>
+                      <small>{{ option.description }}</small>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div class="roster-admin-detail-card__text-block">
-                <span>所好雅事</span>
-                <p>{{ activeEntry.hobbies || '未填' }}</p>
-              </div>
-              <div class="roster-admin-detail-card__grid">
-                <div><span>闲暇时辰</span><strong>{{ getRosterFreeTimeLabels(activeEntry.freeTimeSlots).join('、') || '未填' }}</strong></div>
-                <div><span>效力意愿</span><strong>{{ getRosterContributionLabel(activeEntry.contributionLevel) }}</strong></div>
-              </div>
+
+              <template v-else>
+                <div class="roster-admin-detail-card__text-block">
+                  <span>身怀所长</span>
+                  <p>{{ activeEntry.strengths || '未填' }}</p>
+                </div>
+                <div class="roster-admin-detail-card__text-block">
+                  <span>所好雅事</span>
+                  <p>{{ activeEntry.hobbies || '未填' }}</p>
+                </div>
+                <div class="roster-admin-detail-card__grid">
+                  <div><span>闲暇时辰</span><strong>{{ getRosterFreeTimeLabels(activeEntry.freeTimeSlots).join('、') || '未填' }}</strong></div>
+                  <div><span>效力意愿</span><strong>{{ getRosterContributionLabel(activeEntry.contributionLevel) }}</strong></div>
+                </div>
+              </template>
             </section>
 
             <section class="roster-admin-detail-card">
               <p class="roster-admin-detail-card__eyebrow">誓约与时间</p>
-              <div class="roster-admin-detail-card__grid">
+
+              <div v-if="isEditing" class="roster-admin-form-grid">
+                <label class="roster-admin-form-field">
+                  <span>弟子签押 *</span>
+                  <input v-model="editForm.oathSignedName" class="roster-admin-review-input" maxlength="32" placeholder="请输入签押" type="text" />
+                </label>
+                <label class="roster-admin-form-field">
+                  <span>立誓日期 *</span>
+                  <input v-model="editForm.oathSignedDate" class="roster-admin-review-input" type="date" />
+                </label>
+                <label class="roster-admin-form-field roster-admin-form-field--full">
+                  <span>公开批语</span>
+                  <textarea
+                    v-model="editForm.reviewComment"
+                    class="roster-admin-review-input roster-admin-review-input--textarea"
+                    maxlength="220"
+                    rows="4"
+                    placeholder="这段文字会出现在公开详情页状态区，请按公开口径填写"
+                  ></textarea>
+                </label>
+              </div>
+
+              <div v-else class="roster-admin-detail-card__grid">
                 <div><span>弟子签押</span><strong>{{ activeEntry.oathSignedName }}</strong></div>
                 <div><span>立誓日期</span><strong>{{ activeEntry.oathSignedDate }}</strong></div>
                 <div><span>创建时间</span><strong>{{ formatRosterDateTime(activeEntry.createdAt) }}</strong></div>
                 <div><span>最近更新</span><strong>{{ formatRosterDateTime(activeEntry.updatedAt) }}</strong></div>
-                <div><span>审核执事</span><strong>{{ activeEntry.reviewedByName || '未审核' }}</strong></div>
-                <div><span>审核时间</span><strong>{{ activeEntry.reviewedAt ? formatRosterDateTime(activeEntry.reviewedAt) : '未审核' }}</strong></div>
+                <div><span>审核执事</span><strong>{{ activeEntry.reviewedByName || '未记录' }}</strong></div>
+                <div><span>审核时间</span><strong>{{ activeEntry.reviewedAt ? formatRosterDateTime(activeEntry.reviewedAt) : '未记录' }}</strong></div>
+              </div>
+
+              <div v-if="!isEditing" class="roster-admin-detail-card__text-block">
+                <span>公开批语</span>
+                <p>{{ activeEntry.reviewComment || '未留批语' }}</p>
               </div>
             </section>
 
             <section class="roster-admin-detail-card roster-admin-detail-card--action">
-              <p class="roster-admin-detail-card__eyebrow">审核动作</p>
+              <p class="roster-admin-detail-card__eyebrow">档案操作</p>
 
-              <div class="roster-admin-review-status">
+              <template v-if="isEditing">
+                <div class="roster-admin-review-actions">
+                  <button
+                    type="button"
+                    class="ink-button ink-button--primary"
+                    :disabled="isSaving"
+                    @click="handleSaveEntry"
+                  >
+                    {{ isSaving ? '保存中...' : rosterContent.admin.reviewButton }}
+                  </button>
+                  <button
+                    type="button"
+                    class="ink-button ink-button--ghost"
+                    :disabled="isSaving"
+                    @click="cancelEditing"
+                  >
+                    取消编辑
+                  </button>
+                </div>
+                <span class="roster-admin-review-summary">{{ saveSummary }}</span>
+              </template>
+
+              <template v-else>
+                <div class="roster-admin-detail-card__grid">
+                  <div><span>公开详情</span><strong>{{ activeEntry.publicSlug }}</strong></div>
+                  <div><span>当前文牒号</span><strong>{{ activeEntry.entryNo ? formatRosterEntryNo(activeEntry.entryNo) : '未分配' }}</strong></div>
+                </div>
+              </template>
+            </section>
+
+            <section class="roster-admin-detail-card roster-admin-detail-card--danger">
+              <p class="roster-admin-detail-card__eyebrow">高风险操作</p>
+              <div class="roster-admin-danger-row">
+                <div>
+                  <strong>彻底删除档案</strong>
+                  <p>删除后主表、公开详情和后台记录都会一起消失，且无法恢复。</p>
+                </div>
                 <button
                   type="button"
-                  class="roster-admin-review-status__button"
-                  :class="{ 'roster-admin-review-status__button--active': reviewStatus === 'approved' }"
-                  @click="reviewStatus = 'approved'"
+                  class="roster-admin-danger-button"
+                  :disabled="isDeleting"
+                  @click="handleDeleteEntry"
                 >
-                  准予入册
+                  {{ isDeleting ? '删除中...' : '删除档案' }}
                 </button>
-                <button
-                  type="button"
-                  class="roster-admin-review-status__button"
-                  :class="{ 'roster-admin-review-status__button--active': reviewStatus === 'deferred' }"
-                  @click="reviewStatus = 'deferred'"
-                >
-                  暂缓入册
-                </button>
-                <button
-                  type="button"
-                  class="roster-admin-review-status__button"
-                  :class="{ 'roster-admin-review-status__button--active': reviewStatus === 'rejected' }"
-                  @click="reviewStatus = 'rejected'"
-                >
-                  不予收录
-                </button>
-              </div>
-
-              <label class="roster-admin-review-field">
-                <span>最终法号</span>
-                <input
-                  v-model="reviewStyleName"
-                  class="roster-admin-review-input"
-                  :disabled="reviewStatus !== 'approved'"
-                  placeholder="准予入册时可确认或修改最终法号"
-                  type="text"
-                />
-              </label>
-
-              <label class="roster-admin-review-field">
-                <span>公开批语</span>
-                <textarea
-                  v-model="reviewComment"
-                  class="roster-admin-review-input roster-admin-review-input--textarea"
-                  maxlength="220"
-                  placeholder="这段文字会出现在公开详情页状态区，请按公开口径填写"
-                  rows="4"
-                ></textarea>
-              </label>
-
-              <div class="roster-admin-review-actions">
-                <button
-                  type="button"
-                  class="ink-button ink-button--primary"
-                  :disabled="isSubmittingReview"
-                  @click="handleSubmitReview"
-                >
-                  {{ isSubmittingReview ? '提交中...' : rosterContent.admin.reviewButton }}
-                </button>
-                <span>{{ buildReviewActionSummary({ entryId: activeEntry.id, nextStatus: reviewStatus, effectiveStyleName: reviewStyleName, reviewComment }) }}</span>
               </div>
             </section>
 
@@ -562,18 +1122,14 @@ onMounted(async () => {
               <div v-else class="roster-admin-log-list">
                 <article
                   v-for="log in reviewLogs"
-                  :key="String(log.id)"
+                  :key="log.id"
                   class="roster-admin-log-item"
                 >
-                  <strong>{{ String(log.reviewed_by_name || '执事') }} · {{ formatRosterDateTime(String(log.created_at || '')) }}</strong>
-                  <p>
-                    状态：
-                    {{ log.previous_status ? rosterStatusLabelMap[String(log.previous_status) as RosterEntryStatus] : '首次' }}
-                    →
-                    {{ rosterStatusLabelMap[String(log.next_status || 'pending') as RosterEntryStatus] }}
-                  </p>
-                  <p>法号：{{ String(log.previous_style_name || '未定') }} → {{ String(log.next_style_name || '未定') }}</p>
-                  <small>{{ String(log.review_comment || '未留批语') }}</small>
+                  <strong>{{ log.reviewedByName || '执事' }} · {{ formatRosterDateTime(log.createdAt) }}</strong>
+                  <p>{{ formatLogActionType(log.actionType) }}：{{ log.previousStatus ? rosterStatusLabelMap[log.previousStatus] : '首次记录' }} → {{ rosterStatusLabelMap[log.nextStatus] }}</p>
+                  <p>道号：{{ log.previousDaohao || '未定' }} → {{ log.nextDaohao || '未定' }}</p>
+                  <p>文牒号：{{ log.previousEntryNo ? formatRosterEntryNo(log.previousEntryNo) : '无' }} → {{ log.nextEntryNo ? formatRosterEntryNo(log.nextEntryNo) : '无' }}</p>
+                  <small>{{ log.reviewComment || '未留批语' }}</small>
                 </article>
               </div>
             </section>
@@ -657,8 +1213,9 @@ onMounted(async () => {
 }
 
 .roster-admin-toolbar__chip,
-.roster-admin-review-status__button,
-.roster-admin-entry {
+.roster-admin-entry,
+.roster-admin-choice-card,
+.roster-admin-choice-chip {
   cursor: pointer;
 }
 
@@ -700,7 +1257,9 @@ onMounted(async () => {
 
 .roster-admin-column__head,
 .roster-admin-entry__head,
-.roster-admin-review-actions {
+.roster-admin-danger-row,
+.roster-admin-review-actions,
+.roster-admin-drawer__head-actions {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -735,7 +1294,9 @@ onMounted(async () => {
     background-color var(--transition-base);
 }
 
-.roster-admin-entry:hover {
+.roster-admin-entry:hover,
+.roster-admin-choice-card:hover,
+.roster-admin-choice-chip:hover {
   transform: translateY(-2px);
 }
 
@@ -787,7 +1348,7 @@ onMounted(async () => {
   position: absolute;
   top: 0;
   right: 0;
-  width: min(820px, 100%);
+  width: min(860px, 100%);
   height: 100%;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -819,13 +1380,19 @@ onMounted(async () => {
   line-height: 1.72;
 }
 
-.roster-admin-drawer__close {
+.roster-admin-drawer__close,
+.roster-admin-danger-button {
   min-height: 42px;
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.2);
   background: rgba(7, 27, 37, 0.44);
   color: var(--color-text);
+}
+
+.roster-admin-danger-button {
+  border-color: rgba(208, 96, 96, 0.3);
+  background: rgba(91, 27, 27, 0.46);
 }
 
 .roster-admin-drawer__body {
@@ -844,6 +1411,11 @@ onMounted(async () => {
   background: rgba(7, 27, 37, 0.48);
 }
 
+.roster-admin-detail-card--danger {
+  border-color: rgba(208, 96, 96, 0.2);
+  background: rgba(54, 18, 18, 0.42);
+}
+
 .roster-admin-detail-card__eyebrow {
   margin: 0;
   color: var(--color-cyan);
@@ -851,7 +1423,8 @@ onMounted(async () => {
   font-size: 0.82rem;
 }
 
-.roster-admin-detail-card__grid {
+.roster-admin-detail-card__grid,
+.roster-admin-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -859,14 +1432,18 @@ onMounted(async () => {
 
 .roster-admin-detail-card__grid div,
 .roster-admin-detail-card__text-block,
-.roster-admin-review-field {
+.roster-admin-form-field {
   display: grid;
   gap: 8px;
 }
 
+.roster-admin-form-field--full {
+  grid-column: 1 / -1;
+}
+
 .roster-admin-detail-card__grid span,
 .roster-admin-detail-card__text-block span,
-.roster-admin-review-field span {
+.roster-admin-form-field span {
   color: var(--color-cyan);
   font-size: 0.82rem;
   letter-spacing: 0.14em;
@@ -880,27 +1457,10 @@ onMounted(async () => {
   overflow-wrap: anywhere;
 }
 
-.roster-admin-review-status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.roster-admin-review-status__button {
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(5, 19, 28, 0.52);
-  color: var(--color-text-soft);
-}
-
-.roster-admin-review-status__button--active {
-  border-color: rgba(216, 185, 114, 0.32);
-  background:
-    linear-gradient(180deg, rgba(216, 185, 114, 0.14), rgba(35, 25, 9, 0.76)),
-    rgba(23, 17, 8, 0.88);
-  color: rgba(248, 237, 204, 0.98);
+.roster-admin-form-field small,
+.roster-admin-review-summary {
+  color: var(--color-text-faint);
+  line-height: 1.72;
 }
 
 .roster-admin-review-input--textarea {
@@ -909,13 +1469,100 @@ onMounted(async () => {
   line-height: 1.78;
 }
 
-.roster-admin-review-actions {
+.roster-admin-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.roster-admin-choice-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.roster-admin-choice-card,
+.roster-admin-choice-chip {
+  border: 1px solid rgba(216, 185, 114, 0.14);
+  transition:
+    transform var(--transition-base),
+    border-color var(--transition-base),
+    background-color var(--transition-base);
+}
+
+.roster-admin-choice-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(7, 27, 37, 0.44);
+  text-align: left;
+}
+
+.roster-admin-choice-card strong,
+.roster-admin-choice-card small {
+  margin: 0;
+}
+
+.roster-admin-choice-card strong {
+  color: var(--color-text);
+}
+
+.roster-admin-choice-card small {
+  color: var(--color-text-soft);
+  line-height: 1.72;
+}
+
+.roster-admin-choice-card--active,
+.roster-admin-choice-chip--active {
+  border-color: rgba(216, 185, 114, 0.34);
+  background:
+    linear-gradient(135deg, rgba(216, 185, 114, 0.14), rgba(9, 34, 46, 0.88)),
+    rgba(8, 25, 35, 0.86);
+}
+
+.roster-admin-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.roster-admin-choice-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(5, 19, 28, 0.52);
+  color: var(--color-text-soft);
+}
+
+.roster-admin-form-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  color: var(--color-text-soft);
+  line-height: 1.72;
+}
+
+.roster-admin-form-check input {
+  margin-top: 4px;
+}
+
+.roster-admin-danger-row strong,
+.roster-admin-danger-row p,
+.roster-admin-log-item strong,
+.roster-admin-log-item p,
+.roster-admin-log-item small {
+  margin: 0;
+}
+
+.roster-admin-danger-row {
   align-items: center;
 }
 
-.roster-admin-review-actions span {
-  color: var(--color-text-faint);
-  line-height: 1.72;
+.roster-admin-danger-row p {
+  color: var(--color-text-soft);
+  line-height: 1.7;
 }
 
 .roster-admin-log-list {
@@ -930,12 +1577,6 @@ onMounted(async () => {
   border-radius: 18px;
   border: 1px solid rgba(216, 185, 114, 0.14);
   background: rgba(5, 19, 28, 0.44);
-}
-
-.roster-admin-log-item strong,
-.roster-admin-log-item p,
-.roster-admin-log-item small {
-  margin: 0;
 }
 
 .roster-admin-log-item p,
@@ -953,11 +1594,15 @@ onMounted(async () => {
 @media (max-width: 920px) {
   .roster-admin-toolbar__head,
   .roster-admin-review-actions,
-  .roster-admin-drawer__head {
+  .roster-admin-drawer__head,
+  .roster-admin-drawer__head-actions,
+  .roster-admin-danger-row {
     flex-direction: column;
   }
 
-  .roster-admin-detail-card__grid {
+  .roster-admin-detail-card__grid,
+  .roster-admin-form-grid,
+  .roster-admin-choice-grid {
     grid-template-columns: 1fr;
   }
 
@@ -979,15 +1624,18 @@ onMounted(async () => {
   }
 
   .roster-admin-toolbar__chips,
-  .roster-admin-review-status {
+  .roster-admin-choice-row {
     gap: 8px;
   }
 
   .roster-admin-toolbar__chip,
-  .roster-admin-review-status__button {
+  .roster-admin-choice-chip,
+  .roster-admin-danger-button {
     min-height: 36px;
     padding: 0 12px;
     font-size: 0.86rem;
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

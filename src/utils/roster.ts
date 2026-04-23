@@ -1,13 +1,19 @@
-import { rosterContributionOptions, rosterHallLabelMap, rosterStatusDescriptionMap, rosterStatusLabelMap } from '@/data/rosterContent'
+import {
+  rosterContributionOptions,
+  rosterHallLabelMap,
+  rosterStatusDescriptionMap,
+  rosterStatusLabelMap,
+} from '@/data/rosterContent'
 import type {
   AdminRosterEntryRecord,
+  AdminRosterEntrySavePayload,
   PublicRosterEntry,
-  ReviewRosterEntryPayload,
   RosterContributionLevel,
   RosterEntryStatus,
   RosterFreeTimeSlot,
   RosterHallKey,
   RosterRegistrationFormValue,
+  RosterReviewLogRecord,
   SubmitRosterEntryPayload,
 } from '@/types/roster'
 
@@ -18,7 +24,7 @@ const publicDateFormatter = new Intl.DateTimeFormat('zh-CN', {
   day: '2-digit',
 })
 
-// 这里定义公开日期时间格式化器，审核台会用到更完整的时间。
+// 这里定义公开日期时间格式化器，后台会用到更完整的时间。
 const publicDateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric',
   month: '2-digit',
@@ -29,7 +35,7 @@ const publicDateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
 
 /**
  * 清洗单行文本
- * 用途：统一去掉首尾空白并压缩连续空格，避免表单值带入脏字符
+ * 用途：统一去掉首尾空格，并把连续空白压成一个空格
  * 入参：value 为原始文本，fallback 为兜底文本
  * 返回值：返回清洗后的文本
  */
@@ -40,7 +46,7 @@ export function normalizeRosterShortText(value: string, fallback = ''): string {
 
 /**
  * 清洗多行文本
- * 用途：保留换行但去掉无意义的空白行，方便本心、所长与雅事稳定显示
+ * 用途：保留换行，但去掉无意义空白行
  * 入参：value 为原始文本，fallback 为兜底文本
  * 返回值：返回清洗后的文本
  */
@@ -54,19 +60,64 @@ export function normalizeRosterLongText(value: string, fallback = ''): string {
 }
 
 /**
+ * 清洗道号文本
+ * 用途：统一处理道号输入口径，方便前后端保持同一套规则
+ * 入参：value 为原始道号
+ * 返回值：返回清洗后的道号
+ */
+export function normalizeRosterDaohao(value: string): string {
+  return normalizeRosterShortText(value)
+}
+
+/**
+ * 校验道号格式
+ * 用途：前台失焦校验、提交前校验和后台编辑校验共用
+ * 入参：daohao 为道号
+ * 返回值：符合规则返回 true，否则返回 false
+ */
+export function isValidRosterDaohao(daohao: string): boolean {
+  const normalizedDaohao = normalizeRosterDaohao(daohao)
+
+  if (!normalizedDaohao) {
+    return false
+  }
+
+  return Array.from(normalizedDaohao).length <= 12
+}
+
+/**
+ * 获取道号错误提示
+ * 用途：把道号校验失败原因用中文讲清楚
+ * 入参：daohao 为道号
+ * 返回值：没有错误返回空字符串
+ */
+export function getRosterDaohaoError(daohao: string): string {
+  const normalizedDaohao = normalizeRosterDaohao(daohao)
+
+  if (!normalizedDaohao) {
+    return '请先填写道号'
+  }
+
+  if (Array.from(normalizedDaohao).length > 12) {
+    return '道号最多支持 12 个字，请再精简一些'
+  }
+
+  return ''
+}
+
+/**
  * 清洗登记表单
- * 用途：在提交、预览和草稿回显前统一清洗表单值
+ * 用途：提交、预览和草稿回显前统一清洗表单值
  * 入参：form 为原始表单
  * 返回值：返回清洗后的表单
  */
 export function normalizeRosterFormValue(form: RosterRegistrationFormValue): RosterRegistrationFormValue {
   return {
-    jianghuName: normalizeRosterShortText(form.jianghuName),
+    daohao: normalizeRosterDaohao(form.daohao),
     secularName: normalizeRosterShortText(form.secularName),
     currentCity: normalizeRosterShortText(form.currentCity),
     birthYear: normalizeRosterShortText(form.birthYear),
     profession: normalizeRosterShortText(form.profession),
-    requestedStyleName: normalizeRosterShortText(form.requestedStyleName),
     referrerName: normalizeRosterShortText(form.referrerName, '自行登门'),
     hallKey: form.hallKey,
     otherHallText: normalizeRosterShortText(form.otherHallText),
@@ -87,48 +138,10 @@ export function normalizeRosterFormValue(form: RosterRegistrationFormValue): Ros
 }
 
 /**
- * 判断法号格式是否正确
- * 用途：前端失焦校验和提交前校验共用一份规则
- * 入参：styleName 为法号
- * 返回值：符合规则返回 true，否则返回 false
- */
-export function isValidRosterStyleName(styleName: string): boolean {
-  return /^[云栖][\u4e00-\u9fa5]$/.test(normalizeRosterShortText(styleName))
-}
-
-/**
- * 获取法号格式错误提示
- * 用途：把法号校验失败原因用中文讲清楚
- * 入参：styleName 为法号
- * 返回值：返回提示文案，符合规则时返回空字符串
- */
-export function getRosterStyleNameError(styleName: string): string {
-  const normalizedStyleName = normalizeRosterShortText(styleName)
-
-  if (!normalizedStyleName) {
-    return '请先填写云栖法号'
-  }
-
-  if (!/^[云栖]/.test(normalizedStyleName)) {
-    return '云栖法号必须以“云”或“栖”开头'
-  }
-
-  if (Array.from(normalizedStyleName).length !== 2) {
-    return '云栖法号固定为两个汉字'
-  }
-
-  if (!isValidRosterStyleName(normalizedStyleName)) {
-    return '云栖法号只能使用常见汉字，格式示例为“云川”“栖月”'
-  }
-
-  return ''
-}
-
-/**
  * 获取堂口中文名
- * 用途：公开名录、详情页和审核台统一显示堂口文案
+ * 用途：公开名录、详情页和后台统一显示堂口文案
  * 入参：hallKey 为堂口键名
- * 返回值：返回中文堂口名
+ * 返回值：返回堂口中文名
  */
 export function getRosterHallLabel(hallKey: RosterHallKey): string {
   return rosterHallLabelMap[hallKey] || '其他'
@@ -136,7 +149,7 @@ export function getRosterHallLabel(hallKey: RosterHallKey): string {
 
 /**
  * 获取状态标签
- * 用途：公开详情、名帖和审核台统一显示中文状态
+ * 用途：公开详情、名帖和后台统一显示状态中文名
  * 入参：status 为状态键名
  * 返回值：返回中文状态名
  */
@@ -156,13 +169,19 @@ export function getRosterStatusDescription(status: RosterEntryStatus): string {
 
 /**
  * 格式化正式牒号
- * 用途：把数字编号统一渲染成“云栖-第0001号”样式
- * 入参：entryNo 为数字编号
+ * 用途：把数字牒号统一渲染成“云栖-第0001号”
+ * 入参：entryNo 为原始数字或已格式化文本
  * 返回值：返回格式化后的牒号
  */
 export function formatRosterEntryNo(entryNo: number | string | null | undefined): string {
   if (typeof entryNo === 'string' && entryNo.trim()) {
-    return entryNo
+    const parsedEntryNo = extractRosterEntryNo(entryNo)
+
+    if (parsedEntryNo === null) {
+      return entryNo.trim()
+    }
+
+    return `云栖-第${String(parsedEntryNo).padStart(4, '0')}号`
   }
 
   if (typeof entryNo !== 'number' || !Number.isFinite(entryNo) || entryNo <= 0) {
@@ -173,8 +192,46 @@ export function formatRosterEntryNo(entryNo: number | string | null | undefined)
 }
 
 /**
+ * 提取正式牒号数字
+ * 用途：把“12”“0012”“云栖-第0012号”都统一识别成数字 12
+ * 入参：value 为搜索词或输入文本
+ * 返回值：成功返回数字，否则返回 null
+ */
+export function extractRosterEntryNo(value: string): number | null {
+  const normalizedValue = normalizeRosterShortText(value)
+
+  if (!normalizedValue) {
+    return null
+  }
+
+  const matchedDigits = normalizedValue.replace(/[^\d]/g, '')
+
+  if (!matchedDigits) {
+    return null
+  }
+
+  const parsedValue = Number.parseInt(matchedDigits, 10)
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return null
+  }
+
+  return parsedValue
+}
+
+/**
+ * 规范化搜索关键字
+ * 用途：统一处理公开页和后台搜索输入
+ * 入参：value 为原始关键字
+ * 返回值：返回清洗后的关键字
+ */
+export function normalizeRosterSearchKeyword(value: string): string {
+  return normalizeRosterShortText(value)
+}
+
+/**
  * 格式化公开日期
- * 用途：把数据库时间统一转成中文年月日，避免页面自己重复处理
+ * 用途：把数据库时间统一转成中文年月日
  * 入参：value 为日期字符串
  * 返回值：返回格式化后的日期文本
  */
@@ -194,7 +251,7 @@ export function formatRosterDate(value: string): string {
 
 /**
  * 格式化日期时间
- * 用途：审核台查看详情时展示更完整的时间
+ * 用途：后台详情展示更完整的操作时间
  * 入参：value 为日期字符串
  * 返回值：返回格式化后的日期时间文本
  */
@@ -214,18 +271,17 @@ export function formatRosterDateTime(value: string): string {
 
 /**
  * 把表单值转成提交载荷
- * 用途：统一把前端字段名转换成数据库 RPC 需要的字段名
- * 入参：form 为已经清洗过的表单
+ * 用途：统一把前端字段名映射成 RPC 需要的数据库字段名
+ * 入参：form 为已清洗的表单
  * 返回值：返回提交载荷
  */
 export function mapRosterFormToSubmitPayload(form: RosterRegistrationFormValue): SubmitRosterEntryPayload {
   return {
-    jianghu_name: form.jianghuName,
+    daohao: form.daohao,
     secular_name: form.secularName,
     current_city: form.currentCity,
     birth_year: form.birthYear || null,
     profession: form.profession,
-    requested_style_name: form.requestedStyleName,
     referrer_name: form.referrerName || '自行登门',
     hall_key: form.hallKey as RosterHallKey,
     hall_other_text: form.otherHallText,
@@ -246,7 +302,7 @@ export function mapRosterFormToSubmitPayload(form: RosterRegistrationFormValue):
 
 /**
  * 获取效力意愿文案
- * 用途：审核台和详情区统一显示意愿中文名
+ * 用途：后台和详情区统一显示意愿中文名
  * 入参：value 为意愿键名
  * 返回值：返回中文文案
  */
@@ -256,7 +312,7 @@ export function getRosterContributionLabel(value: RosterContributionLevel | ''):
 
 /**
  * 获取空闲时段文案列表
- * 用途：审核台把多选时段更直观地展示出来
+ * 用途：把多选时段更直观地展示出来
  * 入参：value 为时段键名数组
  * 返回值：返回中文列表
  */
@@ -273,7 +329,7 @@ export function getRosterFreeTimeLabels(value: RosterFreeTimeSlot[]): string[] {
 
 /**
  * 生成公开详情链接
- * 用途：名帖二维码、复制链接和分享都共用同一份详情地址
+ * 用途：名帖二维码、复制链接和分享都共用同一份地址
  * 入参：publicSlug 为详情 slug
  * 返回值：返回完整公开链接
  */
@@ -288,13 +344,13 @@ export function resolveRosterEntryUrl(publicSlug: string): string {
 
 /**
  * 生成公开名帖文字版
- * 用途：详情页复制链接或后续分享时可复用一份简洁文本
+ * 用途：详情页复制链接或后续分享时复用一份简洁文字
  * 入参：entry 为公开记录
  * 返回值：返回文字版内容
  */
 export function buildRosterPublicText(entry: PublicRosterEntry): string {
   const numberLabel = entry.status === 'approved'
-    ? `牒号：${entry.entryNo}`
+    ? `文牒号：${entry.entryNo}`
     : `回执号：${entry.receiptCode}`
 
   const dateLabel = entry.status === 'approved'
@@ -303,12 +359,11 @@ export function buildRosterPublicText(entry: PublicRosterEntry): string {
 
   return [
     '云栖名册 · 公开名帖',
-    `江湖名号：${entry.jianghuName}`,
-    `云栖法号：${entry.styleName}`,
+    `道号：${entry.daohao}`,
     `归属堂口：${entry.hallLabel}`,
     `入派本心：${entry.entryIntent}`,
-    `身怀所长：${entry.strengths}`,
-    `所好雅事：${entry.hobbies}`,
+    `身怀所长：${entry.strengths || '暂未公开所长'}`,
+    `所好雅事：${entry.hobbies || '暂未公开雅事'}`,
     `当前状态：${entry.statusLabel}`,
     numberLabel,
     dateLabel,
@@ -318,27 +373,19 @@ export function buildRosterPublicText(entry: PublicRosterEntry): string {
 
 /**
  * 校验登记表单必填项
- * 用途：提交前统一检查，避免页面各处写一堆零散判断
- * 入参：form 为已经清洗过的表单
+ * 用途：提交前统一检查，避免页面各处重复判断
+ * 入参：form 为已清洗表单
  * 返回值：返回首个错误提示，没有错误时返回空字符串
  */
 export function validateRosterRegistrationForm(form: RosterRegistrationFormValue): string {
-  if (!form.jianghuName) {
-    return '请先填写江湖名号'
+  const daohaoError = getRosterDaohaoError(form.daohao)
+
+  if (daohaoError) {
+    return daohaoError
   }
 
   if (!form.currentCity) {
     return '请填写现居洞府，至少精确到市'
-  }
-
-  if (!form.requestedStyleName) {
-    return '请填写云栖法号'
-  }
-
-  const styleNameError = getRosterStyleNameError(form.requestedStyleName)
-
-  if (styleNameError) {
-    return styleNameError
   }
 
   if (!form.hallKey) {
@@ -373,16 +420,71 @@ export function validateRosterRegistrationForm(form: RosterRegistrationFormValue
 }
 
 /**
+ * 校验后台保存载荷
+ * 用途：后台编辑保存前统一检查必填项、道号和文牒号
+ * 入参：payload 为后台保存载荷
+ * 返回值：返回首个错误提示，没有错误时返回空字符串
+ */
+export function validateAdminRosterEntryPayload(payload: AdminRosterEntrySavePayload): string {
+  const daohaoError = getRosterDaohaoError(payload.daohao)
+
+  if (daohaoError) {
+    return daohaoError
+  }
+
+  if (!payload.currentCity) {
+    return '请填写现居洞府'
+  }
+
+  if (!payload.hallKey) {
+    return '请选择归属堂口'
+  }
+
+  if (payload.hallKey === 'other' && !payload.hallOtherText) {
+    return '选择“其他”堂口时，请补充堂口说明'
+  }
+
+  if (!payload.entryIntent) {
+    return '请填写入派本心'
+  }
+
+  if (!payload.wechatId) {
+    return '请填写核心传讯'
+  }
+
+  if (!payload.oathSignedName) {
+    return '请填写弟子签押'
+  }
+
+  if (!payload.oathSignedDate) {
+    return '请填写立誓日期'
+  }
+
+  if (payload.status === 'approved') {
+    if (payload.entryNo === null) {
+      return '准予入册时需要正式文牒号'
+    }
+
+    if (!Number.isInteger(payload.entryNo) || payload.entryNo <= 0) {
+      return '文牒号只能填写正整数'
+    }
+  }
+
+  return ''
+}
+
+/**
  * 映射公开记录
  * 用途：把后端脱敏数据整理成前端统一结构
  * 入参：record 为后端返回记录
- * 返回值：返回前端使用的公开记录
+ * 返回值：返回公开记录
  */
 export function mapPublicRosterEntry(record: Record<string, unknown>): PublicRosterEntry {
   const status = (record.status as RosterEntryStatus) || 'pending'
   const createdAt = String(record.created_at || '')
   const reviewedAt = String(record.reviewed_at || '')
   const effectiveDate = String(record.effective_date || '')
+  const entryNoValue = typeof record.entry_no === 'number' ? record.entry_no : null
 
   return {
     publicSlug: String(record.public_slug || ''),
@@ -391,10 +493,10 @@ export function mapPublicRosterEntry(record: Record<string, unknown>): PublicRos
     entryNo: formatRosterEntryNo(
       typeof record.entry_no_text === 'string' && record.entry_no_text
         ? record.entry_no_text
-        : (record.entry_no as number | null | undefined),
+        : entryNoValue,
     ),
-    jianghuName: String(record.jianghu_name || ''),
-    styleName: String(record.style_name || ''),
+    entryNoValue,
+    daohao: String(record.daohao || ''),
     hallKey: (record.hall_key as RosterHallKey) || 'other',
     hallLabel: getRosterHallLabel((record.hall_key as RosterHallKey) || 'other'),
     entryIntent: String(record.entry_intent || ''),
@@ -410,10 +512,10 @@ export function mapPublicRosterEntry(record: Record<string, unknown>): PublicRos
 }
 
 /**
- * 映射审核台详情记录
+ * 映射后台详情记录
  * 用途：把数据库原始字段整理成更顺手的前端结构
  * 入参：record 为数据库返回记录
- * 返回值：返回审核台详情记录
+ * 返回值：返回后台详情记录
  */
 export function mapAdminRosterEntry(record: Record<string, unknown>): AdminRosterEntryRecord {
   return {
@@ -422,13 +524,11 @@ export function mapAdminRosterEntry(record: Record<string, unknown>): AdminRoste
     receiptCode: String(record.receipt_code || ''),
     status: (record.status as RosterEntryStatus) || 'pending',
     entryNo: typeof record.entry_no === 'number' ? record.entry_no : null,
-    jianghuName: String(record.jianghu_name || ''),
+    daohao: String(record.daohao || ''),
     secularName: String(record.secular_name || ''),
     currentCity: String(record.current_city || ''),
     birthYear: String(record.birth_year || ''),
     profession: String(record.profession || ''),
-    requestedStyleName: String(record.requested_style_name || ''),
-    effectiveStyleName: String(record.effective_style_name || ''),
     referrerName: String(record.referrer_name || ''),
     hallKey: (record.hall_key as RosterHallKey) || 'other',
     hallOtherText: String(record.hall_other_text || ''),
@@ -454,13 +554,40 @@ export function mapAdminRosterEntry(record: Record<string, unknown>): AdminRoste
 }
 
 /**
- * 生成审核动作摘要
- * 用途：审核台提交前给用户或日志留下一句清晰摘要
- * 入参：payload 为审核动作
+ * 映射后台审核日志
+ * 用途：把原始日志字段整理成前端可直接展示的结构
+ * 入参：record 为数据库返回记录
+ * 返回值：返回日志记录
+ */
+export function mapRosterReviewLogRecord(record: Record<string, unknown>): RosterReviewLogRecord {
+  return {
+    id: String(record.id || ''),
+    entryId: String(record.entry_id || ''),
+    actionType: String(record.action_type || 'save'),
+    previousStatus: record.previous_status ? (String(record.previous_status) as RosterEntryStatus) : null,
+    nextStatus: String(record.next_status || 'pending') as RosterEntryStatus,
+    previousDaohao: String(record.previous_daohao || ''),
+    nextDaohao: String(record.next_daohao || ''),
+    previousEntryNo: typeof record.previous_entry_no === 'number' ? record.previous_entry_no : null,
+    nextEntryNo: typeof record.next_entry_no === 'number' ? record.next_entry_no : null,
+    reviewComment: String(record.review_comment || ''),
+    reviewedByUserId: String(record.reviewed_by_user_id || ''),
+    reviewedByName: String(record.reviewed_by_name || ''),
+    createdAt: String(record.created_at || ''),
+  }
+}
+
+/**
+ * 构建后台保存摘要
+ * 用途：后台保存前给执事一眼看清这次会提交什么
+ * 入参：payload 为后台保存载荷
  * 返回值：返回中文摘要
  */
-export function buildReviewActionSummary(payload: ReviewRosterEntryPayload): string {
-  const statusLabel = getRosterStatusLabel(payload.nextStatus)
-  const styleLine = payload.nextStatus === 'approved' ? `，最终法号定为 ${payload.effectiveStyleName}` : ''
-  return `本次审核动作为“${statusLabel}”${styleLine}`
+export function buildAdminSaveSummary(payload: AdminRosterEntrySavePayload): string {
+  const statusLabel = getRosterStatusLabel(payload.status)
+  const entryNoText = payload.status === 'approved'
+    ? `，文牒号为 ${formatRosterEntryNo(payload.entryNo)}`
+    : '，并清空正式文牒号'
+
+  return `本次保存将把道号定为 ${payload.daohao}，状态设为“${statusLabel}”${entryNoText}`
 }
