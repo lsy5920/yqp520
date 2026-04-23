@@ -96,11 +96,11 @@ async function loginRosterAdmin(email: string, password: string): Promise<Roster
   rosterAuthLoading.value = true
 
   try {
-    const profile = await signInRosterAdmin(email, password)
-    rosterSession.value = await getRosterSession()
-    rosterAdminProfile.value = profile
+    const result = await signInRosterAdmin(email, password)
+    rosterSession.value = result.session
+    rosterAdminProfile.value = result.profile
     rosterAuthReady.value = true
-    return profile
+    return result.profile
   } finally {
     rosterAuthLoading.value = false
   }

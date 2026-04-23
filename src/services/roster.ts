@@ -55,6 +55,54 @@ function resolveRosterErrorMessage(error: unknown): string {
 }
 
 /**
+ * 等待一小段时间
+ * 用途：给移动端登录后的会话和白名单资料同步留一点缓冲时间
+ * 入参：ms 为等待毫秒数
+ * 返回值：等待结束后返回 Promise
+ */
+function waitForRosterDelay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+/**
+ * 按用户 id 读取管理员资料
+ * 用途：登录成功后直接按当前用户 id 查白名单，避免再额外依赖会话读取时序
+ * 入参：userId 为 Supabase 用户 id
+ * 返回值：返回管理员资料，没有资料时返回 null
+ */
+async function getRosterAdminProfileByUserId(userId: string): Promise<RosterAdminProfile | null> {
+  const supabase = getSupabaseClient()
+
+  if (!userId.trim()) {
+    return null
+  }
+
+  const { data, error } = await supabase
+    .from('yunqi_roster_admin_profiles')
+    .select('user_id, email, display_name, role, is_active')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  if (!data) {
+    return null
+  }
+
+  return {
+    userId: String(data.user_id || ''),
+    email: String(data.email || ''),
+    displayName: String(data.display_name || ''),
+    role: String(data.role || ''),
+    isActive: Boolean(data.is_active),
+  }
+}
+
+/**
  * 读取当前登录会话
  * 用途：审核台入口和路由守卫都需要先判断会话状态
  * 入参：无
@@ -78,34 +126,13 @@ export async function getRosterSession(): Promise<Session | null> {
  * 返回值：返回管理员资料，没有资料时返回 null
  */
 export async function getCurrentRosterAdminProfile(): Promise<RosterAdminProfile | null> {
-  const supabase = getSupabaseClient()
   const session = await getRosterSession()
 
   if (!session?.user) {
     return null
   }
 
-  const { data, error } = await supabase
-    .from('yunqi_roster_admin_profiles')
-    .select('user_id, email, display_name, role, is_active')
-    .eq('user_id', session.user.id)
-    .maybeSingle()
-
-  if (error) {
-    throw new Error(resolveRosterErrorMessage(error))
-  }
-
-  if (!data) {
-    return null
-  }
-
-  return {
-    userId: String(data.user_id || ''),
-    email: String(data.email || ''),
-    displayName: String(data.display_name || ''),
-    role: String(data.role || ''),
-    isActive: Boolean(data.is_active),
-  }
+  return getRosterAdminProfileByUserId(session.user.id)
 }
 
 /**
@@ -130,7 +157,10 @@ export async function requireRosterAdminProfile(): Promise<RosterAdminProfile> {
  * 入参：email 为邮箱，password 为密码
  * 返回值：返回管理员资料
  */
-export async function signInRosterAdmin(email: string, password: string): Promise<RosterAdminProfile> {
+export async function signInRosterAdmin(
+  email: string,
+  password: string,
+): Promise<{ profile: RosterAdminProfile; session: Session }> {
   const supabase = getSupabaseClient()
   const normalizedEmail = normalizeRosterShortText(email)
 
@@ -138,7 +168,7 @@ export async function signInRosterAdmin(email: string, password: string): Promis
     throw new Error('请填写完整的邮箱与密码')
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: normalizedEmail,
     password,
   })
@@ -147,14 +177,34 @@ export async function signInRosterAdmin(email: string, password: string): Promis
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  const profile = await getCurrentRosterAdminProfile()
+  const currentSession = data.session
+
+  if (!currentSession?.user?.id) {
+    throw new Error('执事登录成功，但当前会话尚未就绪，请稍后再试')
+  }
+
+  let profile: RosterAdminProfile | null = null
+
+  // 这里给移动端浏览器一点同步时间，避免刚登录就误判成没进白名单。
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    profile = await getRosterAdminProfileByUserId(currentSession.user.id)
+
+    if (profile?.isActive) {
+      break
+    }
+
+    await waitForRosterDelay(180)
+  }
 
   if (!profile || !profile.isActive) {
     await supabase.auth.signOut()
     throw new Error('当前账号未被加入执事白名单，请先在 Supabase 后台补充管理员资料')
   }
 
-  return profile
+  return {
+    profile,
+    session: currentSession,
+  }
 }
 
 /**
