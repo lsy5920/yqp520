@@ -76,7 +76,7 @@ function handleMusicEntry(): void {
             <li>阅全典，看完整立派精神。</li>
             <li>观门规，知相处底线与禁律。</li>
             <li>览日常，感受门中烟火与温度。</li>
-            <li>循指引，完成问心入门卷。</li>
+            <li>赴考核，完成问心入门卷。</li>
             <li>入海报，生成专属分享图。</li>
           </ul>
         </div>

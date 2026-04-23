@@ -793,7 +793,7 @@ onBeforeUnmount(() => {
     :aria-hidden="isExamDialogOpen ? 'true' : undefined"
   >
     <PageBanner
-      eyebrow="入派指引"
+      eyebrow="入派考核"
       title="先明门风，再答问心卷"
       lead="认同宗旨、愿守门风、能与同门真诚相待，便可循此页看清入门之路，再从容答完这一卷。"
       :note="siteContent.join.note"
@@ -1319,7 +1319,7 @@ onBeforeUnmount(() => {
           <div class="section-heading">
             <p class="eyebrow">结果海报</p>
             <h2>把这张成绩帖留下来，也可直接分享出去</h2>
-            <p>结果海报会自动带上入派指引页二维码，别人扫码后可直接进入问心考核区。</p>
+            <p>结果海报会自动带上入派考核页二维码，别人扫码后可直接进入问心考核区。</p>
           </div>
 
           <AssessmentResultPosterStudio

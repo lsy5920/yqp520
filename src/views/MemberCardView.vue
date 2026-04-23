@@ -23,7 +23,7 @@ useRevealMotion({
   <div ref="pageRef" class="page page--member-card">
     <div class="member-card-view__actions" data-reveal>
       <RouterLink class="ink-button ink-button--ghost" to="/join">
-        返回入派指引
+        返回入派考核
       </RouterLink>
       <RouterLink class="ink-button ink-button--ghost" to="/poster">
         去云栖海报

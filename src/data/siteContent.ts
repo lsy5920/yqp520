@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
   { label: '立派全典', path: '/canon', hint: '完整典章' },
   { label: '门规与禁律', path: '/discipline', hint: '共守风气' },
   { label: '宗门日常', path: '/life', hint: '同门相处' },
-  { label: '入派指引', path: '/join', hint: '来去随缘' },
+  { label: '入派考核', path: '/join', hint: '来去随缘' },
   { label: '云栖海报', path: '/poster', hint: '分享门面' },
 ]
 
@@ -62,7 +62,7 @@ const navItems: NavItem[] = [
 const homeActions: QuickAction[] = [
   { label: '阅立派全典', path: '/canon', style: 'primary' },
   { label: '启江湖海报', path: '/poster', style: 'secondary' },
-  { label: '观入派指引', path: '/join', style: 'ghost' },
+  { label: '观入派考核', path: '/join', style: 'ghost' },
 ]
 
 // 这里定义首页亮点卡片，用简洁方式概括门派核心精神。

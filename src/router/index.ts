@@ -43,13 +43,13 @@ export const routes: RouteRecordRaw[] = [
     path: '/join',
     name: 'join',
     component: AssessmentView,
-    meta: { title: '入派指引' },
+    meta: { title: '入派考核' },
   },
   {
     path: '/assessment',
     name: 'assessment',
     redirect: '/join#exam',
-    meta: { title: '入派指引' },
+    meta: { title: '入派考核' },
   },
   {
     path: '/poster',
