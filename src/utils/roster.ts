@@ -34,6 +34,23 @@ const publicDateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
 })
 
 /**
+ * 从记录里提取兼容后的道号
+ * 用途：兼容旧库里还没迁移到 daohao 字段的情况，优先回落到旧的几套名称字段
+ * 入参：record 为数据库或 RPC 返回记录
+ * 返回值：返回统一后的道号文本
+ */
+function resolveRosterDaohaoFromRecord(record: Record<string, unknown>): string {
+  const candidateValue = [
+    record.daohao,
+    record.effective_style_name,
+    record.requested_style_name,
+    record.jianghu_name,
+  ].find((item) => typeof item === 'string' && item.trim())
+
+  return normalizeRosterDaohao(typeof candidateValue === 'string' ? candidateValue : '')
+}
+
+/**
  * 清洗单行文本
  * 用途：统一去掉首尾空格，并把连续空白压成一个空格
  * 入参：value 为原始文本，fallback 为兜底文本
@@ -496,7 +513,7 @@ export function mapPublicRosterEntry(record: Record<string, unknown>): PublicRos
         : entryNoValue,
     ),
     entryNoValue,
-    daohao: String(record.daohao || ''),
+    daohao: resolveRosterDaohaoFromRecord(record),
     hallKey: (record.hall_key as RosterHallKey) || 'other',
     hallLabel: getRosterHallLabel((record.hall_key as RosterHallKey) || 'other'),
     entryIntent: String(record.entry_intent || ''),
@@ -524,7 +541,7 @@ export function mapAdminRosterEntry(record: Record<string, unknown>): AdminRoste
     receiptCode: String(record.receipt_code || ''),
     status: (record.status as RosterEntryStatus) || 'pending',
     entryNo: typeof record.entry_no === 'number' ? record.entry_no : null,
-    daohao: String(record.daohao || ''),
+    daohao: resolveRosterDaohaoFromRecord(record),
     secularName: String(record.secular_name || ''),
     currentCity: String(record.current_city || ''),
     birthYear: String(record.birth_year || ''),
@@ -566,8 +583,8 @@ export function mapRosterReviewLogRecord(record: Record<string, unknown>): Roste
     actionType: String(record.action_type || 'save'),
     previousStatus: record.previous_status ? (String(record.previous_status) as RosterEntryStatus) : null,
     nextStatus: String(record.next_status || 'pending') as RosterEntryStatus,
-    previousDaohao: String(record.previous_daohao || ''),
-    nextDaohao: String(record.next_daohao || ''),
+    previousDaohao: normalizeRosterDaohao(String(record.previous_daohao || record.previous_style_name || '')),
+    nextDaohao: normalizeRosterDaohao(String(record.next_daohao || record.next_style_name || '')),
     previousEntryNo: typeof record.previous_entry_no === 'number' ? record.previous_entry_no : null,
     nextEntryNo: typeof record.next_entry_no === 'number' ? record.next_entry_no : null,
     reviewComment: String(record.review_comment || ''),

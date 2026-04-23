@@ -85,6 +85,12 @@ interface AdminEditingFormState {
   reviewComment: string
 }
 
+/**
+ * 动作提示语气类型
+ * 用途：统一控制抽屉内反馈条的颜色状态
+ */
+type ActionFeedbackTone = 'info' | 'success' | 'error'
+
 // 这里保存页面根节点，供审核台静态区块使用统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
 
@@ -118,6 +124,9 @@ const isLoading = ref<boolean>(false)
 
 // 这里记录当前动作提示，用来给执事明确反馈。
 const actionMessage = ref<string>('待审核、已通过、暂缓与不予收录四栏都会显示在下方。')
+
+// 这里记录当前提示语气，方便抽屉内把成功和报错区分开来。
+const actionTone = ref<ActionFeedbackTone>('info')
 
 // 这里记录当前错误提示。
 const errorMessage = ref<string>('')
@@ -259,6 +268,17 @@ function createEmptyEditingForm(): AdminEditingFormState {
 }
 
 /**
+ * 设置动作提示
+ * 用途：把页面横幅提示和抽屉内提示统一由这里更新，避免同一类反馈散落在各处
+ * 入参：message 为提示文本，tone 为提示语气
+ * 返回值：无返回值
+ */
+function setActionMessage(message: string, tone: ActionFeedbackTone = 'info'): void {
+  actionMessage.value = message
+  actionTone.value = tone
+}
+
+/**
  * 格式化日志动作名称
  * 用途：让后台日志展示更容易读懂
  * 入参：actionType 为日志动作类型
@@ -382,6 +402,7 @@ function openEntryDrawer(entry: AdminRosterEntryRecord): void {
   activeEntryId.value = entry.id
   isEditing.value = false
   syncEditForm(entry)
+  setActionMessage(`已载入“${entry.daohao || '未命名档案'}”当前登记内容，切到编辑模式时会自动带出之前所填信息。`)
   void loadReviewLogs(entry.id)
 }
 
@@ -411,6 +432,7 @@ async function enterEditMode(): Promise<void> {
 
   isEditing.value = true
   syncEditForm(activeEntry.value)
+  setActionMessage(`已自动带入“${activeEntry.value.daohao || '未命名档案'}”的原始内容，可直接修改后保存。`)
 
   if (editForm.value.status === 'approved' && !editEntryNoText.value) {
     await fillNextEntryNo()
@@ -426,6 +448,7 @@ async function enterEditMode(): Promise<void> {
 function cancelEditing(): void {
   isEditing.value = false
   syncEditForm(activeEntry.value)
+  setActionMessage('已取消本次编辑，并恢复成当前档案最近一次保存的内容。')
 }
 
 /**
@@ -445,7 +468,7 @@ async function fillNextEntryNo(): Promise<void> {
     const nextEntryNo = await getNextRosterEntryNo()
     editEntryNoText.value = String(nextEntryNo)
   } catch (error) {
-    actionMessage.value = error instanceof Error ? error.message : '默认文牒号获取失败，请稍后再试'
+    setActionMessage(error instanceof Error ? error.message : '默认文牒号获取失败，请稍后再试', 'error')
   } finally {
     isLoadingNextEntryNo.value = false
   }
@@ -521,7 +544,7 @@ async function handleLogout(): Promise<void> {
     await logoutRosterAdmin()
     await router.replace('/roster/admin/login')
   } catch (error) {
-    actionMessage.value = error instanceof Error ? error.message : '退出失败，请稍后再试'
+    setActionMessage(error instanceof Error ? error.message : '退出失败，请稍后再试', 'error')
   }
 }
 
@@ -535,38 +558,40 @@ async function handleSaveEntry(): Promise<void> {
   const payload = buildSavePayload()
 
   if (!payload) {
-    actionMessage.value = '请先选择一条记录再保存'
+    setActionMessage('请先选择一条记录再保存', 'error')
     return
   }
 
   const daohaoError = getRosterDaohaoError(payload.daohao)
 
   if (daohaoError) {
-    actionMessage.value = daohaoError
+    setActionMessage(daohaoError, 'error')
     return
   }
 
   const validationMessage = validateAdminRosterEntryPayload(payload)
 
   if (validationMessage) {
-    actionMessage.value = validationMessage
+    setActionMessage(validationMessage, 'error')
     return
   }
 
   isSaving.value = true
-  actionMessage.value = saveSummary.value
+  setActionMessage(saveSummary.value)
 
   try {
     await saveAdminRosterEntry(payload)
-    actionMessage.value = '档案已保存，列表、详情与公开页会同步刷新。'
     isEditing.value = false
     await loadEntryList()
 
     if (activeEntryId.value) {
+      syncEditForm(entryList.value.find((item) => item.id === activeEntryId.value) ?? null)
       await loadReviewLogs(activeEntryId.value)
     }
+
+    setActionMessage('档案已保存，抽屉内容、列表与公开页会同步刷新。', 'success')
   } catch (error) {
-    actionMessage.value = error instanceof Error ? error.message : '档案保存失败，请稍后再试'
+    setActionMessage(error instanceof Error ? error.message : '档案保存失败，请稍后再试', 'error')
   } finally {
     isSaving.value = false
   }
@@ -580,7 +605,7 @@ async function handleSaveEntry(): Promise<void> {
  */
 async function handleDeleteEntry(): Promise<void> {
   if (!activeEntry.value) {
-    actionMessage.value = '请先选择一条记录再删除'
+    setActionMessage('请先选择一条记录再删除', 'error')
     return
   }
 
@@ -593,15 +618,15 @@ async function handleDeleteEntry(): Promise<void> {
   }
 
   isDeleting.value = true
-  actionMessage.value = '正在删除档案，请稍候...'
+  setActionMessage('正在删除档案，请稍候...')
 
   try {
     await deleteAdminRosterEntry(activeEntry.value.id)
-    actionMessage.value = '档案已彻底删除，公开页与后台都不会再显示这条记录。'
+    setActionMessage('档案已彻底删除，公开页与后台都不会再显示这条记录。', 'success')
     closeEntryDrawer()
     await loadEntryList()
   } catch (error) {
-    actionMessage.value = error instanceof Error ? error.message : '删除档案失败，请稍后再试'
+    setActionMessage(error instanceof Error ? error.message : '删除档案失败，请稍后再试', 'error')
   } finally {
     isDeleting.value = false
   }
@@ -796,6 +821,11 @@ onMounted(async () => {
           </div>
 
           <div class="roster-admin-drawer__body">
+            <section class="roster-admin-feedback" :class="`roster-admin-feedback--${actionTone}`">
+              <strong>{{ actionTone === 'error' ? '当前异常提示' : actionTone === 'success' ? '当前保存结果' : '当前操作提示' }}</strong>
+              <p>{{ actionMessage }}</p>
+            </section>
+
             <section class="roster-admin-detail-card">
               <p class="roster-admin-detail-card__eyebrow">弟子名籍</p>
 
@@ -1409,6 +1439,49 @@ onMounted(async () => {
   border-radius: 24px;
   border: 1px solid rgba(147, 203, 198, 0.14);
   background: rgba(7, 27, 37, 0.48);
+}
+
+.roster-admin-feedback {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(147, 203, 198, 0.16);
+  background: rgba(7, 27, 37, 0.48);
+}
+
+.roster-admin-feedback strong,
+.roster-admin-feedback p {
+  margin: 0;
+}
+
+.roster-admin-feedback strong {
+  color: var(--color-cyan);
+  letter-spacing: 0.12em;
+  font-size: 0.82rem;
+}
+
+.roster-admin-feedback p {
+  color: var(--color-text-soft);
+  line-height: 1.76;
+}
+
+.roster-admin-feedback--success {
+  border-color: rgba(96, 186, 138, 0.28);
+  background: rgba(12, 49, 35, 0.52);
+}
+
+.roster-admin-feedback--success strong {
+  color: rgba(138, 226, 177, 0.96);
+}
+
+.roster-admin-feedback--error {
+  border-color: rgba(208, 96, 96, 0.28);
+  background: rgba(64, 19, 19, 0.52);
+}
+
+.roster-admin-feedback--error strong {
+  color: rgba(255, 186, 186, 0.96);
 }
 
 .roster-admin-detail-card--danger {

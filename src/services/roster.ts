@@ -42,18 +42,120 @@ export interface ListAdminRosterEntriesOptions {
 }
 
 /**
- * 提取 Supabase 错误文案
- * 用途：统一把后端错误转成更容易展示的中文文本
+ * 提取原始错误文案
+ * 用途：先拿到 Supabase 返回的原始报错，后面才能做更精确的兼容判断
  * 入参：error 为未知错误对象
- * 返回值：返回可展示文本
+ * 返回值：返回原始错误文本
  */
-function resolveRosterErrorMessage(error: unknown): string {
+function extractRawRosterErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message
   }
 
   if (typeof error === 'object' && error && 'message' in error && typeof error.message === 'string') {
     return error.message
+  }
+
+  return ''
+}
+
+/**
+ * 判断是否命中了旧版名册结构报错
+ * 用途：当线上数据库还没执行最新版 SQL 时，给用户更清楚的中文提示
+ * 入参：message 为原始错误文本
+ * 返回值：命中旧结构问题时返回 true
+ */
+function isLegacyRosterSchemaErrorMessage(message: string): boolean {
+  const normalizedMessage = message.toLowerCase()
+
+  return normalizedMessage.includes('column yunqi_roster_entries.daohao does not exist')
+    || normalizedMessage.includes('column "daohao" does not exist')
+    || normalizedMessage.includes('public.admin_save_roster_entry')
+    || normalizedMessage.includes('public.admin_delete_roster_entry')
+    || normalizedMessage.includes('public.check_roster_daohao_available')
+    || normalizedMessage.includes('public.get_next_roster_entry_no')
+    || normalizedMessage.includes('public.list_public_roster_entries')
+    || normalizedMessage.includes('public.get_public_roster_entry_by_slug')
+}
+
+/**
+ * 判断是否缺少新版道号字段
+ * 用途：后台搜索时如果仍连着旧表结构，就自动退回旧字段搜索，避免页面直接报错
+ * 入参：message 为原始错误文本
+ * 返回值：缺少道号列时返回 true
+ */
+function isMissingRosterDaohaoColumnMessage(message: string): boolean {
+  const normalizedMessage = message.toLowerCase()
+
+  return normalizedMessage.includes('column yunqi_roster_entries.daohao does not exist')
+    || normalizedMessage.includes('column "daohao" does not exist')
+}
+
+/**
+ * 构建后台列表查询
+ * 用途：让新版道号检索和旧版名称字段检索共用一套查询组装逻辑
+ * 入参：supabase 为数据库客户端，options 为列表查询条件，useLegacyNameColumns 控制是否回退旧字段搜索
+ * 返回值：返回可继续执行的查询对象
+ */
+function buildAdminRosterListQuery(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  options: ListAdminRosterEntriesOptions,
+  useLegacyNameColumns = false,
+) {
+  let query = supabase
+    .from('yunqi_roster_entries')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(300)
+
+  const normalizedKeyword = normalizeRosterSearchKeyword(options.keyword || '')
+  const parsedEntryNo = extractRosterEntryNo(normalizedKeyword)
+
+  if (options.hallKey) {
+    query = query.eq('hall_key', options.hallKey)
+  }
+
+  if (normalizedKeyword) {
+    const safeKeyword = normalizedKeyword.replace(/,/g, ' ')
+    const orConditions = useLegacyNameColumns
+      ? [
+        `jianghu_name.ilike.%${safeKeyword}%`,
+        `requested_style_name.ilike.%${safeKeyword}%`,
+        `effective_style_name.ilike.%${safeKeyword}%`,
+        `receipt_code.ilike.%${safeKeyword}%`,
+        `wechat_id.ilike.%${safeKeyword}%`,
+      ]
+      : [
+        `daohao.ilike.%${safeKeyword}%`,
+        `receipt_code.ilike.%${safeKeyword}%`,
+        `wechat_id.ilike.%${safeKeyword}%`,
+      ]
+
+    if (parsedEntryNo !== null) {
+      orConditions.push(`entry_no.eq.${parsedEntryNo}`)
+    }
+
+    query = query.or(orConditions.join(','))
+  }
+
+  return query
+}
+
+/**
+ * 提取 Supabase 错误文案
+ * 用途：统一把后端错误转成更容易展示的中文文本
+ * 入参：error 为未知错误对象
+ * 返回值：返回可展示文本
+ */
+function resolveRosterErrorMessage(error: unknown): string {
+  const rawMessage = extractRawRosterErrorMessage(error)
+
+  if (rawMessage) {
+    if (isLegacyRosterSchemaErrorMessage(rawMessage)) {
+      return '当前 Supabase 仍在使用旧版云栖名册结构，请先到 Supabase SQL Editor 重新执行项目里的 supabase/yunqi_roster.sql，完成“道号字段”和“后台保存 RPC”升级后再重试。'
+    }
+
+    return rawMessage
   }
 
   return '当前请求失败，请稍后再试'
@@ -339,35 +441,14 @@ export async function listAdminRosterEntries(options: ListAdminRosterEntriesOpti
   await requireRosterAdminProfile()
 
   const supabase = getSupabaseClient()
-  let query = supabase
-    .from('yunqi_roster_entries')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(300)
+  let { data, error } = await buildAdminRosterListQuery(supabase, options)
 
-  const normalizedKeyword = normalizeRosterSearchKeyword(options.keyword || '')
-  const parsedEntryNo = extractRosterEntryNo(normalizedKeyword)
-
-  if (options.hallKey) {
-    query = query.eq('hall_key', options.hallKey)
+  // 这里兼容旧版表结构：如果线上还没有 daohao 列，就回退到旧字段检索。
+  if (error && isMissingRosterDaohaoColumnMessage(extractRawRosterErrorMessage(error))) {
+    const fallbackResult = await buildAdminRosterListQuery(supabase, options, true)
+    data = fallbackResult.data
+    error = fallbackResult.error
   }
-
-  if (normalizedKeyword) {
-    const safeKeyword = normalizedKeyword.replace(/,/g, ' ')
-    const orConditions = [
-      `daohao.ilike.%${safeKeyword}%`,
-      `receipt_code.ilike.%${safeKeyword}%`,
-      `wechat_id.ilike.%${safeKeyword}%`,
-    ]
-
-    if (parsedEntryNo !== null) {
-      orConditions.push(`entry_no.eq.${parsedEntryNo}`)
-    }
-
-    query = query.or(orConditions.join(','))
-  }
-
-  const { data, error } = await query
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
