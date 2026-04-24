@@ -42,7 +42,9 @@ function isNavItemActive(path: string): boolean {
   <header class="site-header">
     <div class="site-header__inner">
       <RouterLink class="site-brand" to="/">
-        <span class="site-brand__seal">云栖</span>
+        <span class="site-brand__seal" aria-hidden="true">
+          <img src="/images/yunqi-logo.png" alt="" />
+        </span>
         <span>
           <strong class="site-brand__name">{{ siteContent.site.name }}</strong>
           <span class="site-brand__sub">{{ siteContent.site.subtitle }}</span>

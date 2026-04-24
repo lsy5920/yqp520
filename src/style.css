@@ -1125,3 +1125,42 @@ img {
     font-size: 0.92rem;
   }
 }
+
+/* 门派正式 logo：替换顶部文字印，统一显示圆形云栖徽记。 */
+.site-brand__seal {
+  overflow: hidden;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  writing-mode: horizontal-tb;
+}
+
+.site-brand__seal img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 海报正式 logo：替换所有旧文字印章。 */
+.poster-card__seal img,
+.assessment-result-poster-card__seal img,
+.roster-poster-card__seal img,
+.roster-registration-poster-card__seal img,
+.member-card-card__seal img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.poster-card__seal,
+.assessment-result-poster-card__seal,
+.roster-poster-card__seal,
+.roster-registration-poster-card__seal,
+.member-card-card__seal {
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.58);
+}

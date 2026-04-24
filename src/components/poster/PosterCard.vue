@@ -100,7 +100,9 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
         </div>
 
         <div class="poster-card__seal-panel">
-          <div class="poster-card__seal">云栖印</div>
+          <div class="poster-card__seal">
+            <img src="/images/yunqi-logo.png" alt="云栖派 logo" />
+          </div>
           <p class="poster-card__seal-copy">青金山门帖</p>
         </div>
       </header>

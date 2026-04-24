@@ -88,26 +88,6 @@ const statusTagline = computed<string>(() => {
 })
 
 /**
- * 状态印文
- * 用途：右上角印记直接提示当前流程状态
- */
-const sealText = computed<string>(() => {
-  if (props.entry.status === 'approved') {
-    return '准予入册'
-  }
-
-  if (props.entry.status === 'deferred') {
-    return '暂缓入册'
-  }
-
-  if (props.entry.status === 'rejected') {
-    return '不予收录'
-  }
-
-  return '待审核'
-})
-
-/**
  * 批语标题
  * 用途：底部批语区根据状态切换更贴切的标题
  */
@@ -173,8 +153,7 @@ const commentText = computed<string>(() => {
 
         <div class="roster-poster-card__seal">
           <span class="roster-poster-card__seal-ring" />
-          <strong>{{ sealText }}</strong>
-          <small>{{ isApproved ? '云栖派掌门印' : '档案司回执印' }}</small>
+          <img src="/images/yunqi-logo.png" alt="云栖派 logo" />
         </div>
       </header>
 

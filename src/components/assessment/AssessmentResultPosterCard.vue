@@ -66,12 +66,6 @@ const props = withDefaults(defineProps<AssessmentResultPosterCardProps>(), {
 })
 
 /**
- * 状态标签
- * 用途：在海报里用更短的词直接提示是否合格
- */
-const statusText = computed<string>(() => (props.passed ? '已合格' : '待补考'))
-
-/**
  * 分数文本
  * 用途：集中生成“分数 / 总分”的展示文本
  */
@@ -108,7 +102,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 
         <div class="assessment-result-poster-card__seal">
           <span class="assessment-result-poster-card__seal-ring" />
-          <strong>{{ statusText }}</strong>
+          <img src="/images/yunqi-logo.png" alt="云栖派 logo" />
         </div>
       </header>
 

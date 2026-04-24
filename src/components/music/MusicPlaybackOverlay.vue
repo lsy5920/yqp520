@@ -71,7 +71,9 @@ function handleConfirmPlay(): void {
 
       <article class="music-playback-overlay__panel">
         <div class="music-playback-overlay__seal-group" aria-hidden="true">
-          <span class="music-playback-overlay__seal">云</span>
+          <span class="music-playback-overlay__seal">
+            <img src="/images/yunqi-logo.png" alt="" />
+          </span>
           <span class="music-playback-overlay__seal-ring"></span>
         </div>
 
@@ -507,3 +509,16 @@ function handleConfirmPlay(): void {
   }
 }
 </style>
+
+/* 启播浮窗使用门派正式 logo。 */
+.music-playback-overlay__seal {
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.music-playback-overlay__seal img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

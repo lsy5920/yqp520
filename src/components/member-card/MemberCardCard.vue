@@ -165,9 +165,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
         </div>
 
         <div class="member-card-card__seal" aria-hidden="true">
-          <span class="member-card-card__seal-top">{{ memberCardCopy.generated.sealText }}</span>
-          <strong class="member-card-card__seal-center">立帖</strong>
-          <span class="member-card-card__seal-bottom">{{ memberCardCopy.generated.sideMark }}</span>
+          <img src="/images/yunqi-logo.png" alt="" />
         </div>
       </header>
 

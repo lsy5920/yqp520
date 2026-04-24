@@ -61,8 +61,7 @@ const processList = computed<string[]>(() => (
 
         <div class="roster-registration-poster-card__seal">
           <span class="roster-registration-poster-card__seal-ring" />
-          <strong>{{ template.sealText }}</strong>
-          <small>云栖派门籍引帖</small>
+          <img src="/images/yunqi-logo.png" alt="云栖派 logo" />
         </div>
       </header>
 

@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
       @click="handleExpandClick"
     >
       <span class="music-player__collapsed-shell" aria-hidden="true">
-        <span class="music-player__disc music-player__disc--compact" />
+        <img class="music-player__logo music-player__logo--compact" src="/images/yunqi-logo.png" alt="" />
       </span>
       <span
         class="music-player__collapsed-signal"
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
     <template v-else>
       <div class="music-player__head">
         <div class="music-player__cover" aria-hidden="true">
-          <span class="music-player__disc" />
+          <img class="music-player__logo" src="/images/yunqi-logo.png" alt="" />
         </div>
 
         <button
@@ -784,4 +784,32 @@ onBeforeUnmount(() => {
     padding: 0;
     border-radius: 0;
   }
+}
+
+/* 门派 logo 音乐图标：展开态和贴边态都使用正式徽记。 */
+.music-player__logo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(23, 61, 66, 0.16));
+}
+
+.music-player__logo--compact {
+  width: 32px;
+  height: 32px;
+}
+
+.music-player__cover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.music-player__disc {
+  display: none;
+}
+
+.music-player--collapsed .music-player__collapsed-shell::before {
+  display: none;
 }
