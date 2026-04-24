@@ -321,7 +321,7 @@ const posterTemplate: PosterTemplate = {
   stampText: '云栖印',
   qrLabel: '扫码入云栖',
   exportWidth: 1080,
-  exportHeight: 1920,
+  exportHeight: 1350,
 }
 
 // 这里定义背景音乐配置。当前已接入正式曲目，可直接播放。

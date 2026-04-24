@@ -524,3 +524,102 @@ const processList = computed<string[]>(() => (
   }
 }
 </style>
+
+/* 新版名册宣传海报：统一 1080×1350 的山门招帖。 */
+.roster-registration-poster-card {
+  border-radius: 44px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.9), transparent 24%),
+    radial-gradient(circle at 20% 78%, rgba(139, 208, 203, 0.24), transparent 28%),
+    linear-gradient(145deg, #fcfff9 0%, #eaf8f1 48%, #d5eee8 100%);
+  color: #173d42;
+  box-shadow: 0 34px 90px rgba(42, 101, 101, 0.22);
+}
+
+.roster-registration-poster-card::before {
+  position: absolute;
+  inset: 34px;
+  border: 1px solid rgba(84, 154, 151, 0.28);
+  border-radius: 34px;
+  background:
+    linear-gradient(90deg, transparent 0 49%, rgba(84, 154, 151, 0.12) 49% 51%, transparent 51%),
+    radial-gradient(circle at 74% 36%, rgba(216, 185, 114, 0.16), transparent 22%);
+  content: '';
+  pointer-events: none;
+}
+
+.roster-registration-poster-card__mountain,
+.roster-registration-poster-card__trace {
+  display: none;
+}
+
+.roster-registration-poster-card__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 28px;
+  height: 100%;
+  padding: 76px 70px 64px;
+}
+
+.roster-registration-poster-card__header,
+.roster-registration-poster-card__hero,
+.roster-registration-poster-card__footer {
+  display: grid;
+  gap: 24px;
+}
+
+.roster-registration-poster-card__header,
+.roster-registration-poster-card__footer {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.roster-registration-poster-card__title {
+  color: #173d42;
+  font-size: 70px;
+  line-height: 1.06;
+}
+
+.roster-registration-poster-card__lead,
+.roster-registration-poster-card__paper p,
+.roster-registration-poster-card__closing-card p,
+.roster-registration-poster-card__qr-copy span {
+  color: rgba(35, 83, 86, 0.74);
+}
+
+.roster-registration-poster-card__hero {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: stretch;
+}
+
+.roster-registration-poster-card__paper,
+.roster-registration-poster-card__process-column,
+.roster-registration-poster-card__closing-card,
+.roster-registration-poster-card__qr-panel {
+  border: 1px solid rgba(84, 154, 151, 0.22);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.roster-registration-poster-card__paper {
+  min-height: 480px;
+  padding: 44px;
+}
+
+.roster-registration-poster-card__paper h3,
+.roster-registration-poster-card__closing-card h3 {
+  color: #173d42;
+  font-size: 34px;
+}
+
+.roster-registration-poster-card__process-column {
+  padding: 24px;
+}
+
+.roster-registration-poster-card__qr-shell {
+  background: #f8fffb;
+  box-shadow: inset 0 0 0 1px rgba(23, 61, 66, 0.18), 0 12px 28px rgba(42, 101, 101, 0.12);
+}

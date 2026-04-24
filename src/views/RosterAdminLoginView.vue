@@ -162,10 +162,10 @@ onMounted(async () => {
   gap: 18px;
   padding: 24px;
   border-radius: 28px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
+  border: 1px solid rgba(84, 154, 151, 0.22);
   background:
-    linear-gradient(180deg, rgba(8, 30, 42, 0.92), rgba(5, 18, 28, 0.96)),
-    rgba(5, 18, 28, 0.94);
+    linear-gradient(180deg, rgba(249, 253, 250, 0.92), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.9);
   box-shadow: var(--shadow-soft);
 }
 
@@ -206,16 +206,16 @@ onMounted(async () => {
   width: 100%;
   min-height: 48px;
   padding: 12px 14px;
-  border: 1px solid rgba(216, 185, 114, 0.18);
+  border: 1px solid rgba(84, 154, 151, 0.22);
   border-radius: 16px;
-  background: rgba(5, 19, 28, 0.62);
+  background: rgba(255, 255, 255, 0.72);
   color: var(--color-text);
   outline: none;
 }
 
 .roster-admin-login-input:focus {
-  border-color: rgba(216, 185, 114, 0.34);
-  box-shadow: 0 0 0 3px rgba(216, 185, 114, 0.1);
+  border-color: rgba(84, 154, 151, 0.42);
+  box-shadow: 0 0 0 3px rgba(84, 154, 151, 0.12);
 }
 
 .roster-admin-login-actions {

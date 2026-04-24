@@ -78,7 +78,7 @@ const props = withDefaults(defineProps<AssessmentResultPosterStudioProps>(), {
   qrLabel: '扫码赴考',
   qrTargetPath: 'join#exam',
   exportWidth: 1080,
-  exportHeight: 1920,
+  exportHeight: 1350,
   reduceMotion: false,
 })
 
@@ -369,7 +369,7 @@ async function generatePosterQr(): Promise<void> {
       width: 240,
       color: {
         dark: '#173d42',
-        light: '#173d42',
+        light: '#f8fffb',
       },
     })
     isQrReady.value = true

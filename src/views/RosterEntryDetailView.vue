@@ -8,7 +8,7 @@ import { createEmptyPublicRosterEntry, rosterContent } from '@/data/rosterConten
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { getPublicRosterEntryBySlug } from '@/services/roster'
 import type { PublicRosterEntry } from '@/types/roster'
-import { buildRosterPublicText, getRosterStatusDescription } from '@/utils/roster'
+import { getRosterStatusDescription } from '@/utils/roster'
 
 // 这里保存页面根节点，供详情页静态区块使用统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
@@ -53,12 +53,6 @@ const numberLabel = computed<string>(() => (
 const numberText = computed<string>(() => (
   entry.value.status === 'approved' ? (entry.value.entryNo || '待分配') : (entry.value.receiptCode || '待生成')
 ))
-
-/**
- * 详情页公开文本
- * 用途：把当前公开信息整理成一段简洁文字说明
- */
-const publicText = computed<string>(() => buildRosterPublicText(entry.value))
 
 /**
  * 读取公开详情
@@ -170,20 +164,6 @@ onMounted(() => {
         </div>
 
         <aside class="roster-entry-side">
-          <article class="content-card">
-            <p class="content-card__eyebrow">公开文字版</p>
-            <h3>这段文字遵循同一套克制公开口径</h3>
-            <pre class="roster-entry-side__text">{{ publicText }}</pre>
-          </article>
-
-          <article class="content-card content-card--soft">
-            <p class="content-card__eyebrow">公开说明</p>
-            <h3>敏感信息不会进入分享名帖</h3>
-            <ul class="list-column">
-              <li v-for="line in rosterContent.privacyNotes" :key="line">{{ line }}</li>
-            </ul>
-          </article>
-
           <article class="content-card content-card--serif">
             <p class="content-card__eyebrow">下一步</p>
             <h3>{{ entry.status === 'approved' ? '可去名录中继续浏览其他同门' : '可先分享当前公开详情页' }}</h3>
@@ -240,18 +220,6 @@ onMounted(() => {
   gap: 18px;
 }
 
-.roster-entry-side__text {
-  margin: 0;
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(7, 27, 37, 0.42);
-  color: var(--color-text-soft);
-  white-space: pre-wrap;
-  font-family: inherit;
-  line-height: 1.82;
-}
-
 .roster-entry-state h2,
 .roster-entry-side h3 {
   margin: 0 0 12px;
@@ -272,11 +240,4 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 720px) {
-  .roster-entry-side__text {
-    padding: 14px;
-    border-radius: 16px;
-    font-size: 0.92rem;
-  }
-}
 </style>

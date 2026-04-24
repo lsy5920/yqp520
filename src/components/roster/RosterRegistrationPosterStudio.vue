@@ -205,7 +205,7 @@ async function generatePosterQr(): Promise<void> {
       width: 220,
       color: {
         dark: '#102734',
-        light: '#f4efe2',
+        light: '#f8fffb',
       },
     })
     isQrReady.value = true

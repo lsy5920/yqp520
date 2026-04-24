@@ -68,7 +68,7 @@ const props = withDefaults(defineProps<PosterStudioProps>(), {
   shareTitle: '云栖派海报分享',
   shareText: '我在云栖派生成了一张分享海报，送给你。',
   exportWidth: 1080,
-  exportHeight: 1920,
+  exportHeight: 1350,
   qrLabel: '扫码入云栖',
   qrTargetMode: 'home',
   reduceMotion: false,
@@ -492,7 +492,7 @@ async function generatePosterQr(): Promise<void> {
       width: 240,
       color: {
         dark: '#173d42',
-        light: '#173d42',
+        light: '#f8fffb',
       },
     })
     isQrReady.value = true

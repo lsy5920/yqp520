@@ -36,10 +36,10 @@ interface MemberCardStudioProps {
 }
 
 // 这里定义江湖名帖默认成图宽度，按 57 比 84 的成品比例换算成像素宽度。
-const memberCardDefaultExportWidth = 1140
+const memberCardDefaultExportWidth = 1080
 
 // 这里定义江湖名帖默认成图高度，和上面的宽度一起保持 57 比 84 的固定比例。
-const memberCardDefaultExportHeight = 1680
+const memberCardDefaultExportHeight = 1350
 
 const props = withDefaults(defineProps<MemberCardStudioProps>(), {
   exportWidth: memberCardDefaultExportWidth,
@@ -575,7 +575,7 @@ async function generateMemberCardQr(): Promise<void> {
       width: 180,
       color: {
         dark: '#102734',
-        light: '#edf7f1',
+        light: '#f8fffb',
       },
     })
     isQrReady.value = true

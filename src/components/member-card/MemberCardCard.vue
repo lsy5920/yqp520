@@ -1097,3 +1097,122 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   }
 }
 </style>
+
+/* 新版江湖正帖：统一 1080×1350 的云栖名帖成图。 */
+.member-card-card {
+  border-radius: 44px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.9), transparent 24%),
+    radial-gradient(circle at 16% 76%, rgba(139, 208, 203, 0.22), transparent 28%),
+    linear-gradient(145deg, #fbfff9 0%, #eaf8f1 48%, #d5eee8 100%);
+  color: #173d42;
+  box-shadow: 0 34px 90px rgba(42, 101, 101, 0.22);
+}
+
+.member-card-card::before {
+  position: absolute;
+  inset: 34px;
+  border: 1px solid rgba(84, 154, 151, 0.28);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 72% 28%, rgba(216, 185, 114, 0.16), transparent 22%),
+    linear-gradient(90deg, rgba(84, 154, 151, 0.08), transparent 18%, transparent 82%, rgba(84, 154, 151, 0.08));
+  content: '';
+  pointer-events: none;
+}
+
+.member-card-card__backdrop,
+.member-card-card__grain,
+.member-card-card__rail {
+  display: none;
+}
+
+.member-card-card__sheet {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 24px;
+  min-height: 100%;
+  padding: 70px 68px 60px;
+  background: transparent;
+}
+
+.member-card-card__header,
+.member-card-card__hero,
+.member-card-card__closing,
+.member-card-card__footer {
+  display: grid;
+  gap: 22px;
+}
+
+.member-card-card__header,
+.member-card-card__footer {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.member-card-card__name {
+  color: #173d42;
+  font-size: 68px;
+  line-height: 1.06;
+}
+
+.member-card-card__subtitle,
+.member-card-card__meta-chip,
+.member-card-card__story-text,
+.member-card-card__qr-copy span {
+  color: rgba(35, 83, 86, 0.74);
+}
+
+.member-card-card__hero {
+  grid-template-columns: 360px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.member-card-card__portrait,
+.member-card-card__panel,
+.member-card-card__story-card,
+.member-card-card__qr-panel {
+  border: 1px solid rgba(84, 154, 151, 0.22);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.member-card-card__portrait {
+  min-height: 470px;
+  padding: 22px;
+}
+
+.member-card-card__portrait-frame {
+  border-radius: 24px;
+  background: rgba(229, 246, 240, 0.72);
+}
+
+.member-card-card__hero-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.member-card-card__identity-grid,
+.member-card-card__tag-list {
+  gap: 10px;
+}
+
+.member-card-card__closing {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.member-card-card__story-card {
+  padding: 22px 24px;
+}
+
+.member-card-card__footer-side {
+  width: 350px;
+}
+
+.member-card-card__qr-shell {
+  background: #f8fffb;
+  box-shadow: inset 0 0 0 1px rgba(23, 61, 66, 0.18), 0 12px 28px rgba(42, 101, 101, 0.12);
+}

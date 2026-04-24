@@ -723,3 +723,65 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
+/* 精简贴边态：取消背景卡片，只保留小型青玉音印和透明点击热区。 */
+.music-player--collapsed {
+  right: 0;
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+}
+
+.music-player--collapsed .music-player__collapsed-button {
+  width: 48px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.music-player--collapsed .music-player__collapsed-button::before,
+.music-player--collapsed .music-player__collapsed-shell::after {
+  display: none;
+}
+
+.music-player--collapsed .music-player__collapsed-shell {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.music-player--collapsed .music-player__collapsed-shell::before {
+  inset: 3px;
+  border: 2px solid rgba(23, 61, 66, 0.82);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(248, 255, 251, 0.64), 0 0 16px rgba(63, 170, 167, 0.22);
+}
+
+.music-player--collapsed .music-player__collapsed-signal {
+  top: 8px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  box-shadow: 0 0 0 3px rgba(63, 170, 167, 0.14);
+}
+
+@media (max-width: 720px) {
+  .music-player--collapsed {
+    right: 0;
+    left: auto;
+    width: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 0;
+  }
+}

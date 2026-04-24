@@ -1389,7 +1389,7 @@ onBeforeUnmount(() => {
   padding: 12px 14px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   border-radius: 16px;
-  background: rgba(5, 19, 28, 0.62);
+  background: rgba(255, 255, 255, 0.72);
   color: var(--color-text);
   outline: none;
 }
@@ -1420,16 +1420,16 @@ onBeforeUnmount(() => {
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(5, 19, 28, 0.52);
+  background: rgba(255, 255, 255, 0.62);
   color: var(--color-text-soft);
 }
 
 .roster-admin-toolbar__chip--active {
   border-color: rgba(216, 185, 114, 0.32);
   background:
-    linear-gradient(180deg, rgba(216, 185, 114, 0.14), rgba(35, 25, 9, 0.76)),
+    linear-gradient(180deg, rgba(230, 197, 116, 0.28), rgba(255, 248, 230, 0.84)),
     rgba(23, 17, 8, 0.88);
-  color: rgba(248, 237, 204, 0.98);
+  color: #173d42;
 }
 
 .roster-admin-columns {
@@ -1444,8 +1444,8 @@ onBeforeUnmount(() => {
   border-radius: 28px;
   border: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(8, 30, 42, 0.92), rgba(5, 18, 28, 0.96)),
-    rgba(5, 18, 28, 0.94);
+    linear-gradient(180deg, rgba(249, 253, 250, 0.92), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.9);
   box-shadow: var(--shadow-soft);
 }
 
@@ -1480,7 +1480,7 @@ onBeforeUnmount(() => {
   padding: 16px;
   border-radius: 22px;
   border: 1px solid rgba(147, 203, 198, 0.14);
-  background: rgba(7, 27, 37, 0.44);
+  background: rgba(239, 249, 246, 0.74);
   text-align: left;
   transition:
     transform var(--transition-base),
@@ -1497,8 +1497,8 @@ onBeforeUnmount(() => {
 .roster-admin-entry--active {
   border-color: rgba(216, 185, 114, 0.32);
   background:
-    linear-gradient(135deg, rgba(216, 185, 114, 0.12), rgba(9, 34, 46, 0.88)),
-    rgba(8, 25, 35, 0.86);
+    linear-gradient(135deg, rgba(230, 197, 116, 0.2), rgba(218, 242, 236, 0.9)),
+    rgba(238, 248, 244, 0.9);
 }
 
 .roster-admin-entry strong,
@@ -1521,7 +1521,7 @@ onBeforeUnmount(() => {
 .roster-admin-column__empty {
   padding: 14px;
   border-radius: 18px;
-  background: rgba(7, 27, 37, 0.34);
+  background: rgba(239, 249, 246, 0.64);
   color: var(--color-text-faint);
 }
 
@@ -1534,7 +1534,7 @@ onBeforeUnmount(() => {
 .roster-admin-drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(2, 12, 17, 0.7);
+  background: rgba(225, 242, 238, 0.72);
   backdrop-filter: blur(10px);
 }
 
@@ -1549,8 +1549,8 @@ onBeforeUnmount(() => {
   padding: 22px 20px;
   border-left: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(8, 30, 42, 0.98), rgba(5, 18, 28, 0.99)),
-    rgba(5, 18, 28, 0.98);
+    linear-gradient(180deg, rgba(249, 253, 250, 0.98), rgba(224, 243, 237, 0.99)),
+    rgba(236, 248, 244, 0.96);
   box-shadow: -24px 0 64px rgba(0, 0, 0, 0.28);
 }
 
@@ -1580,13 +1580,13 @@ onBeforeUnmount(() => {
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.2);
-  background: rgba(7, 27, 37, 0.44);
+  background: rgba(239, 249, 246, 0.74);
   color: var(--color-text);
 }
 
 .roster-admin-danger-button {
   border-color: rgba(208, 96, 96, 0.3);
-  background: rgba(91, 27, 27, 0.46);
+  background: rgba(255, 239, 230, 0.76);
 }
 
 .roster-admin-drawer__body {
@@ -1602,7 +1602,7 @@ onBeforeUnmount(() => {
   padding: 18px;
   border-radius: 24px;
   border: 1px solid rgba(147, 203, 198, 0.14);
-  background: rgba(7, 27, 37, 0.48);
+  background: rgba(239, 249, 246, 0.74);
 }
 
 .roster-admin-feedback {
@@ -1611,7 +1611,7 @@ onBeforeUnmount(() => {
   padding: 16px 18px;
   border-radius: 22px;
   border: 1px solid rgba(147, 203, 198, 0.16);
-  background: rgba(7, 27, 37, 0.48);
+  background: rgba(239, 249, 246, 0.74);
 }
 
 .roster-admin-feedback strong,
@@ -1632,25 +1632,25 @@ onBeforeUnmount(() => {
 
 .roster-admin-feedback--success {
   border-color: rgba(96, 186, 138, 0.28);
-  background: rgba(12, 49, 35, 0.52);
+  background: rgba(229, 247, 237, 0.78);
 }
 
 .roster-admin-feedback--success strong {
-  color: rgba(138, 226, 177, 0.96);
+  color: #276b4a;
 }
 
 .roster-admin-feedback--error {
   border-color: rgba(208, 96, 96, 0.28);
-  background: rgba(64, 19, 19, 0.52);
+  background: rgba(255, 234, 234, 0.78);
 }
 
 .roster-admin-feedback--error strong {
-  color: rgba(255, 186, 186, 0.96);
+  color: #8a3434;
 }
 
 .roster-admin-detail-card--danger {
   border-color: rgba(208, 96, 96, 0.2);
-  background: rgba(54, 18, 18, 0.42);
+  background: rgba(255, 239, 230, 0.72);
 }
 
 .roster-admin-detail-card__eyebrow {
@@ -1730,7 +1730,7 @@ onBeforeUnmount(() => {
   gap: 8px;
   padding: 16px 18px;
   border-radius: 20px;
-  background: rgba(7, 27, 37, 0.44);
+  background: rgba(239, 249, 246, 0.74);
   text-align: left;
 }
 
@@ -1752,8 +1752,8 @@ onBeforeUnmount(() => {
 .roster-admin-choice-chip--active {
   border-color: rgba(216, 185, 114, 0.34);
   background:
-    linear-gradient(135deg, rgba(216, 185, 114, 0.14), rgba(9, 34, 46, 0.88)),
-    rgba(8, 25, 35, 0.86);
+    linear-gradient(135deg, rgba(216, 185, 114, 0.18), rgba(224, 243, 237, 0.9)),
+    rgba(238, 248, 244, 0.9);
 }
 
 .roster-admin-choice-row {
@@ -1769,7 +1769,7 @@ onBeforeUnmount(() => {
   min-height: 40px;
   padding: 0 14px;
   border-radius: 999px;
-  background: rgba(5, 19, 28, 0.52);
+  background: rgba(255, 255, 255, 0.62);
   color: var(--color-text-soft);
 }
 
@@ -1813,7 +1813,7 @@ onBeforeUnmount(() => {
   padding: 14px 16px;
   border-radius: 18px;
   border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(5, 19, 28, 0.44);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .roster-admin-log-item p,

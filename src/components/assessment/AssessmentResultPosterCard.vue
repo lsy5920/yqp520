@@ -612,3 +612,123 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   }
 }
 </style>
+
+/* 新版问心放榜帖：统一 1080×1350 的榜文式构图。 */
+.assessment-result-poster-card {
+  border-radius: 44px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.9), transparent 24%),
+    linear-gradient(145deg, #fcfff9 0%, #edf8ef 48%, #d8eee8 100%);
+  color: #173d42;
+  box-shadow: 0 34px 90px rgba(42, 101, 101, 0.22);
+}
+
+.assessment-result-poster-card::before {
+  position: absolute;
+  inset: 34px;
+  border: 1px solid rgba(84, 154, 151, 0.28);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(216, 185, 114, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), transparent 48%);
+  content: '';
+  pointer-events: none;
+}
+
+.assessment-result-poster-card__mountains,
+.assessment-result-poster-card__halo {
+  opacity: 0.34;
+}
+
+.assessment-result-poster-card__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 28px;
+  height: 100%;
+  padding: 78px 72px 68px;
+}
+
+.assessment-result-poster-card__header,
+.assessment-result-poster-card__footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: center;
+}
+
+.assessment-result-poster-card__title {
+  color: #173d42;
+  font-size: 62px;
+  line-height: 1.08;
+}
+
+.assessment-result-poster-card__subtitle,
+.assessment-result-poster-card__official-copy,
+.assessment-result-poster-card__insight-copy,
+.assessment-result-poster-card__url-tip,
+.assessment-result-poster-card__qr-copy span {
+  color: rgba(35, 83, 86, 0.72);
+}
+
+.assessment-result-poster-card__hero {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.assessment-result-poster-card__score-panel,
+.assessment-result-poster-card__copy-panel,
+.assessment-result-poster-card__insight,
+.assessment-result-poster-card__url-strip,
+.assessment-result-poster-card__qr-panel {
+  border: 1px solid rgba(84, 154, 151, 0.22);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.assessment-result-poster-card__score-panel {
+  place-content: center;
+  min-height: 315px;
+}
+
+.assessment-result-poster-card__score {
+  color: #8c7130;
+  font-size: 118px;
+  line-height: 0.95;
+}
+
+.assessment-result-poster-card__status-chip {
+  background: rgba(230, 197, 116, 0.18);
+  color: #173d42;
+}
+
+.assessment-result-poster-card__middle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 24px;
+}
+
+.assessment-result-poster-card__tags span,
+.assessment-result-poster-card__meta-grid span {
+  background: rgba(229, 246, 240, 0.86);
+  color: #1c5558;
+}
+
+.assessment-result-poster-card__footer-left {
+  display: grid;
+  gap: 14px;
+}
+
+.assessment-result-poster-card__qr-panel {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 390px;
+}
+
+.assessment-result-poster-card__qr-shell {
+  background: #f8fffb;
+  box-shadow: inset 0 0 0 1px rgba(23, 61, 66, 0.18), 0 12px 28px rgba(42, 101, 101, 0.12);
+}

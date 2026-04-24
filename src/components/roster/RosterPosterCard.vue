@@ -737,3 +737,123 @@ const commentText = computed<string>(() => {
   }
 }
 </style>
+
+/* 新版入册名帖：统一 1080×1350 的玉册竹影构图。 */
+.roster-poster-card {
+  border-radius: 44px;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.88), transparent 24%),
+    radial-gradient(circle at 80% 74%, rgba(139, 208, 203, 0.22), transparent 28%),
+    linear-gradient(145deg, #fbfff9 0%, #eaf8f1 48%, #d5eee8 100%);
+  color: #173d42;
+  box-shadow: 0 34px 90px rgba(42, 101, 101, 0.22);
+}
+
+.roster-poster-card::before {
+  position: absolute;
+  inset: 34px;
+  border: 1px solid rgba(84, 154, 151, 0.28);
+  border-radius: 34px;
+  background:
+    linear-gradient(90deg, rgba(84, 154, 151, 0.08), transparent 18%, transparent 82%, rgba(84, 154, 151, 0.08)),
+    radial-gradient(circle at 52% 45%, rgba(216, 185, 114, 0.14), transparent 26%);
+  content: '';
+  pointer-events: none;
+}
+
+.roster-poster-card__mountains,
+.roster-poster-card__paper-glow {
+  display: none;
+}
+
+.roster-poster-card__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 24px;
+  height: 100%;
+  padding: 72px 68px 64px;
+}
+
+.roster-poster-card__header,
+.roster-poster-card__hero,
+.roster-poster-card__footer {
+  display: grid;
+  gap: 24px;
+}
+
+.roster-poster-card__header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.roster-poster-card__title {
+  color: #173d42;
+  font-size: 68px;
+  line-height: 1.05;
+}
+
+.roster-poster-card__subtitle,
+.roster-poster-card__meta-card span,
+.roster-poster-card__info-card p:last-child,
+.roster-poster-card__comment,
+.roster-poster-card__qr-copy span {
+  color: rgba(35, 83, 86, 0.74);
+}
+
+.roster-poster-card__hero {
+  grid-template-columns: minmax(0, 1fr) 315px;
+  align-items: stretch;
+}
+
+.roster-poster-card__paper,
+.roster-poster-card__meta-card,
+.roster-poster-card__info-card,
+.roster-poster-card__comment-card,
+.roster-poster-card__qr-card {
+  border: 1px solid rgba(84, 154, 151, 0.22);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.roster-poster-card__paper {
+  min-height: 360px;
+  padding: 42px;
+}
+
+.roster-poster-card__daohao {
+  color: #173d42;
+  font-size: 58px;
+  line-height: 1.12;
+}
+
+.roster-poster-card__meta-column {
+  gap: 12px;
+}
+
+.roster-poster-card__meta-card {
+  padding: 16px 18px;
+}
+
+.roster-poster-card__meta-card strong {
+  color: #173d42;
+  font-size: 22px;
+}
+
+.roster-poster-card__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.roster-poster-card__footer {
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: stretch;
+}
+
+.roster-poster-card__qr-shell {
+  background: #f8fffb;
+  box-shadow: inset 0 0 0 1px rgba(23, 61, 66, 0.18), 0 12px 28px rgba(42, 101, 101, 0.12);
+}

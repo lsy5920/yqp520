@@ -623,7 +623,7 @@ export const assessmentPaperConfig: AssessmentPaperConfig = {
     signature: '云栖派 · 问心录',
     qrLabel: '扫码赴考',
     exportWidth: 1080,
-    exportHeight: 1920,
+    exportHeight: 1350,
     passHeadline: '考核已过',
     failHeadline: '再温原文',
     passCopy: '已知门风，可从容入云栖。',
