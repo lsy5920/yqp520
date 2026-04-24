@@ -435,7 +435,7 @@ musicTracks: [
     defaultVolume: 0.56,
   },
 ]
-```
+```~
 
 ### 每个字段是什么意思
 - `id`：曲目的唯一标识
