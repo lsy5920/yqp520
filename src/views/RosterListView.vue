@@ -42,19 +42,19 @@ const errorMessage = ref<string>('')
 let searchTimer: number | null = null
 
 /**
- * 玉佩展示样式
- * 用途：给每一枚玉佩提供稳定的错落漂浮参数
+ * 木签展示样式
+ * 用途：给每一枚木签提供稳定的错落漂浮参数
  * 入参：无
  * 返回值：返回带公开条目和样式变量的列表
  */
-const jadeEntryList = computed(() => entryList.value.map((entry, index) => ({
+const woodenEntryList = computed(() => entryList.value.map((entry, index) => ({
   entry,
-  style: buildJadePendantStyle(entry, index),
+  style: buildWoodenSlipStyle(entry, index),
 })))
 
 /**
  * 生成稳定数字
- * 用途：把公开标识转成稳定数字，让玉佩位置看起来随机但不会频繁跳动
+ * 用途：把公开标识转成稳定数字，让木签位置看起来随机但不会频繁跳动
  * 入参：source 为用于计算的文字
  * 返回值：返回稳定数字
  */
@@ -71,43 +71,49 @@ function buildStableNumber(source: string): number {
 }
 
 /**
- * 生成玉佩样式
- * 用途：统一控制玉佩大小、旋转、浮动距离和动画速度
+ * 生成木签样式
+ * 用途：统一控制木签大小、旋转、浮动距离和动画速度
  * 入参：entry 为公开条目，index 为列表序号
  * 返回值：返回可绑定到 style 的样式变量
  */
-function buildJadePendantStyle(entry: PublicRosterEntry, index: number): Record<string, string> {
-  // 这里用公开标识与序号生成稳定种子，避免筛选后所有玉佩都长得一样。
+function buildWoodenSlipStyle(entry: PublicRosterEntry, index: number): Record<string, string> {
+  // 这里用公开标识与序号生成稳定种子，避免筛选后所有木签都长得一样。
   const seed = buildStableNumber(`${entry.publicSlug}-${entry.daohao}-${index}`)
-  // 这里让玉佩尺寸在合理范围内变化，形成远近层次。
-  const size = 188 + (seed % 42)
-  // 这里让玉佩左右错开，营造漂浮在江湖云雾里的感觉。
-  const offset = ((seed % 7) - 3) * 10
-  // 这里让玉佩轻微旋转，不影响道名阅读。
-  const rotate = ((seed % 9) - 4) * 1.8
-  // 这里让每枚玉佩上下浮动距离不同，避免动画整齐呆板。
-  const floatDistance = 10 + (seed % 10)
+  // 这里让木签宽度在合理范围内变化，形成远近层次。
+  const width = 176 + (seed % 34)
+  // 这里让木签高度在合理范围内变化，模拟不同长短的江湖名签。
+  const height = 270 + (seed % 46)
+  // 这里让木签左右错开，营造漂浮在江湖云雾里的感觉。
+  const offset = ((seed % 9) - 4) * 12
+  // 这里让木签轻微旋转，不影响道名阅读。
+  const rotate = ((seed % 11) - 5) * 1.4
+  // 这里让木签左右游移幅度不同，动画更像悬在风里。
+  const driftDistance = 6 + (seed % 8)
+  // 这里让每枚木签上下浮动距离不同，避免动画整齐呆板。
+  const floatDistance = 12 + (seed % 12)
   // 这里让动画时长错开，形成更自然的漂浮节奏。
-  const duration = 5.8 + (seed % 8) * 0.36
+  const duration = 6.4 + (seed % 9) * 0.42
   // 这里让动画延迟错开，避免同时起伏。
-  const delay = (seed % 10) * -0.32
-  // 这里通过层级让部分玉佩更靠前。
+  const delay = (seed % 12) * -0.28
+  // 这里通过层级让部分木签更靠前。
   const depth = 1 + (seed % 5)
 
   return {
-    '--jade-size': `${size}px`,
-    '--jade-offset': `${offset}px`,
-    '--jade-rotate': `${rotate}deg`,
-    '--jade-float-distance': `${floatDistance}px`,
-    '--jade-duration': `${duration}s`,
-    '--jade-delay': `${delay}s`,
-    '--jade-depth': String(depth),
+    '--wooden-width': `${width}px`,
+    '--wooden-height': `${height}px`,
+    '--wooden-offset': `${offset}px`,
+    '--wooden-rotate': `${rotate}deg`,
+    '--wooden-drift-distance': `${driftDistance}px`,
+    '--wooden-float-distance': `${floatDistance}px`,
+    '--wooden-duration': `${duration}s`,
+    '--wooden-delay': `${delay}s`,
+    '--wooden-depth': String(depth),
   }
 }
 
 /**
  * 获取名册编号文案
- * 用途：弹窗和玉佩统一显示文牒号或回执号
+ * 用途：弹窗和木签统一显示文牒号或回执号
  * 入参：entry 为公开条目
  * 返回值：返回编号文案
  */
@@ -130,7 +136,7 @@ function getEntryDateText(entry: PublicRosterEntry): string {
 }
 
 /**
- * 打开玉佩弹窗
+ * 打开木签弹窗
  * 用途：点击道名后展示该同门公开信息
  * 入参：entry 为要查看的公开条目
  * 返回值：无返回值
@@ -140,7 +146,7 @@ function openEntryDialog(entry: PublicRosterEntry): void {
 }
 
 /**
- * 关闭玉佩弹窗
+ * 关闭木签弹窗
  * 用途：关闭后清空当前条目，避免下次打开时闪旧内容
  * 入参：无
  * 返回值：无返回值
@@ -336,37 +342,41 @@ onBeforeUnmount(() => {
       <p>{{ rosterContent.list.emptyDescription }}</p>
     </section>
 
-    <section v-else class="roster-jade-field" data-reveal>
-      <div class="roster-jade-field__sky" aria-hidden="true"></div>
-      <div class="roster-jade-field__head">
-        <p class="content-card__eyebrow">玉佩江湖墙</p>
-        <h2>道名入玉，云中浮录</h2>
-        <p>点击玉佩上的道名，可展开该同门的公开名帖小窗。</p>
+    <section v-else class="roster-wooden-field" data-reveal>
+      <div class="roster-wooden-field__sky" aria-hidden="true"></div>
+      <div class="roster-wooden-field__head">
+        <p class="content-card__eyebrow">木签江湖墙</p>
+        <h2>木签悬名，江湖浮录</h2>
+        <p>点击木签上的道名，可展开该同门的公开名帖小窗。</p>
       </div>
 
-      <div class="roster-jade-field__grid">
+      <div class="roster-wooden-field__grid">
         <article
-          v-for="item in jadeEntryList"
+          v-for="item in woodenEntryList"
           :key="item.entry.publicSlug"
-          class="roster-jade-pendant"
+          class="roster-wooden-slip"
           :style="item.style"
         >
-          <div class="roster-jade-pendant__cord" aria-hidden="true"></div>
-          <div class="roster-jade-pendant__body">
-            <span class="roster-jade-pendant__hole" aria-hidden="true"></span>
-            <p class="roster-jade-pendant__hall">{{ item.entry.hallLabel }}</p>
+          <div class="roster-wooden-slip__cord" aria-hidden="true"></div>
+          <div class="roster-wooden-slip__knot" aria-hidden="true"></div>
+          <div class="roster-wooden-slip__body">
+            <span class="roster-wooden-slip__copper" aria-hidden="true"></span>
+            <span class="roster-wooden-slip__grain" aria-hidden="true"></span>
+            <p class="roster-wooden-slip__seal">{{ item.entry.hallLabel }}</p>
             <button
               type="button"
-              class="roster-jade-pendant__name"
+              class="roster-wooden-slip__name"
               :aria-label="`查看${item.entry.daohao}的公开名帖`"
               @click="openEntryDialog(item.entry)"
             >
               {{ item.entry.daohao }}
             </button>
-            <p class="roster-jade-pendant__number">{{ item.entry.entryNo || '牒号待定' }}</p>
-            <p class="roster-jade-pendant__status">{{ item.entry.positionLabel }} · {{ item.entry.statusLabel }}</p>
+            <p class="roster-wooden-slip__number">{{ item.entry.entryNo || '牒号待定' }}</p>
+            <p class="roster-wooden-slip__status">{{ item.entry.positionLabel }} · {{ item.entry.statusLabel }}</p>
+            <span class="roster-wooden-slip__corner roster-wooden-slip__corner--left" aria-hidden="true"></span>
+            <span class="roster-wooden-slip__corner roster-wooden-slip__corner--right" aria-hidden="true"></span>
           </div>
-          <div class="roster-jade-pendant__tassel" aria-hidden="true"></div>
+          <div class="roster-wooden-slip__tassel" aria-hidden="true"></div>
         </article>
       </div>
     </section>
@@ -444,326 +454,378 @@ onBeforeUnmount(() => {
 
 .roster-list-toolbar,
 .roster-list-poster,
-.roster-jade-field {
-  display: grid;
-  gap: 18px;
-}
-
-.roster-list-poster {
-  align-items: start;
-}
-
-.roster-list-toolbar__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.roster-list-toolbar__actions {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.roster-list-toolbar__head h2 {
-  margin: 0 0 12px;
-  font-size: clamp(1.5rem, 3vw, 2.2rem);
-  line-height: 1.24;
-}
-
-.roster-list-toolbar__head p:last-child {
-  margin: 0;
-  color: var(--color-text-soft);
-  line-height: 1.78;
-}
-
-.roster-list-toolbar__admin-note {
-  margin: 0;
-  color: rgba(248, 237, 204, 0.74);
-  line-height: 1.74;
-}
-
-.roster-list-toolbar__controls {
-  display: grid;
-  gap: 16px;
-}
-
-.roster-list-toolbar__search,
-.roster-list-toolbar__hall-filter {
-  display: grid;
-  gap: 10px;
-}
-
-.roster-list-toolbar__search span,
-.roster-list-toolbar__hall-filter span {
-  color: var(--color-cyan);
-  font-size: 0.84rem;
-  letter-spacing: 0.16em;
-}
-
-.roster-list-toolbar__input {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
-  border: 1px solid rgba(216, 185, 114, 0.18);
-  border-radius: 16px;
-  background: rgba(5, 19, 28, 0.62);
-  color: var(--color-text);
-  outline: none;
-}
-
-.roster-list-toolbar__input:focus {
-  border-color: rgba(216, 185, 114, 0.34);
-  box-shadow: 0 0 0 3px rgba(216, 185, 114, 0.1);
-}
-
-.roster-list-toolbar__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.roster-list-toolbar__chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(5, 19, 28, 0.52);
-  color: var(--color-text-soft);
-  cursor: pointer;
-  transition:
-    transform var(--transition-base),
-    border-color var(--transition-base),
-    background-color var(--transition-base);
-}
-
-.roster-list-toolbar__chip:hover {
-  transform: translateY(-2px);
-}
-
-.roster-list-toolbar__chip--active {
-  border-color: rgba(216, 185, 114, 0.32);
-  background:
-    linear-gradient(180deg, rgba(216, 185, 114, 0.14), rgba(35, 25, 9, 0.76)),
-    rgba(23, 17, 8, 0.88);
-  color: rgba(248, 237, 204, 0.98);
-}
-
-.roster-jade-field {
+.roster-wooden-field {
   position: relative;
   display: grid;
-  gap: 28px;
+  gap: 30px;
   overflow: hidden;
-  padding: clamp(24px, 5vw, 48px);
-  border-radius: 36px;
-  border: 1px solid rgba(216, 185, 114, 0.2);
+  padding: clamp(26px, 5vw, 52px);
+  border-radius: 38px;
+  border: 1px solid rgba(212, 164, 82, 0.24);
   background:
-    radial-gradient(circle at 18% 14%, rgba(139, 208, 203, 0.18), transparent 26%),
-    radial-gradient(circle at 84% 22%, rgba(216, 185, 114, 0.14), transparent 28%),
-    linear-gradient(145deg, rgba(5, 18, 28, 0.94), rgba(9, 30, 42, 0.9) 52%, rgba(5, 16, 24, 0.96));
+    radial-gradient(circle at 16% 10%, rgba(212, 164, 82, 0.18), transparent 26%),
+    radial-gradient(circle at 86% 18%, rgba(139, 208, 203, 0.12), transparent 30%),
+    linear-gradient(145deg, rgba(8, 20, 24, 0.97), rgba(28, 18, 11, 0.9) 48%, rgba(6, 16, 22, 0.98));
   box-shadow: var(--shadow-strong);
   isolation: isolate;
 }
 
-.roster-jade-field::before,
-.roster-jade-field::after,
-.roster-jade-field__sky {
+.roster-wooden-field::before,
+.roster-wooden-field::after,
+.roster-wooden-field__sky {
   position: absolute;
   inset: 0;
   pointer-events: none;
   content: '';
 }
 
-.roster-jade-field::before {
+.roster-wooden-field::before {
   background:
-    linear-gradient(115deg, transparent 0 20%, rgba(244, 239, 226, 0.06) 21%, transparent 22% 54%, rgba(216, 185, 114, 0.08) 55%, transparent 56%),
-    radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.28), transparent 58%);
-  opacity: 0.9;
+    linear-gradient(115deg, transparent 0 18%, rgba(212, 164, 82, 0.08) 19%, transparent 20% 54%, rgba(139, 43, 28, 0.1) 55%, transparent 56%),
+    radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.34), transparent 60%);
+  opacity: 0.96;
+  z-index: -3;
+}
+
+.roster-wooden-field::after {
+  background:
+    radial-gradient(ellipse at 22% 84%, rgba(139, 208, 203, 0.12), transparent 34%),
+    radial-gradient(ellipse at 80% 78%, rgba(212, 164, 82, 0.14), transparent 32%);
+  filter: blur(16px);
+  animation: woodenMistDrift 14s ease-in-out infinite alternate;
   z-index: -2;
 }
 
-.roster-jade-field::after {
-  background:
-    radial-gradient(ellipse at 20% 86%, rgba(139, 208, 203, 0.13), transparent 34%),
-    radial-gradient(ellipse at 78% 78%, rgba(244, 239, 226, 0.1), transparent 30%);
-  filter: blur(14px);
-  z-index: -1;
-}
-
-.roster-jade-field__sky {
+.roster-wooden-field__sky {
   background-image:
-    linear-gradient(rgba(216, 185, 114, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(216, 185, 114, 0.06) 1px, transparent 1px);
-  background-size: 68px 68px;
-  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.62), transparent 70%);
+    linear-gradient(rgba(212, 164, 82, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 164, 82, 0.05) 1px, transparent 1px),
+    radial-gradient(circle, rgba(244, 239, 226, 0.1) 1px, transparent 1px);
+  background-size: 76px 76px, 76px 76px, 34px 34px;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.68), transparent 72%);
+  animation: woodenSkyFlow 24s linear infinite;
   z-index: -1;
 }
 
-.roster-jade-field__head {
-  max-width: 720px;
+.roster-wooden-field__head {
+  max-width: 760px;
 }
 
-.roster-jade-field__head h2,
-.roster-jade-field__head p {
+.roster-wooden-field__head h2,
+.roster-wooden-field__head p {
   margin: 0;
 }
 
-.roster-jade-field__head h2 {
+.roster-wooden-field__head h2 {
   margin-top: 8px;
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  line-height: 1.18;
+  font-size: clamp(1.9rem, 4vw, 3.2rem);
+  line-height: 1.16;
 }
 
-.roster-jade-field__head p:last-child {
+.roster-wooden-field__head p:last-child {
   margin-top: 10px;
   color: var(--color-text-soft);
   line-height: 1.78;
 }
 
-.roster-jade-field__grid {
+.roster-wooden-field__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(22px, 4vw, 42px);
+  gap: clamp(26px, 4vw, 48px);
   align-items: start;
-  padding: 10px 0 18px;
+  padding: 14px 0 20px;
 }
 
-.roster-jade-pendant {
+.roster-wooden-slip {
   position: relative;
-  z-index: var(--jade-depth);
+  z-index: var(--wooden-depth);
   display: grid;
   justify-items: center;
-  width: min(100%, var(--jade-size));
-  min-height: calc(var(--jade-size) + 80px);
+  width: min(100%, var(--wooden-width));
+  min-height: calc(var(--wooden-height) + 94px);
   margin-inline: auto;
-  transform: translateX(var(--jade-offset)) rotate(var(--jade-rotate));
-  animation: jadePendantFloat var(--jade-duration) ease-in-out var(--jade-delay) infinite alternate;
+  transform: translateX(var(--wooden-offset)) rotate(var(--wooden-rotate));
+  animation:
+    woodenSlipEnter 0.72s ease-out both,
+    woodenSlipFloat var(--wooden-duration) ease-in-out var(--wooden-delay) infinite alternate;
+  transition:
+    transform var(--transition-base),
+    filter var(--transition-base);
 }
 
-.roster-jade-pendant__cord {
-  width: 4px;
-  height: 44px;
+.roster-wooden-slip:hover,
+.roster-wooden-slip:focus-within {
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.34));
+  transform: translateX(var(--wooden-offset)) translateY(-6px) rotate(calc(var(--wooden-rotate) * 0.72));
+}
+
+.roster-wooden-slip__cord {
+  width: 5px;
+  height: 42px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(128, 42, 30, 0.94), rgba(216, 185, 114, 0.86));
-  box-shadow: 0 0 16px rgba(216, 185, 114, 0.22);
+  background: linear-gradient(180deg, rgba(116, 24, 20, 0.98), rgba(190, 62, 36, 0.92) 48%, rgba(212, 164, 82, 0.86));
+  box-shadow: 0 0 18px rgba(190, 62, 36, 0.24);
 }
 
-.roster-jade-pendant__body {
+.roster-wooden-slip__knot {
+  width: 42px;
+  height: 16px;
+  margin-top: -4px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 28% 50%, rgba(244, 239, 226, 0.26), transparent 24%),
+    linear-gradient(135deg, rgba(128, 36, 26, 0.98), rgba(212, 164, 82, 0.9));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.26);
+}
+
+.roster-wooden-slip__body {
   position: relative;
   display: grid;
-  place-items: center;
-  width: var(--jade-size);
-  min-height: calc(var(--jade-size) * 1.08);
-  padding: 46px 22px 28px;
-  border: 1px solid rgba(244, 239, 226, 0.48);
-  border-radius: 46% 46% 50% 50% / 38% 38% 58% 58%;
+  justify-items: center;
+  width: var(--wooden-width);
+  min-height: var(--wooden-height);
+  padding: 48px 18px 28px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 164, 82, 0.42);
+  border-radius: 22px 22px 34px 34px;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.78), transparent 12%),
-    radial-gradient(circle at 72% 78%, rgba(32, 112, 105, 0.28), transparent 28%),
-    linear-gradient(145deg, rgba(238, 255, 241, 0.94), rgba(145, 214, 189, 0.9) 46%, rgba(54, 134, 122, 0.96));
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent 18% 82%, rgba(0, 0, 0, 0.18)),
+    repeating-linear-gradient(96deg, rgba(255, 224, 156, 0.08) 0 2px, transparent 2px 13px),
+    linear-gradient(145deg, #6f3f22 0%, #9b6335 28%, #5c321d 54%, #2d1710 100%);
   box-shadow:
-    inset 0 0 28px rgba(255, 255, 255, 0.54),
-    inset 0 -18px 30px rgba(11, 64, 61, 0.28),
-    0 22px 44px rgba(0, 0, 0, 0.3),
-    0 0 38px rgba(139, 208, 203, 0.2);
+    inset 0 0 24px rgba(255, 226, 164, 0.22),
+    inset 0 -28px 36px rgba(20, 8, 4, 0.42),
+    0 24px 46px rgba(0, 0, 0, 0.34),
+    0 0 32px rgba(212, 164, 82, 0.1);
 }
 
-.roster-jade-pendant__body::before,
-.roster-jade-pendant__body::after {
+.roster-wooden-slip__body::before,
+.roster-wooden-slip__body::after {
   position: absolute;
   content: '';
   pointer-events: none;
 }
 
-.roster-jade-pendant__body::before {
-  inset: 16px;
-  border: 1px solid rgba(21, 73, 68, 0.22);
-  border-radius: inherit;
+.roster-wooden-slip__body::before {
+  inset: 12px;
+  border: 1px solid rgba(23, 10, 5, 0.36);
+  border-radius: 16px 16px 28px 28px;
+  box-shadow: inset 0 0 0 1px rgba(212, 164, 82, 0.18);
 }
 
-.roster-jade-pendant__body::after {
-  inset: 24px 18px auto;
-  height: 36px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
-  transform: rotate(-14deg);
+.roster-wooden-slip__body::after {
+  inset: 0 auto 0 -70%;
+  width: 54%;
+  background: linear-gradient(90deg, transparent, rgba(255, 236, 186, 0.2), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.72s ease;
 }
 
-.roster-jade-pendant__hole {
+.roster-wooden-slip:hover .roster-wooden-slip__body::after,
+.roster-wooden-slip:focus-within .roster-wooden-slip__body::after {
+  left: 118%;
+}
+
+.roster-wooden-slip__copper {
   position: absolute;
-  top: 18px;
+  top: 16px;
   left: 50%;
-  width: 28px;
-  height: 28px;
-  border: 6px solid rgba(42, 113, 103, 0.52);
+  width: 42px;
+  height: 22px;
   border-radius: 999px;
-  background: rgba(4, 18, 24, 0.72);
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.36);
+  background:
+    radial-gradient(circle at 32% 32%, rgba(255, 241, 192, 0.75), transparent 24%),
+    linear-gradient(135deg, rgba(212, 164, 82, 0.98), rgba(96, 49, 20, 0.96));
+  box-shadow:
+    inset 0 -3px 8px rgba(59, 26, 9, 0.42),
+    0 6px 12px rgba(0, 0, 0, 0.28);
   transform: translateX(-50%);
 }
 
-.roster-jade-pendant__hall,
-.roster-jade-pendant__number,
-.roster-jade-pendant__status {
+.roster-wooden-slip__grain {
+  position: absolute;
+  inset: 24px 14px;
+  border-radius: 18px 18px 28px 28px;
+  background:
+    radial-gradient(ellipse at 30% 24%, transparent 0 18px, rgba(45, 20, 8, 0.18) 19px 21px, transparent 22px),
+    radial-gradient(ellipse at 70% 62%, transparent 0 24px, rgba(255, 223, 156, 0.12) 25px 27px, transparent 28px);
+  opacity: 0.76;
+  pointer-events: none;
+}
+
+.roster-wooden-slip__seal,
+.roster-wooden-slip__number,
+.roster-wooden-slip__status {
+  position: relative;
+  z-index: 1;
   margin: 0;
   text-align: center;
-  color: rgba(6, 44, 45, 0.78);
 }
 
-.roster-jade-pendant__hall {
-  font-size: 0.78rem;
-  letter-spacing: 0.18em;
+.roster-wooden-slip__seal {
+  align-self: start;
+  padding: 4px 9px;
+  border: 1px solid rgba(122, 24, 18, 0.36);
+  border-radius: 999px;
+  background: rgba(68, 20, 12, 0.22);
+  color: rgba(255, 222, 160, 0.92);
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
 }
 
-.roster-jade-pendant__name {
-  margin: 10px 0 8px;
+.roster-wooden-slip__name {
+  position: relative;
+  z-index: 1;
+  margin: 22px 0 12px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: rgba(14, 54, 50, 0.96);
+  color: rgba(255, 225, 156, 0.96);
   font-family: inherit;
-  font-size: clamp(1.45rem, 3vw, 2rem);
-  font-weight: 800;
-  line-height: 1.2;
+  font-size: clamp(1.52rem, 3vw, 2.06rem);
+  font-weight: 900;
+  line-height: 1.18;
   text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42), 0 0 12px rgba(255, 255, 255, 0.36);
+  text-shadow:
+    0 2px 0 rgba(38, 12, 4, 0.88),
+    0 0 16px rgba(212, 164, 82, 0.24);
   cursor: pointer;
+  writing-mode: horizontal-tb;
 }
 
-.roster-jade-pendant__name:hover,
-.roster-jade-pendant__name:focus-visible {
-  color: rgba(112, 46, 18, 0.98);
+.roster-wooden-slip__name::after {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 226, 164, 0.94), transparent);
+  content: '';
+  transform: translateX(-50%);
+  transition: width var(--transition-base);
+}
+
+.roster-wooden-slip__name:hover,
+.roster-wooden-slip__name:focus-visible {
+  color: rgba(255, 244, 206, 0.98);
   outline: none;
-  text-decoration: underline;
-  text-underline-offset: 6px;
+  text-shadow:
+    0 2px 0 rgba(38, 12, 4, 0.9),
+    0 0 22px rgba(255, 216, 134, 0.48);
 }
 
-.roster-jade-pendant__number {
+.roster-wooden-slip__name:hover::after,
+.roster-wooden-slip__name:focus-visible::after {
+  width: 110%;
+}
+
+.roster-wooden-slip__number {
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(20, 8, 4, 0.22);
+  color: rgba(244, 239, 226, 0.9);
+  font-size: 0.86rem;
   font-weight: 700;
 }
 
-.roster-jade-pendant__status {
-  margin-top: 6px;
-  font-size: 0.82rem;
-  line-height: 1.5;
+.roster-wooden-slip__status {
+  margin-top: 10px;
+  padding: 7px 10px;
+  border: 1px solid rgba(212, 164, 82, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 238, 194, 0.08);
+  color: rgba(244, 239, 226, 0.74);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
-.roster-jade-pendant__tassel {
-  width: 36px;
-  height: 58px;
+.roster-wooden-slip__corner {
+  position: absolute;
+  bottom: 14px;
+  width: 22px;
+  height: 22px;
+  border-bottom: 2px solid rgba(212, 164, 82, 0.34);
+  pointer-events: none;
+}
+
+.roster-wooden-slip__corner--left {
+  left: 14px;
+  border-left: 2px solid rgba(212, 164, 82, 0.34);
+  border-radius: 0 0 0 10px;
+}
+
+.roster-wooden-slip__corner--right {
+  right: 14px;
+  border-right: 2px solid rgba(212, 164, 82, 0.34);
+  border-radius: 0 0 10px;
+}
+
+.roster-wooden-slip__tassel {
+  width: 34px;
+  height: 62px;
   border-radius: 0 0 999px 999px;
   background:
-    repeating-linear-gradient(90deg, rgba(128, 42, 30, 0.9) 0 3px, rgba(216, 185, 114, 0.88) 3px 5px),
-    rgba(128, 42, 30, 0.92);
-  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.24));
+    repeating-linear-gradient(90deg, rgba(116, 24, 20, 0.95) 0 3px, rgba(212, 164, 82, 0.9) 3px 5px),
+    rgba(116, 24, 20, 0.95);
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.26));
+  transform-origin: top center;
+  animation: woodenTasselSwing calc(var(--wooden-duration) * 0.7) ease-in-out var(--wooden-delay) infinite alternate;
 }
 
+@keyframes woodenSlipEnter {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+    scale: 0.96;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes woodenSlipFloat {
+  from {
+    translate: calc(var(--wooden-drift-distance) * -0.5) calc(var(--wooden-float-distance) * -0.35);
+  }
+
+  to {
+    translate: var(--wooden-drift-distance) var(--wooden-float-distance);
+  }
+}
+
+@keyframes woodenTasselSwing {
+  from {
+    rotate: -3deg;
+  }
+
+  to {
+    rotate: 4deg;
+  }
+}
+
+@keyframes woodenMistDrift {
+  from {
+    transform: translate3d(-12px, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(18px, -10px, 0) scale(1.04);
+  }
+}
+
+@keyframes woodenSkyFlow {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+
+  to {
+    background-position: 76px 76px, -76px 76px, 34px 34px;
+  }
+}
 .roster-entry-dialog {
   position: fixed;
   inset: 0;
@@ -880,22 +942,12 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
-@keyframes jadePendantFloat {
-  from {
-    translate: 0 calc(var(--jade-float-distance) * -0.35);
-  }
-
-  to {
-    translate: 0 var(--jade-float-distance);
-  }
-}
-
 .roster-list-state {
   text-align: left;
 }
 
 @media (max-width: 1180px) {
-  .roster-jade-field__grid {
+  .roster-wooden-field__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -921,50 +973,52 @@ onBeforeUnmount(() => {
     grid-column: 1 / -1;
   }
 
-  .roster-jade-field {
+  .roster-wooden-field {
     padding: 20px 14px;
     border-radius: 26px;
   }
 
-  .roster-jade-field__grid {
+  .roster-wooden-field__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px 10px;
   }
 
-  .roster-jade-pendant {
-    width: min(100%, 158px);
-    min-height: 238px;
-    transform: rotate(calc(var(--jade-rotate) * 0.45));
+  .roster-wooden-slip {
+    width: min(100%, 156px);
+    min-height: 258px;
+    transform: rotate(calc(var(--wooden-rotate) * 0.45));
+    animation-duration: calc(var(--wooden-duration) * 1.12);
   }
 
-  .roster-jade-pendant__cord {
+  .roster-wooden-slip__cord {
     height: 32px;
   }
 
-  .roster-jade-pendant__body {
+  .roster-wooden-slip__body {
     width: 100%;
-    min-height: 168px;
-    padding: 38px 12px 20px;
+    min-height: 192px;
+    padding: 42px 10px 20px;
+    border-radius: 18px 18px 28px 28px;
   }
 
-  .roster-jade-pendant__hole {
+  .roster-wooden-slip__copper {
     top: 14px;
-    width: 22px;
-    height: 22px;
-    border-width: 5px;
+    width: 34px;
+    height: 18px;
   }
 
-  .roster-jade-pendant__name {
-    font-size: 1.22rem;
+  .roster-wooden-slip__name {
+    margin-top: 18px;
+    font-size: 1.18rem;
   }
 
-  .roster-jade-pendant__hall,
-  .roster-jade-pendant__number,
-  .roster-jade-pendant__status {
-    font-size: 0.72rem;
+  .roster-wooden-slip__seal,
+  .roster-wooden-slip__number,
+  .roster-wooden-slip__status {
+    font-size: 0.68rem;
   }
 
-  .roster-jade-pendant__tassel {
+  .roster-wooden-slip__tassel {
     width: 28px;
     height: 44px;
   }
