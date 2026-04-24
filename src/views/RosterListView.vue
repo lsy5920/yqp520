@@ -2,9 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import PageBanner from '@/components/common/PageBanner.vue'
-import RosterRegistrationPosterStudio from '@/components/roster/RosterRegistrationPosterStudio.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
-import { rosterContent, rosterHallOptions, rosterRegistrationPosterTemplate } from '@/data/rosterContent'
+import { rosterContent, rosterHallOptions } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { listPublicRosterEntries } from '@/services/roster'
 import type { PublicRosterEntry, RosterHallKey } from '@/types/roster'
@@ -42,19 +41,19 @@ const errorMessage = ref<string>('')
 let searchTimer: number | null = null
 
 /**
- * 木签展示样式
- * 用途：给每一枚木签提供稳定的错落漂浮参数
+ * 竹叶展示样式
+ * 用途：给每一枚竹叶提供稳定的错落漂浮参数
  * 入参：无
  * 返回值：返回带公开条目和样式变量的列表
  */
-const woodenEntryList = computed(() => entryList.value.map((entry, index) => ({
+const bambooEntryList = computed(() => entryList.value.map((entry, index) => ({
   entry,
-  style: buildWoodenSlipStyle(entry, index),
+  style: buildBambooLeafStyle(entry, index),
 })))
 
 /**
  * 生成稳定数字
- * 用途：把公开标识转成稳定数字，让木签位置看起来随机但不会频繁跳动
+ * 用途：把公开标识转成稳定数字，让竹叶位置看起来随机但不会频繁跳动
  * 入参：source 为用于计算的文字
  * 返回值：返回稳定数字
  */
@@ -71,49 +70,49 @@ function buildStableNumber(source: string): number {
 }
 
 /**
- * 生成木签样式
- * 用途：统一控制木签大小、旋转、浮动距离和动画速度
+ * 生成竹叶样式
+ * 用途：统一控制竹叶大小、旋转、浮动距离和动画速度
  * 入参：entry 为公开条目，index 为列表序号
  * 返回值：返回可绑定到 style 的样式变量
  */
-function buildWoodenSlipStyle(entry: PublicRosterEntry, index: number): Record<string, string> {
-  // 这里用公开标识与序号生成稳定种子，避免筛选后所有木签都长得一样。
+function buildBambooLeafStyle(entry: PublicRosterEntry, index: number): Record<string, string> {
+  // 这里用公开标识与序号生成稳定种子，避免筛选后所有竹叶都长得一样。
   const seed = buildStableNumber(`${entry.publicSlug}-${entry.daohao}-${index}`)
-  // 这里让木签宽度在合理范围内变化，形成远近层次。
+  // 这里让竹叶宽度在合理范围内变化，形成远近层次。
   const width = 176 + (seed % 34)
-  // 这里让木签高度在合理范围内变化，模拟不同长短的江湖名签。
+  // 这里让竹叶高度在合理范围内变化，模拟不同长短的江湖名签。
   const height = 270 + (seed % 46)
-  // 这里让木签左右错开，营造漂浮在江湖云雾里的感觉。
+  // 这里让竹叶左右错开，营造漂浮在江湖云雾里的感觉。
   const offset = ((seed % 9) - 4) * 12
-  // 这里让木签轻微旋转，不影响道名阅读。
+  // 这里让竹叶轻微旋转，不影响道名阅读。
   const rotate = ((seed % 11) - 5) * 1.4
-  // 这里让木签左右游移幅度不同，动画更像悬在风里。
+  // 这里让竹叶左右游移幅度不同，动画更像悬在风里。
   const driftDistance = 6 + (seed % 8)
-  // 这里让每枚木签上下浮动距离不同，避免动画整齐呆板。
+  // 这里让每枚竹叶上下浮动距离不同，避免动画整齐呆板。
   const floatDistance = 12 + (seed % 12)
   // 这里让动画时长错开，形成更自然的漂浮节奏。
   const duration = 6.4 + (seed % 9) * 0.42
   // 这里让动画延迟错开，避免同时起伏。
   const delay = (seed % 12) * -0.28
-  // 这里通过层级让部分木签更靠前。
+  // 这里通过层级让部分竹叶更靠前。
   const depth = 1 + (seed % 5)
 
   return {
-    '--wooden-width': `${width}px`,
-    '--wooden-height': `${height}px`,
-    '--wooden-offset': `${offset}px`,
-    '--wooden-rotate': `${rotate}deg`,
-    '--wooden-drift-distance': `${driftDistance}px`,
-    '--wooden-float-distance': `${floatDistance}px`,
-    '--wooden-duration': `${duration}s`,
-    '--wooden-delay': `${delay}s`,
-    '--wooden-depth': String(depth),
+    '--bamboo-width': `${width}px`,
+    '--bamboo-height': `${height}px`,
+    '--bamboo-offset': `${offset}px`,
+    '--bamboo-rotate': `${rotate}deg`,
+    '--bamboo-drift-distance': `${driftDistance}px`,
+    '--bamboo-float-distance': `${floatDistance}px`,
+    '--bamboo-duration': `${duration}s`,
+    '--bamboo-delay': `${delay}s`,
+    '--bamboo-depth': String(depth),
   }
 }
 
 /**
  * 获取名册编号文案
- * 用途：弹窗和木签统一显示文牒号或回执号
+ * 用途：弹窗和竹叶统一显示文牒号或回执号
  * 入参：entry 为公开条目
  * 返回值：返回编号文案
  */
@@ -136,7 +135,7 @@ function getEntryDateText(entry: PublicRosterEntry): string {
 }
 
 /**
- * 打开木签弹窗
+ * 打开竹叶弹窗
  * 用途：点击道名后展示该同门公开信息
  * 入参：entry 为要查看的公开条目
  * 返回值：无返回值
@@ -146,7 +145,7 @@ function openEntryDialog(entry: PublicRosterEntry): void {
 }
 
 /**
- * 关闭木签弹窗
+ * 关闭竹叶弹窗
  * 用途：关闭后清空当前条目，避免下次打开时闪旧内容
  * 入参：无
  * 返回值：无返回值
@@ -320,10 +319,6 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <section class="roster-list-poster" data-reveal>
-      <RosterRegistrationPosterStudio :template="rosterRegistrationPosterTemplate" />
-    </section>
-
     <section v-if="isLoading" class="content-card roster-list-state" data-reveal>
       <p class="content-card__eyebrow">加载中</p>
       <h3>公开名录正在整理，请稍候</h3>
@@ -342,41 +337,38 @@ onBeforeUnmount(() => {
       <p>{{ rosterContent.list.emptyDescription }}</p>
     </section>
 
-    <section v-else class="roster-wooden-field" data-reveal>
-      <div class="roster-wooden-field__sky" aria-hidden="true"></div>
-      <div class="roster-wooden-field__head">
-        <p class="content-card__eyebrow">木签江湖墙</p>
-        <h2>木签悬名，江湖浮录</h2>
-        <p>点击木签上的道名，可展开该同门的公开名帖小窗。</p>
+    <section v-else class="roster-bamboo-field" data-reveal>
+      <div class="roster-bamboo-field__sky" aria-hidden="true"></div>
+      <div class="roster-bamboo-field__head">
+        <p class="content-card__eyebrow">竹叶江湖墙</p>
+        <h2>竹叶题名，竹影浮录</h2>
+        <p>点击竹叶上的道名，可展开该同门的公开名帖小窗。</p>
       </div>
 
-      <div class="roster-wooden-field__grid">
+      <div class="roster-bamboo-field__grid">
         <article
-          v-for="item in woodenEntryList"
+          v-for="item in bambooEntryList"
           :key="item.entry.publicSlug"
-          class="roster-wooden-slip"
+          class="roster-bamboo-leaf"
           :style="item.style"
         >
-          <div class="roster-wooden-slip__cord" aria-hidden="true"></div>
-          <div class="roster-wooden-slip__knot" aria-hidden="true"></div>
-          <div class="roster-wooden-slip__body">
-            <span class="roster-wooden-slip__copper" aria-hidden="true"></span>
-            <span class="roster-wooden-slip__grain" aria-hidden="true"></span>
-            <p class="roster-wooden-slip__seal">{{ item.entry.hallLabel }}</p>
+          <div class="roster-bamboo-leaf__stem" aria-hidden="true"></div>
+          <div class="roster-bamboo-leaf__body">
+            <span class="roster-bamboo-leaf__vein" aria-hidden="true"></span>
+            <span class="roster-bamboo-leaf__dew roster-bamboo-leaf__dew--one" aria-hidden="true"></span>
+            <span class="roster-bamboo-leaf__dew roster-bamboo-leaf__dew--two" aria-hidden="true"></span>
+            <p class="roster-bamboo-leaf__seal">{{ item.entry.hallLabel }}</p>
             <button
               type="button"
-              class="roster-wooden-slip__name"
+              class="roster-bamboo-leaf__name"
               :aria-label="`查看${item.entry.daohao}的公开名帖`"
               @click="openEntryDialog(item.entry)"
             >
               {{ item.entry.daohao }}
             </button>
-            <p class="roster-wooden-slip__number">{{ item.entry.entryNo || '牒号待定' }}</p>
-            <p class="roster-wooden-slip__status">{{ item.entry.positionLabel }} · {{ item.entry.statusLabel }}</p>
-            <span class="roster-wooden-slip__corner roster-wooden-slip__corner--left" aria-hidden="true"></span>
-            <span class="roster-wooden-slip__corner roster-wooden-slip__corner--right" aria-hidden="true"></span>
+            <p class="roster-bamboo-leaf__number">{{ item.entry.entryNo || '牒号待定' }}</p>
+            <p class="roster-bamboo-leaf__status">{{ item.entry.positionLabel }} · {{ item.entry.statusLabel }}</p>
           </div>
-          <div class="roster-wooden-slip__tassel" aria-hidden="true"></div>
         </article>
       </div>
     </section>
@@ -452,335 +444,292 @@ onBeforeUnmount(() => {
   isolation: isolate;
 }
 
-.roster-list-toolbar,
-.roster-list-poster {
+.roster-list-toolbar {
   display: grid;
   gap: 18px;
 }
 
-.roster-list-poster {
-  align-items: start;
-}
-
-.roster-wooden-field {
+.roster-bamboo-field {
   position: relative;
   display: grid;
-  gap: 30px;
+  gap: 32px;
   overflow: hidden;
   padding: clamp(26px, 5vw, 52px);
   border-radius: 38px;
-  border: 1px solid rgba(212, 164, 82, 0.24);
+  border: 1px solid rgba(84, 154, 151, 0.26);
   background:
-    radial-gradient(circle at 16% 10%, rgba(212, 164, 82, 0.18), transparent 26%),
-    radial-gradient(circle at 86% 18%, rgba(139, 208, 203, 0.12), transparent 30%),
-    linear-gradient(145deg, rgba(8, 20, 24, 0.97), rgba(28, 18, 11, 0.9) 48%, rgba(6, 16, 22, 0.98));
+    radial-gradient(circle at 14% 10%, rgba(255, 255, 255, 0.62), transparent 28%),
+    radial-gradient(circle at 86% 18%, rgba(91, 188, 181, 0.2), transparent 32%),
+    linear-gradient(145deg, rgba(246, 251, 244, 0.72), rgba(208, 235, 226, 0.82));
   box-shadow: var(--shadow-strong);
+  backdrop-filter: blur(16px);
   isolation: isolate;
 }
-.roster-wooden-field::before,
-.roster-wooden-field::after,
-.roster-wooden-field__sky {
+
+.roster-bamboo-field::before,
+.roster-bamboo-field::after,
+.roster-bamboo-field__sky {
   position: absolute;
   inset: 0;
   pointer-events: none;
   content: '';
 }
 
-.roster-wooden-field::before {
+.roster-bamboo-field::before {
   background:
-    linear-gradient(115deg, transparent 0 18%, rgba(212, 164, 82, 0.08) 19%, transparent 20% 54%, rgba(139, 43, 28, 0.1) 55%, transparent 56%),
-    radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.34), transparent 60%);
-  opacity: 0.96;
+    linear-gradient(115deg, transparent 0 18%, rgba(88, 151, 104, 0.1) 19%, transparent 20% 54%, rgba(84, 154, 151, 0.08) 55%, transparent 56%),
+    radial-gradient(ellipse at 50% 100%, rgba(84, 154, 151, 0.12), transparent 60%);
+  opacity: 0.95;
   z-index: -3;
 }
 
-.roster-wooden-field::after {
+.roster-bamboo-field::after {
   background:
-    radial-gradient(ellipse at 22% 84%, rgba(139, 208, 203, 0.12), transparent 34%),
-    radial-gradient(ellipse at 80% 78%, rgba(212, 164, 82, 0.14), transparent 32%);
-  filter: blur(16px);
-  animation: woodenMistDrift 14s ease-in-out infinite alternate;
+    radial-gradient(ellipse at 22% 84%, rgba(114, 188, 182, 0.18), transparent 34%),
+    radial-gradient(ellipse at 82% 76%, rgba(255, 255, 255, 0.34), transparent 32%);
+  filter: blur(14px);
+  animation: bambooMistDrift 14s ease-in-out infinite alternate;
   z-index: -2;
 }
 
-.roster-wooden-field__sky {
+.roster-bamboo-field__sky {
   background-image:
-    linear-gradient(rgba(212, 164, 82, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(212, 164, 82, 0.05) 1px, transparent 1px),
-    radial-gradient(circle, rgba(244, 239, 226, 0.1) 1px, transparent 1px);
+    linear-gradient(rgba(65, 134, 111, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(65, 134, 111, 0.06) 1px, transparent 1px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
   background-size: 76px 76px, 76px 76px, 34px 34px;
-  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.68), transparent 72%);
-  animation: woodenSkyFlow 24s linear infinite;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.5), transparent 72%);
+  animation: bambooSkyFlow 24s linear infinite;
   z-index: -1;
 }
 
-.roster-wooden-field__head {
+.roster-bamboo-field__head {
   max-width: 760px;
 }
 
-.roster-wooden-field__head h2,
-.roster-wooden-field__head p {
+.roster-bamboo-field__head h2,
+.roster-bamboo-field__head p {
   margin: 0;
 }
 
-.roster-wooden-field__head h2 {
+.roster-bamboo-field__head h2 {
   margin-top: 8px;
+  color: #173d42;
   font-size: clamp(1.9rem, 4vw, 3.2rem);
   line-height: 1.16;
 }
 
-.roster-wooden-field__head p:last-child {
+.roster-bamboo-field__head p:last-child {
   margin-top: 10px;
   color: var(--color-text-soft);
   line-height: 1.78;
 }
 
-.roster-wooden-field__grid {
+.roster-bamboo-field__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(26px, 4vw, 48px);
+  gap: clamp(24px, 4vw, 46px);
   align-items: start;
   padding: 14px 0 20px;
 }
 
-.roster-wooden-slip {
+.roster-bamboo-leaf {
   position: relative;
-  z-index: var(--wooden-depth);
+  z-index: var(--bamboo-depth);
   display: grid;
   justify-items: center;
-  width: min(100%, var(--wooden-width));
-  min-height: calc(var(--wooden-height) + 94px);
+  width: min(100%, var(--bamboo-width));
+  min-height: calc(var(--bamboo-height) + 42px);
   margin-inline: auto;
-  transform: translateX(var(--wooden-offset)) rotate(var(--wooden-rotate));
+  transform: translateX(var(--bamboo-offset)) rotate(var(--bamboo-rotate));
   animation:
-    woodenSlipEnter 0.72s ease-out both,
-    woodenSlipFloat var(--wooden-duration) ease-in-out var(--wooden-delay) infinite alternate;
+    bambooLeafEnter 0.72s ease-out both,
+    bambooLeafFloat var(--bamboo-duration) ease-in-out var(--bamboo-delay) infinite alternate;
   transition:
     transform var(--transition-base),
     filter var(--transition-base);
 }
 
-.roster-wooden-slip:hover,
-.roster-wooden-slip:focus-within {
-  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.34));
-  transform: translateX(var(--wooden-offset)) translateY(-6px) rotate(calc(var(--wooden-rotate) * 0.72));
+.roster-bamboo-leaf:hover,
+.roster-bamboo-leaf:focus-within {
+  filter: drop-shadow(0 22px 28px rgba(63, 140, 126, 0.24));
+  transform: translateX(var(--bamboo-offset)) translateY(-8px) rotate(calc(var(--bamboo-rotate) * 0.72));
 }
 
-.roster-wooden-slip__cord {
-  width: 5px;
-  height: 42px;
+.roster-bamboo-leaf__stem {
+  width: 8px;
+  height: 46px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(116, 24, 20, 0.98), rgba(190, 62, 36, 0.92) 48%, rgba(212, 164, 82, 0.86));
-  box-shadow: 0 0 18px rgba(190, 62, 36, 0.24);
+  background: linear-gradient(180deg, rgba(77, 133, 82, 0.96), rgba(44, 116, 87, 0.9));
+  box-shadow: 0 0 18px rgba(78, 157, 133, 0.2);
 }
 
-.roster-wooden-slip__knot {
-  width: 42px;
-  height: 16px;
-  margin-top: -4px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 28% 50%, rgba(244, 239, 226, 0.26), transparent 24%),
-    linear-gradient(135deg, rgba(128, 36, 26, 0.98), rgba(212, 164, 82, 0.9));
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.26);
-}
-
-.roster-wooden-slip__body {
+.roster-bamboo-leaf__body {
   position: relative;
   display: grid;
   justify-items: center;
-  width: var(--wooden-width);
-  min-height: var(--wooden-height);
-  padding: 48px 18px 28px;
+  width: var(--bamboo-width);
+  min-height: var(--bamboo-height);
+  padding: 42px 18px 28px;
   overflow: hidden;
-  border: 1px solid rgba(212, 164, 82, 0.42);
-  border-radius: 22px 22px 34px 34px;
+  border: 1px solid rgba(67, 132, 107, 0.32);
+  border-radius: 72% 18% 72% 22% / 48% 20% 52% 20%;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent 18% 82%, rgba(0, 0, 0, 0.18)),
-    repeating-linear-gradient(96deg, rgba(255, 224, 156, 0.08) 0 2px, transparent 2px 13px),
-    linear-gradient(145deg, #6f3f22 0%, #9b6335 28%, #5c321d 54%, #2d1710 100%);
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.72), transparent 18%),
+    linear-gradient(118deg, rgba(229, 252, 231, 0.96), rgba(129, 205, 158, 0.92) 44%, rgba(46, 136, 101, 0.94) 100%);
   box-shadow:
-    inset 0 0 24px rgba(255, 226, 164, 0.22),
-    inset 0 -28px 36px rgba(20, 8, 4, 0.42),
-    0 24px 46px rgba(0, 0, 0, 0.34),
-    0 0 32px rgba(212, 164, 82, 0.1);
+    inset 0 0 28px rgba(255, 255, 255, 0.34),
+    inset 0 -24px 36px rgba(38, 108, 83, 0.22),
+    0 24px 46px rgba(63, 140, 126, 0.2),
+    0 0 32px rgba(255, 255, 255, 0.18);
+  transform-origin: 50% 0;
 }
 
-.roster-wooden-slip__body::before,
-.roster-wooden-slip__body::after {
+.roster-bamboo-leaf__body::before,
+.roster-bamboo-leaf__body::after {
   position: absolute;
   content: '';
   pointer-events: none;
 }
 
-.roster-wooden-slip__body::before {
-  inset: 12px;
-  border: 1px solid rgba(23, 10, 5, 0.36);
-  border-radius: 16px 16px 28px 28px;
-  box-shadow: inset 0 0 0 1px rgba(212, 164, 82, 0.18);
+.roster-bamboo-leaf__body::before {
+  inset: 24px 50% 18px auto;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(24, 93, 73, 0.18), rgba(13, 76, 66, 0.58), rgba(255, 255, 255, 0.14));
+  transform: rotate(8deg);
 }
 
-.roster-wooden-slip__body::after {
+.roster-bamboo-leaf__body::after {
   inset: 0 auto 0 -70%;
   width: 54%;
-  background: linear-gradient(90deg, transparent, rgba(255, 236, 186, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
   transform: skewX(-18deg);
   transition: left 0.72s ease;
 }
 
-.roster-wooden-slip:hover .roster-wooden-slip__body::after,
-.roster-wooden-slip:focus-within .roster-wooden-slip__body::after {
+.roster-bamboo-leaf:hover .roster-bamboo-leaf__body::after,
+.roster-bamboo-leaf:focus-within .roster-bamboo-leaf__body::after {
   left: 118%;
 }
 
-.roster-wooden-slip__copper {
+.roster-bamboo-leaf__vein {
   position: absolute;
-  top: 16px;
-  left: 50%;
-  width: 42px;
-  height: 22px;
+  inset: 30px 18px;
+  border-radius: inherit;
+  background:
+    linear-gradient(26deg, transparent 48%, rgba(255, 255, 255, 0.22) 49%, transparent 51%),
+    linear-gradient(152deg, transparent 48%, rgba(20, 96, 78, 0.16) 49%, transparent 51%),
+    repeating-linear-gradient(112deg, transparent 0 18px, rgba(255, 255, 255, 0.16) 18px 19px, transparent 19px 34px);
+  opacity: 0.7;
+  animation: bambooLeafVeinGlow calc(var(--bamboo-duration) * 0.8) ease-in-out var(--bamboo-delay) infinite alternate;
+}
+
+.roster-bamboo-leaf__dew {
+  position: absolute;
+  width: 14px;
+  height: 14px;
   border-radius: 999px;
-  background:
-    radial-gradient(circle at 32% 32%, rgba(255, 241, 192, 0.75), transparent 24%),
-    linear-gradient(135deg, rgba(212, 164, 82, 0.98), rgba(96, 49, 20, 0.96));
-  box-shadow:
-    inset 0 -3px 8px rgba(59, 26, 9, 0.42),
-    0 6px 12px rgba(0, 0, 0, 0.28);
-  transform: translateX(-50%);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.92), rgba(172, 230, 219, 0.3) 62%, transparent 70%);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.36);
 }
 
-.roster-wooden-slip__grain {
-  position: absolute;
-  inset: 24px 14px;
-  border-radius: 18px 18px 28px 28px;
-  background:
-    radial-gradient(ellipse at 30% 24%, transparent 0 18px, rgba(45, 20, 8, 0.18) 19px 21px, transparent 22px),
-    radial-gradient(ellipse at 70% 62%, transparent 0 24px, rgba(255, 223, 156, 0.12) 25px 27px, transparent 28px);
-  opacity: 0.76;
-  pointer-events: none;
+.roster-bamboo-leaf__dew--one {
+  top: 34px;
+  right: 34px;
 }
 
-.roster-wooden-slip__seal,
-.roster-wooden-slip__number,
-.roster-wooden-slip__status {
+.roster-bamboo-leaf__dew--two {
+  right: 56px;
+  bottom: 44px;
+  width: 9px;
+  height: 9px;
+}
+
+.roster-bamboo-leaf__seal,
+.roster-bamboo-leaf__number,
+.roster-bamboo-leaf__status {
   position: relative;
   z-index: 1;
   margin: 0;
   text-align: center;
 }
 
-.roster-wooden-slip__seal {
+.roster-bamboo-leaf__seal {
   align-self: start;
   padding: 4px 9px;
-  border: 1px solid rgba(122, 24, 18, 0.36);
+  border: 1px solid rgba(24, 93, 73, 0.2);
   border-radius: 999px;
-  background: rgba(68, 20, 12, 0.22);
-  color: rgba(255, 222, 160, 0.92);
+  background: rgba(255, 255, 255, 0.34);
+  color: rgba(21, 84, 72, 0.86);
   font-size: 0.76rem;
   letter-spacing: 0.14em;
 }
 
-.roster-wooden-slip__name {
+.roster-bamboo-leaf__name {
   position: relative;
   z-index: 1;
   margin: 22px 0 12px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: rgba(255, 225, 156, 0.96);
+  color: rgba(15, 65, 57, 0.96);
   font-family: inherit;
   font-size: clamp(1.52rem, 3vw, 2.06rem);
   font-weight: 900;
   line-height: 1.18;
   text-align: center;
   text-shadow:
-    0 2px 0 rgba(38, 12, 4, 0.88),
-    0 0 16px rgba(212, 164, 82, 0.24);
+    0 1px 0 rgba(255, 255, 255, 0.78),
+    0 0 18px rgba(255, 255, 255, 0.36);
   cursor: pointer;
-  writing-mode: horizontal-tb;
 }
 
-.roster-wooden-slip__name::after {
+.roster-bamboo-leaf__name::after {
   position: absolute;
   left: 50%;
   bottom: -8px;
   width: 0;
   height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(255, 226, 164, 0.94), transparent);
+  background: linear-gradient(90deg, transparent, rgba(23, 105, 88, 0.72), transparent);
   content: '';
   transform: translateX(-50%);
   transition: width var(--transition-base);
 }
 
-.roster-wooden-slip__name:hover,
-.roster-wooden-slip__name:focus-visible {
-  color: rgba(255, 244, 206, 0.98);
+.roster-bamboo-leaf__name:hover,
+.roster-bamboo-leaf__name:focus-visible {
+  color: rgba(10, 78, 69, 0.98);
   outline: none;
-  text-shadow:
-    0 2px 0 rgba(38, 12, 4, 0.9),
-    0 0 22px rgba(255, 216, 134, 0.48);
 }
 
-.roster-wooden-slip__name:hover::after,
-.roster-wooden-slip__name:focus-visible::after {
+.roster-bamboo-leaf__name:hover::after,
+.roster-bamboo-leaf__name:focus-visible::after {
   width: 110%;
 }
 
-.roster-wooden-slip__number {
+.roster-bamboo-leaf__number {
   padding: 6px 10px;
   border-radius: 12px;
-  background: rgba(20, 8, 4, 0.22);
-  color: rgba(244, 239, 226, 0.9);
+  background: rgba(255, 255, 255, 0.34);
+  color: rgba(20, 74, 66, 0.88);
   font-size: 0.86rem;
   font-weight: 700;
 }
 
-.roster-wooden-slip__status {
+.roster-bamboo-leaf__status {
   margin-top: 10px;
   padding: 7px 10px;
-  border: 1px solid rgba(212, 164, 82, 0.18);
+  border: 1px solid rgba(24, 93, 73, 0.16);
   border-radius: 999px;
-  background: rgba(255, 238, 194, 0.08);
-  color: rgba(244, 239, 226, 0.74);
+  background: rgba(255, 255, 255, 0.24);
+  color: rgba(21, 77, 69, 0.72);
   font-size: 0.78rem;
   line-height: 1.45;
 }
 
-.roster-wooden-slip__corner {
-  position: absolute;
-  bottom: 14px;
-  width: 22px;
-  height: 22px;
-  border-bottom: 2px solid rgba(212, 164, 82, 0.34);
-  pointer-events: none;
-}
-
-.roster-wooden-slip__corner--left {
-  left: 14px;
-  border-left: 2px solid rgba(212, 164, 82, 0.34);
-  border-radius: 0 0 0 10px;
-}
-
-.roster-wooden-slip__corner--right {
-  right: 14px;
-  border-right: 2px solid rgba(212, 164, 82, 0.34);
-  border-radius: 0 0 10px;
-}
-
-.roster-wooden-slip__tassel {
-  width: 34px;
-  height: 62px;
-  border-radius: 0 0 999px 999px;
-  background:
-    repeating-linear-gradient(90deg, rgba(116, 24, 20, 0.95) 0 3px, rgba(212, 164, 82, 0.9) 3px 5px),
-    rgba(116, 24, 20, 0.95);
-  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.26));
-  transform-origin: top center;
-  animation: woodenTasselSwing calc(var(--wooden-duration) * 0.7) ease-in-out var(--wooden-delay) infinite alternate;
-}
-
-@keyframes woodenSlipEnter {
+@keyframes bambooLeafEnter {
   from {
     opacity: 0;
     translate: 0 18px;
@@ -794,27 +743,31 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes woodenSlipFloat {
+@keyframes bambooLeafFloat {
   from {
-    translate: calc(var(--wooden-drift-distance) * -0.5) calc(var(--wooden-float-distance) * -0.35);
+    translate: calc(var(--bamboo-drift-distance) * -0.5) calc(var(--bamboo-float-distance) * -0.35);
+    rotate: -1.5deg;
   }
 
   to {
-    translate: var(--wooden-drift-distance) var(--wooden-float-distance);
+    translate: var(--bamboo-drift-distance) var(--bamboo-float-distance);
+    rotate: 1.8deg;
   }
 }
 
-@keyframes woodenTasselSwing {
+@keyframes bambooLeafVeinGlow {
   from {
-    rotate: -3deg;
+    opacity: 0.45;
+    transform: translateY(-2px);
   }
 
   to {
-    rotate: 4deg;
+    opacity: 0.9;
+    transform: translateY(3px);
   }
 }
 
-@keyframes woodenMistDrift {
+@keyframes bambooMistDrift {
   from {
     transform: translate3d(-12px, 0, 0) scale(1);
   }
@@ -824,7 +777,7 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes woodenSkyFlow {
+@keyframes bambooSkyFlow {
   from {
     background-position: 0 0, 0 0, 0 0;
   }
@@ -847,9 +800,9 @@ onBeforeUnmount(() => {
   inset: 0;
   border: 0;
   background:
-    radial-gradient(circle at 50% 36%, rgba(139, 208, 203, 0.12), transparent 34%),
-    rgba(2, 10, 15, 0.78);
-  backdrop-filter: blur(10px);
+    radial-gradient(circle at 50% 36%, rgba(139, 208, 203, 0.22), transparent 34%),
+    rgba(229, 244, 239, 0.72);
+  backdrop-filter: blur(12px) saturate(1.08);
   cursor: pointer;
 }
 
@@ -862,11 +815,11 @@ onBeforeUnmount(() => {
   overflow: auto;
   padding: clamp(22px, 4vw, 34px);
   border-radius: 32px;
-  border: 1px solid rgba(216, 185, 114, 0.32);
+  border: 1px solid rgba(84, 154, 151, 0.28);
   background:
-    radial-gradient(circle at top left, rgba(139, 208, 203, 0.15), transparent 34%),
-    linear-gradient(160deg, rgba(8, 30, 42, 0.97), rgba(5, 18, 28, 0.98));
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+    radial-gradient(circle at top left, rgba(139, 208, 203, 0.28), transparent 34%),
+    linear-gradient(160deg, rgba(249, 253, 250, 0.96), rgba(226, 245, 239, 0.98));
+  box-shadow: 0 30px 90px rgba(42, 101, 101, 0.2);
 }
 
 .roster-entry-dialog__close {
@@ -876,9 +829,9 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.24);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(244, 239, 226, 0.92);
+  border: 1px solid rgba(84, 154, 151, 0.26);
+  background: rgba(255, 255, 255, 0.64);
+  color: #173d42;
   font-size: 1.5rem;
   cursor: pointer;
 }
@@ -890,14 +843,14 @@ onBeforeUnmount(() => {
 }
 
 .roster-entry-dialog__title p {
-  color: var(--color-cyan);
+  color: #347d7d;
   letter-spacing: 0.18em;
   font-size: 0.82rem;
 }
 
 .roster-entry-dialog__title h2 {
   margin-top: 8px;
-  color: rgba(244, 239, 226, 0.98);
+  color: #173d42;
   font-size: clamp(2rem, 6vw, 3.5rem);
   line-height: 1.08;
 }
@@ -905,7 +858,7 @@ onBeforeUnmount(() => {
 .roster-entry-dialog__title span {
   display: block;
   margin-top: 10px;
-  color: var(--color-gold-strong);
+  color: #8c7130;
 }
 
 .roster-entry-dialog__meta {
@@ -919,15 +872,15 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 14px;
   border-radius: 18px;
-  border: 1px solid rgba(216, 185, 114, 0.13);
-  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(84, 154, 151, 0.18);
+  background: rgba(255, 255, 255, 0.58);
 }
 
 .roster-entry-dialog__meta strong,
 .roster-entry-dialog__sections p {
   display: block;
   margin: 0 0 6px;
-  color: var(--color-cyan);
+  color: #347d7d;
   font-size: 0.82rem;
   letter-spacing: 0.12em;
 }
@@ -954,7 +907,7 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1180px) {
-  .roster-wooden-field__grid {
+  .roster-bamboo-field__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -980,54 +933,53 @@ onBeforeUnmount(() => {
     grid-column: 1 / -1;
   }
 
-  .roster-wooden-field {
+  .roster-bamboo-field {
     padding: 20px 14px;
     border-radius: 26px;
   }
 
-  .roster-wooden-field__grid {
+  .roster-bamboo-field__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px 10px;
   }
 
-  .roster-wooden-slip {
+  .roster-bamboo-leaf {
     width: min(100%, 156px);
     min-height: 258px;
-    transform: rotate(calc(var(--wooden-rotate) * 0.45));
-    animation-duration: calc(var(--wooden-duration) * 1.12);
+    transform: rotate(calc(var(--bamboo-rotate) * 0.45));
+    animation-duration: calc(var(--bamboo-duration) * 1.12);
   }
 
-  .roster-wooden-slip__cord {
-    height: 32px;
+  .roster-bamboo-leaf__stem {
+    height: 30px;
   }
 
-  .roster-wooden-slip__body {
+  .roster-bamboo-leaf__body {
     width: 100%;
     min-height: 192px;
     padding: 42px 10px 20px;
-    border-radius: 18px 18px 28px 28px;
+    border-radius: 70% 18% 72% 22% / 48% 20% 52% 20%;
   }
 
-  .roster-wooden-slip__copper {
-    top: 14px;
-    width: 34px;
-    height: 18px;
-  }
-
-  .roster-wooden-slip__name {
+  .roster-bamboo-leaf__name {
     margin-top: 18px;
     font-size: 1.18rem;
   }
 
-  .roster-wooden-slip__seal,
-  .roster-wooden-slip__number,
-  .roster-wooden-slip__status {
+  .roster-bamboo-leaf__seal,
+  .roster-bamboo-leaf__number,
+  .roster-bamboo-leaf__status {
     font-size: 0.68rem;
   }
 
-  .roster-wooden-slip__tassel {
-    width: 28px;
-    height: 44px;
+  .roster-bamboo-leaf__dew--one {
+    top: 28px;
+    right: 24px;
+  }
+
+  .roster-bamboo-leaf__dew--two {
+    right: 38px;
+    bottom: 36px;
   }
 
   .roster-list-toolbar__chips {

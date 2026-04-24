@@ -130,11 +130,11 @@ function handleConfirmPlay(): void {
 
 .music-playback-overlay__backdrop {
   background:
-    radial-gradient(circle at 50% 24%, rgba(139, 208, 203, 0.12), transparent 28%),
-    radial-gradient(circle at 18% 76%, rgba(216, 185, 114, 0.12), transparent 26%),
-    linear-gradient(180deg, rgba(3, 15, 24, 0.9), rgba(4, 18, 30, 0.96)),
-    rgba(2, 11, 19, 0.94);
-  backdrop-filter: blur(18px);
+    radial-gradient(circle at 50% 24%, rgba(139, 208, 203, 0.24), transparent 30%),
+    radial-gradient(circle at 18% 76%, rgba(255, 255, 255, 0.36), transparent 28%),
+    linear-gradient(180deg, rgba(244, 252, 249, 0.82), rgba(221, 242, 237, 0.9)),
+    rgba(237, 248, 244, 0.92);
+  backdrop-filter: blur(18px) saturate(1.12);
 }
 
 .music-playback-overlay__mist {
@@ -148,7 +148,7 @@ function handleConfirmPlay(): void {
   inset: auto auto 12% 6%;
   width: min(420px, 42vw);
   height: min(220px, 24vw);
-  background: rgba(139, 208, 203, 0.18);
+  background: rgba(106, 190, 184, 0.24);
   animation: music-playback-overlay-mist-left 9.2s ease-in-out infinite;
 }
 
@@ -156,7 +156,7 @@ function handleConfirmPlay(): void {
   inset: 8% 8% auto auto;
   width: min(420px, 38vw);
   height: min(240px, 22vw);
-  background: rgba(216, 185, 114, 0.16);
+  background: rgba(255, 255, 255, 0.5);
   animation: music-playback-overlay-mist-right 10.6s ease-in-out infinite;
 }
 
@@ -165,8 +165,8 @@ function handleConfirmPlay(): void {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: rgba(244, 239, 226, 0.74);
-  box-shadow: 0 0 22px rgba(244, 239, 226, 0.24);
+  background: rgba(84, 154, 151, 0.42);
+  box-shadow: 0 0 22px rgba(84, 154, 151, 0.22);
 }
 
 .music-playback-overlay__spark--one {
@@ -186,16 +186,17 @@ function handleConfirmPlay(): void {
   gap: 16px;
   width: min(680px, 100%);
   padding: 42px 40px 36px;
-  border: 1px solid rgba(216, 185, 114, 0.26);
+  border: 1px solid rgba(84, 154, 151, 0.28);
   border-radius: 32px;
   background:
-    linear-gradient(180deg, rgba(7, 26, 38, 0.9), rgba(5, 18, 28, 0.94)),
-    rgba(4, 16, 26, 0.94);
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.7), transparent 36%),
+    linear-gradient(180deg, rgba(249, 253, 250, 0.9), rgba(225, 244, 239, 0.94)),
+    rgba(240, 249, 246, 0.9);
   box-shadow:
-    0 28px 70px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 28px 70px rgba(42, 101, 101, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
   text-align: center;
-  color: #f4efe2;
+  color: #173d42;
   overflow: hidden;
 }
 
@@ -209,14 +210,14 @@ function handleConfirmPlay(): void {
 }
 
 .music-playback-overlay__panel::before {
-  border: 1px solid rgba(216, 185, 114, 0.08);
+  border: 1px solid rgba(84, 154, 151, 0.16);
 }
 
 .music-playback-overlay__panel::after {
   inset: auto 48px 0;
   height: 1px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(216, 185, 114, 0), rgba(216, 185, 114, 0.48), rgba(216, 185, 114, 0));
+  background: linear-gradient(90deg, rgba(84, 154, 151, 0), rgba(84, 154, 151, 0.46), rgba(84, 154, 151, 0));
   opacity: 0.58;
 }
 
@@ -247,40 +248,41 @@ function handleConfirmPlay(): void {
   place-items: center;
   border-radius: 999px;
   background:
-    linear-gradient(180deg, rgba(128, 19, 29, 0.96), rgba(70, 9, 15, 0.98)),
-    rgba(70, 9, 15, 0.96);
-  color: rgba(243, 224, 170, 0.96);
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.7), transparent 34%),
+    linear-gradient(160deg, rgba(139, 208, 203, 0.96), rgba(54, 142, 141, 0.98)),
+    rgba(84, 154, 151, 0.96);
+  color: #173d42;
   font-size: 1.7rem;
   letter-spacing: 0.1em;
   box-shadow:
-    inset 0 0 0 1px rgba(241, 217, 160, 0.14),
-    0 18px 38px rgba(0, 0, 0, 0.28);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    0 18px 38px rgba(42, 101, 101, 0.2);
 }
 
 .music-playback-overlay__seal-ring {
   position: absolute;
   width: 104px;
   height: 104px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
+  border: 1px solid rgba(84, 154, 151, 0.24);
   border-radius: 999px;
   animation: music-playback-overlay-ring 3.8s ease-in-out infinite;
 }
 
 .music-playback-overlay__eyebrow {
-  color: #8bd0cb;
+  color: #347d7d;
   font-size: 0.88rem;
   letter-spacing: 0.28em;
 }
 
 .music-playback-overlay__title {
-  color: #f3e3bc;
+  color: #173d42;
   font-size: clamp(2rem, 5vw, 3.2rem);
   line-height: 1.16;
-  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  text-shadow: 0 8px 24px rgba(84, 154, 151, 0.16);
 }
 
 .music-playback-overlay__track {
-  color: rgba(216, 185, 114, 0.92);
+  color: #8c7130;
   font-size: 0.98rem;
   letter-spacing: 0.12em;
 }
@@ -288,7 +290,7 @@ function handleConfirmPlay(): void {
 .music-playback-overlay__description {
   max-width: 34rem;
   margin-inline: auto;
-  color: rgba(244, 239, 226, 0.82);
+  color: rgba(35, 83, 86, 0.82);
   font-size: 1rem;
   line-height: 1.9;
 }
@@ -303,15 +305,15 @@ function handleConfirmPlay(): void {
 }
 
 .music-playback-overlay__resume {
-  border: 1px solid rgba(216, 185, 114, 0.2);
-  background: rgba(216, 185, 114, 0.08);
-  color: rgba(243, 224, 170, 0.94);
+  border: 1px solid rgba(84, 154, 151, 0.22);
+  background: rgba(230, 247, 242, 0.72);
+  color: rgba(35, 83, 86, 0.86);
 }
 
 .music-playback-overlay__error {
-  border: 1px solid rgba(212, 154, 114, 0.28);
-  background: rgba(130, 44, 27, 0.2);
-  color: #f2d2be;
+  border: 1px solid rgba(183, 99, 70, 0.28);
+  background: rgba(255, 239, 230, 0.76);
+  color: #7a3525;
 }
 
 .music-playback-overlay__action {
@@ -321,8 +323,8 @@ function handleConfirmPlay(): void {
   padding: 16px 24px;
   border-radius: 999px;
   color: #102734;
-  background: linear-gradient(135deg, rgba(216, 185, 114, 0.96), rgba(174, 134, 60, 0.98));
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(135deg, rgba(230, 197, 116, 0.96), rgba(187, 145, 67, 0.98));
+  box-shadow: 0 18px 36px rgba(135, 107, 49, 0.2);
 }
 
 .music-playback-overlay__action strong {
@@ -337,13 +339,13 @@ function handleConfirmPlay(): void {
 .music-playback-overlay__action-ring {
   position: absolute;
   inset: -6px;
-  border: 1px solid rgba(216, 185, 114, 0.24);
+  border: 1px solid rgba(183, 145, 67, 0.3);
   border-radius: 999px;
   animation: music-playback-overlay-action-ring 2.8s ease-in-out infinite;
 }
 
 .music-playback-overlay__foot {
-  color: rgba(244, 239, 226, 0.56);
+  color: rgba(35, 83, 86, 0.58);
   font-size: 0.9rem;
   letter-spacing: 0.08em;
 }

@@ -283,7 +283,7 @@ const commentText = computed<string>(() => {
     radial-gradient(circle at 86% 14%, rgba(216, 185, 114, 0.2), transparent 24%),
     linear-gradient(180deg, #16313f 0%, #0d202b 44%, #081218 100%);
   box-shadow: 0 28px 72px rgba(0, 0, 0, 0.34);
-  color: #f4efe2;
+  color: #173d42;
 }
 
 .roster-poster-card--approved {
@@ -470,7 +470,7 @@ const commentText = computed<string>(() => {
 }
 
 .roster-poster-card__seal small {
-  color: rgba(244, 239, 226, 0.68);
+  color: rgba(35, 83, 86, 0.68);
   font-size: 12px;
   letter-spacing: 0.12em;
 }
@@ -564,14 +564,14 @@ const commentText = computed<string>(() => {
   padding: 20px 22px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   background:
-    linear-gradient(180deg, rgba(8, 29, 40, 0.84), rgba(6, 20, 28, 0.94)),
-    rgba(7, 27, 37, 0.72);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.9), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.72);
 }
 
 .roster-poster-card__meta-card strong {
   font-size: 24px;
   line-height: 1.45;
-  color: rgba(244, 239, 226, 0.96);
+  color: rgba(35, 83, 86, 0.96);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -585,12 +585,12 @@ const commentText = computed<string>(() => {
   gap: 12px;
   padding: 20px 22px;
   border: 1px solid rgba(139, 208, 203, 0.14);
-  background: rgba(7, 27, 37, 0.5);
+  background: rgba(239, 249, 246, 0.72);
 }
 
 .roster-poster-card__info-card p:last-child {
   margin: 0;
-  color: rgba(244, 239, 226, 0.8);
+  color: rgba(35, 83, 86, 0.82);
   font-size: 16px;
   line-height: 1.86;
   white-space: pre-wrap;
@@ -618,12 +618,12 @@ const commentText = computed<string>(() => {
   padding: 20px 22px;
   border: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(11, 35, 47, 0.88), rgba(7, 21, 29, 0.94)),
-    rgba(8, 28, 39, 0.74);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.92), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.74);
 }
 
 .roster-poster-card__comment {
-  color: rgba(244, 239, 226, 0.8);
+  color: rgba(35, 83, 86, 0.82);
   font-size: 16px;
   line-height: 1.86;
   white-space: pre-wrap;
@@ -653,7 +653,7 @@ const commentText = computed<string>(() => {
   align-content: center;
   padding: 18px;
   border: 1px solid rgba(216, 185, 114, 0.22);
-  background: rgba(8, 28, 39, 0.78);
+  background: rgba(239, 249, 246, 0.84);
   backdrop-filter: blur(12px);
 }
 
@@ -682,9 +682,9 @@ const commentText = computed<string>(() => {
   place-items: center;
   border-radius: 14px;
   background:
-    linear-gradient(135deg, rgba(17, 50, 68, 0.92), rgba(8, 28, 39, 0.98)),
-    #113244;
-  color: #f4efe2;
+    linear-gradient(135deg, rgba(232, 247, 241, 0.95), rgba(202, 231, 226, 0.98)),
+    #d8eee8;
+  color: #173d42;
   font-size: 34px;
   letter-spacing: 0.24em;
 }
@@ -701,7 +701,7 @@ const commentText = computed<string>(() => {
 }
 
 .roster-poster-card__qr-copy span {
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 14px;
   line-height: 1.78;
   overflow-wrap: anywhere;

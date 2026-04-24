@@ -1272,7 +1272,7 @@ onBeforeUnmount(() => {
 }
 
 .assessment-guide-card p:last-child {
-  color: rgba(244, 239, 226, 0.74);
+  color: rgba(35, 83, 86, 0.74);
   line-height: 1.84;
 }
 
@@ -1290,7 +1290,7 @@ onBeforeUnmount(() => {
 
 .assessment-ready__lead {
   margin: 0;
-  color: rgba(244, 239, 226, 0.76);
+  color: rgba(35, 83, 86, 0.76);
   line-height: 1.85;
 }
 
@@ -1308,7 +1308,7 @@ onBeforeUnmount(() => {
 
 .assessment-ready__label,
 .assessment-ready__helper {
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
 }
 
 .assessment-ready__input {
@@ -1318,7 +1318,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(216, 185, 114, 0.18);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.04);
-  color: #f4efe2;
+  color: #173d42;
 }
 
 .assessment-ready__helper,
@@ -1326,7 +1326,7 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.8;
-  color: rgba(244, 239, 226, 0.66);
+  color: rgba(35, 83, 86, 0.66);
 }
 
 .assessment-ready__intro-list,
@@ -1432,7 +1432,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(216, 185, 114, 0.12);
   border-radius: 18px;
   background: rgba(5, 19, 28, 0.4);
-  color: rgba(244, 239, 226, 0.74);
+  color: rgba(35, 83, 86, 0.74);
   font-size: 0.92rem;
   line-height: 1.74;
   overflow-wrap: anywhere;
@@ -1460,7 +1460,7 @@ onBeforeUnmount(() => {
 
 .assessment-exam__legend-chip--pending {
   background: rgba(255, 255, 255, 0.06);
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
 }
 
 .assessment-ready__intro-list {
@@ -1516,11 +1516,11 @@ onBeforeUnmount(() => {
 
 .assessment-ready__score-card span,
 .assessment-ready__chapter-card span {
-  color: rgba(244, 239, 226, 0.78);
+  color: rgba(35, 83, 86, 0.78);
 }
 
 .assessment-ready__score-card small {
-  color: rgba(244, 239, 226, 0.6);
+  color: rgba(35, 83, 86, 0.6);
   line-height: 1.7;
 }
 
@@ -1688,7 +1688,7 @@ onBeforeUnmount(() => {
 }
 
 .assessment-exam__section-pill span {
-  color: rgba(244, 239, 226, 0.68);
+  color: rgba(35, 83, 86, 0.68);
   font-size: 0.88rem;
 }
 
@@ -1696,7 +1696,7 @@ onBeforeUnmount(() => {
   border-color: rgba(216, 185, 114, 0.34);
   background:
     linear-gradient(135deg, rgba(216, 185, 114, 0.12), rgba(9, 34, 46, 0.86)),
-    rgba(8, 25, 35, 0.86);
+    rgba(239, 249, 246, 0.78);
 }
 
 .assessment-exam__section-pill--started {
@@ -1717,7 +1717,7 @@ onBeforeUnmount(() => {
 
 .assessment-exam__chapter-card p {
   margin: 0;
-  color: rgba(244, 239, 226, 0.76);
+  color: rgba(35, 83, 86, 0.76);
   line-height: 1.82;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1737,8 +1737,8 @@ onBeforeUnmount(() => {
   min-height: 48px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  background: rgba(4, 17, 24, 0.6);
-  color: rgba(244, 239, 226, 0.76);
+  background: rgba(239, 249, 246, 0.72);
+  color: rgba(35, 83, 86, 0.76);
   font-size: 0.94rem;
   font-weight: 600;
   cursor: pointer;
@@ -1753,8 +1753,8 @@ onBeforeUnmount(() => {
 .assessment-exam__order-button--active {
   border-color: rgba(216, 185, 114, 0.42);
   background:
-    linear-gradient(180deg, rgba(216, 185, 114, 0.18), rgba(34, 25, 7, 0.76)),
-    rgba(20, 18, 10, 0.88);
+    linear-gradient(180deg, rgba(216, 185, 114, 0.18), rgba(238, 225, 184, 0.78)),
+    rgba(247, 241, 219, 0.88);
   color: rgba(248, 237, 204, 0.98);
   box-shadow: 0 14px 26px rgba(216, 185, 114, 0.14);
 }
@@ -1762,15 +1762,15 @@ onBeforeUnmount(() => {
 .assessment-exam__order-button--answered {
   border-color: rgba(139, 208, 203, 0.28);
   background:
-    linear-gradient(180deg, rgba(139, 208, 203, 0.16), rgba(7, 31, 36, 0.86)),
-    rgba(7, 29, 35, 0.88);
+    linear-gradient(180deg, rgba(139, 208, 203, 0.16), rgba(210, 238, 233, 0.86)),
+    rgba(224, 243, 237, 0.88);
   color: rgba(209, 241, 238, 0.96);
 }
 
 .assessment-exam__order-button--pending {
   border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(4, 17, 24, 0.6);
-  color: rgba(244, 239, 226, 0.7);
+  background: rgba(239, 249, 246, 0.72);
+  color: rgba(35, 83, 86, 0.72);
 }
 
 .assessment-exam__resume-card {
@@ -1784,7 +1784,7 @@ onBeforeUnmount(() => {
 }
 
 .assessment-exam__resume-lead {
-  color: rgba(244, 239, 226, 0.76);
+  color: rgba(35, 83, 86, 0.76);
   line-height: 1.82;
 }
 
@@ -1848,7 +1848,7 @@ onBeforeUnmount(() => {
   border-radius: 32px;
   background:
     linear-gradient(180deg, rgba(9, 34, 44, 0.96), rgba(5, 19, 28, 0.98)),
-    rgba(8, 25, 35, 0.94);
+    rgba(239, 249, 246, 0.9);
   box-shadow: var(--shadow-strong);
 }
 
@@ -1915,7 +1915,7 @@ onBeforeUnmount(() => {
 .assessment-result__lead,
 .assessment-result__retake-note {
   margin: 12px 0 0;
-  color: rgba(244, 239, 226, 0.74);
+  color: rgba(35, 83, 86, 0.74);
   line-height: 1.82;
 }
 
@@ -1939,7 +1939,7 @@ onBeforeUnmount(() => {
 
 .assessment-result__stat-card span,
 .assessment-result__section-card span {
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
 }
 
 .assessment-result__section-summary {
@@ -1980,7 +1980,7 @@ onBeforeUnmount(() => {
 }
 
 .assessment-result__section-pill span {
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 0.86rem;
 }
 
@@ -2005,7 +2005,7 @@ onBeforeUnmount(() => {
 }
 
 .assessment-result__wrong-count span {
-  color: rgba(244, 239, 226, 0.68);
+  color: rgba(35, 83, 86, 0.68);
   font-size: 0.84rem;
 }
 
@@ -2063,11 +2063,11 @@ onBeforeUnmount(() => {
 }
 
 .assessment-result__answer-box p {
-  color: rgba(244, 239, 226, 0.64);
+  color: rgba(35, 83, 86, 0.64);
 }
 
 .assessment-result__answer-box strong {
-  color: rgba(244, 239, 226, 0.94);
+  color: rgba(35, 83, 86, 0.94);
   line-height: 1.8;
 }
 
@@ -2085,7 +2085,7 @@ onBeforeUnmount(() => {
   padding: 18px 20px;
   border-radius: 24px;
   border: 1px solid rgba(139, 208, 203, 0.14);
-  background: rgba(7, 27, 37, 0.46);
+  background: rgba(239, 249, 246, 0.72);
 }
 
 .assessment-result__source p {
@@ -2097,7 +2097,7 @@ onBeforeUnmount(() => {
 .assessment-result__source blockquote {
   padding-left: 16px;
   border-left: 2px solid rgba(216, 185, 114, 0.3);
-  color: rgba(244, 239, 226, 0.78);
+  color: rgba(35, 83, 86, 0.78);
   line-height: 1.9;
 }
 

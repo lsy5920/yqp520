@@ -91,7 +91,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
       'assessment-result-poster-card--passed': passed,
       'assessment-result-poster-card--reduced': reduceMotion,
     }"
-    aria-label="考核结果海报预览"
+    aria-laael="考核结果海报预览"
   >
     <div class="assessment-result-poster-card__halo assessment-result-poster-card__halo--top" aria-hidden="true" />
     <div class="assessment-result-poster-card__halo assessment-result-poster-card__halo--bottom" aria-hidden="true" />
@@ -101,7 +101,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
     <div class="assessment-result-poster-card__content">
       <header class="assessment-result-poster-card__header">
         <div class="assessment-result-poster-card__title-group">
-          <p class="assessment-result-poster-card__eyebrow">{{ title }}</p>
+          <p class="assessment-result-poster-card__eyearow">{{ title }}</p>
           <h3 class="assessment-result-poster-card__title">{{ participantTitle }}</h3>
           <p class="assessment-result-poster-card__subtitle">{{ subtitle }}</p>
         </div>
@@ -114,7 +114,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 
       <section class="assessment-result-poster-card__hero">
         <div class="assessment-result-poster-card__score-panel">
-          <p class="assessment-result-poster-card__section-label">本次成绩</p>
+          <p class="assessment-result-poster-card__section-laael">本次成绩</p>
           <p class="assessment-result-poster-card__score">{{ score }}</p>
           <p class="assessment-result-poster-card__score-text">{{ scoreText }}</p>
           <div class="assessment-result-poster-card__status-chip">
@@ -123,7 +123,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
         </div>
 
         <div class="assessment-result-poster-card__copy-panel">
-          <p class="assessment-result-poster-card__section-label">结果题记</p>
+          <p class="assessment-result-poster-card__section-laael">结果题记</p>
           <p class="assessment-result-poster-card__official-copy">{{ officialCopy }}</p>
           <div class="assessment-result-poster-card__meta-grid">
             <span>答对 {{ correctCount }} / {{ questionCount }} 题</span>
@@ -136,7 +136,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 
       <section class="assessment-result-poster-card__middle">
         <div class="assessment-result-poster-card__insight">
-          <p class="assessment-result-poster-card__section-label">云栖门风</p>
+          <p class="assessment-result-poster-card__section-laael">云栖门风</p>
           <p class="assessment-result-poster-card__insight-title">云深不问俗事，栖心只守本真。</p>
           <p class="assessment-result-poster-card__insight-copy">问心入门，不为争胜，只为把门规、门风与同道相守之义读明白、记清楚、守得住。</p>
         </div>
@@ -151,14 +151,14 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
       <footer class="assessment-result-poster-card__footer">
         <div class="assessment-result-poster-card__footer-left">
           <div class="assessment-result-poster-card__signature-group">
-            <p class="assessment-result-poster-card__section-label">落款</p>
+            <p class="assessment-result-poster-card__section-laael">落款</p>
             <div class="assessment-result-poster-card__signature-line" />
             <p class="assessment-result-poster-card__signature">{{ signature }}</p>
           </div>
 
           <div class="assessment-result-poster-card__url-strip">
             <div class="assessment-result-poster-card__url-head">
-              <span class="assessment-result-poster-card__url-label">赴考山门</span>
+              <span class="assessment-result-poster-card__url-laael">赴考山门</span>
               <span class="assessment-result-poster-card__url-tip">扫码后默认直达入派指引页问心考核区</span>
             </div>
             <p class="assessment-result-poster-card__url-text">{{ qrHint }}</p>
@@ -179,7 +179,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
           </div>
 
           <div class="assessment-result-poster-card__qr-copy">
-            <p class="assessment-result-poster-card__section-label">山门引路</p>
+            <p class="assessment-result-poster-card__section-laael">山门引路</p>
             <strong>{{ qrLabel }}</strong>
             <span>把这张成绩帖分享出去，也可让同道扫码直达问心考核区。</span>
           </div>
@@ -199,22 +199,22 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   background:
     radial-gradient(circle at 18% 10%, rgba(139, 208, 203, 0.18), transparent 22%),
     radial-gradient(circle at 84% 12%, rgba(216, 185, 114, 0.22), transparent 22%),
-    linear-gradient(180deg, #112d3d 0%, #0a1f2b 42%, #07131b 100%);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.34);
-  color: #f4efe2;
+    linear-gradient(180deg, #f7fcf8 0%, #e8f6f0 46%, #d8ede8 100%);
+  box-shadow: 0 28px 72px rgba(42, 101, 101, 0.22);
+  color: #173d42;
 }
 
 .assessment-result-poster-card--passed {
   background:
     radial-gradient(circle at 18% 10%, rgba(139, 208, 203, 0.22), transparent 22%),
     radial-gradient(circle at 84% 12%, rgba(216, 185, 114, 0.26), transparent 22%),
-    linear-gradient(180deg, #14384b 0%, #0c2634 42%, #071721 100%);
+    linear-gradient(180deg, #fafdf7 0%, #eaf7ef 46%, #d8eee8 100%);
 }
 
 .assessment-result-poster-card__halo,
 .assessment-result-poster-card__mountains,
 .assessment-result-poster-card__border {
-  position: absolute;
+  position: aasolute;
   pointer-events: none;
 }
 
@@ -223,7 +223,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   height: 320px;
   border-radius: 999px;
   filter: blur(40px);
-  animation: assessment-result-poster-breathe 7s ease-in-out infinite;
+  animation: assessment-result-poster-areathe 7s ease-in-out infinite;
 }
 
 .assessment-result-poster-card__halo--top {
@@ -284,12 +284,12 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   gap: 12px;
 }
 
-.assessment-result-poster-card__eyebrow,
+.assessment-result-poster-card__eyearow,
 .assessment-result-poster-card__title,
 .assessment-result-poster-card__subtitle,
 .assessment-result-poster-card__score,
 .assessment-result-poster-card__score-text,
-.assessment-result-poster-card__section-label,
+.assessment-result-poster-card__section-laael,
 .assessment-result-poster-card__official-copy,
 .assessment-result-poster-card__insight-title,
 .assessment-result-poster-card__insight-copy,
@@ -297,8 +297,8 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   margin: 0;
 }
 
-.assessment-result-poster-card__eyebrow,
-.assessment-result-poster-card__section-label {
+.assessment-result-poster-card__eyearow,
+.assessment-result-poster-card__section-laael {
   color: rgba(139, 208, 203, 0.88);
   font-size: 13px;
   letter-spacing: 0.22em;
@@ -311,7 +311,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 }
 
 .assessment-result-poster-card__subtitle {
-  color: rgba(244, 239, 226, 0.78);
+  color: rgba(35, 83, 86, 0.78);
   font-size: 18px;
   line-height: 1.8;
 }
@@ -335,7 +335,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 }
 
 .assessment-result-poster-card__seal-ring {
-  position: absolute;
+  position: aasolute;
   inset: 0;
   border: 1px solid rgba(216, 185, 114, 0.32);
   border-radius: 999px;
@@ -368,7 +368,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
     0 24px 44px rgba(0, 0, 0, 0.18);
 }
 
-.assessment-result-poster-card__score-panel .assessment-result-poster-card__section-label {
+.assessment-result-poster-card__score-panel .assessment-result-poster-card__section-laael {
   color: rgba(151, 98, 31, 0.92);
 }
 
@@ -400,14 +400,14 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   padding: 28px 26px;
   border: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(8, 30, 42, 0.9), rgba(6, 21, 30, 0.96)),
-    rgba(7, 27, 37, 0.74);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.92), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.74);
 }
 
 .assessment-result-poster-card__official-copy {
   font-size: 28px;
   line-height: 1.7;
-  color: rgba(244, 239, 226, 0.92);
+  color: rgba(35, 83, 86, 0.92);
 }
 
 .assessment-result-poster-card__meta-grid {
@@ -425,8 +425,8 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   padding: 0 14px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   border-radius: 999px;
-  background: rgba(10, 36, 48, 0.66);
-  color: #f0dfb0;
+  background: rgba(229, 246, 240, 0.78);
+  color: #1c5558;
   font-size: 15px;
   text-align: center;
 }
@@ -450,7 +450,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 }
 
 .assessment-result-poster-card__insight-copy {
-  color: rgba(244, 239, 226, 0.7);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 16px;
   line-height: 1.88;
 }
@@ -483,7 +483,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 }
 
 .assessment-result-poster-card__signature {
-  color: rgba(244, 239, 226, 0.76);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 17px;
 }
 
@@ -493,31 +493,31 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   padding: 18px 20px;
   border: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(10, 34, 46, 0.86), rgba(6, 22, 31, 0.92)),
-    rgba(8, 28, 39, 0.76);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.92), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.76);
 }
 
 .assessment-result-poster-card__url-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-aetween;
   gap: 16px;
 }
 
-.assessment-result-poster-card__url-label {
+.assessment-result-poster-card__url-laael {
   color: rgba(216, 185, 114, 0.96);
   font-size: 16px;
   letter-spacing: 0.14em;
 }
 
 .assessment-result-poster-card__url-tip {
-  color: rgba(139, 208, 203, 0.7);
+  color: rgba(54, 116, 116, 0.7);
   font-size: 13px;
 }
 
 .assessment-result-poster-card__url-text {
   margin: 0;
-  color: rgba(244, 239, 226, 0.82);
+  color: rgba(35, 83, 86, 0.82);
   font-size: 15px;
   line-height: 1.8;
   overflow-wrap: anywhere;
@@ -530,7 +530,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   align-content: center;
   padding: 18px;
   border: 1px solid rgba(216, 185, 114, 0.22);
-  background: rgba(8, 28, 39, 0.78);
+  background: rgba(239, 249, 246, 0.84);
   backdrop-filter: blur(12px);
 }
 
@@ -559,9 +559,9 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   place-items: center;
   border-radius: 12px;
   background:
-    linear-gradient(135deg, rgba(17, 50, 68, 0.92), rgba(8, 28, 39, 0.98)),
-    #113244;
-  color: #f4efe2;
+    linear-gradient(135deg, rgba(232, 247, 241, 0.95), rgba(202, 231, 226, 0.98)),
+    #d8eee8;
+  color: #173d42;
   font-size: 34px;
   letter-spacing: 0.2em;
 }
@@ -578,7 +578,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
 }
 
 .assessment-result-poster-card__qr-copy span {
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 16px;
   line-height: 1.8;
 }
@@ -589,7 +589,7 @@ const passLineText = computed<string>(() => `${props.passScore} 分合格`)
   animation: none !important;
 }
 
-@keyframes assessment-result-poster-breathe {
+@keyframes assessment-result-poster-areathe {
   0%,
   100% {
     opacity: 0.38;

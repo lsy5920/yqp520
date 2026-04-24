@@ -209,9 +209,9 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   background:
     radial-gradient(circle at 18% 10%, rgba(139, 208, 203, 0.22), transparent 24%),
     radial-gradient(circle at 82% 12%, rgba(216, 185, 114, 0.22), transparent 22%),
-    linear-gradient(180deg, #14384b 0%, #0c2634 36%, #071721 100%);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.34);
-  color: #f4efe2;
+    linear-gradient(180deg, #f7fcf8 0%, #e7f5ef 46%, #d7ece8 100%);
+  box-shadow: 0 28px 72px rgba(42, 101, 101, 0.22);
+  color: #173d42;
 }
 
 .poster-card__halo,
@@ -345,7 +345,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
 .poster-card__subtitle {
   font-size: 18px;
   line-height: 1.8;
-  color: rgba(244, 239, 226, 0.76);
+  color: rgba(35, 83, 86, 0.72);
 }
 
 .poster-card__seal-panel {
@@ -364,7 +364,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   background:
     radial-gradient(circle at 34% 30%, rgba(216, 185, 114, 0.32), transparent 30%),
     linear-gradient(160deg, rgba(12, 44, 58, 0.94), rgba(6, 20, 28, 0.98));
-  color: #f0dfb0;
+  color: #1c5558;
   font-size: 28px;
   letter-spacing: 0.14em;
   box-shadow:
@@ -474,10 +474,10 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   border-radius: 28px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   background:
-    linear-gradient(180deg, rgba(8, 28, 39, 0.84), rgba(6, 21, 30, 0.94)),
-    rgba(7, 27, 37, 0.7);
+    linear-gradient(180deg, rgba(247, 252, 248, 0.9), rgba(222, 242, 236, 0.94)),
+    rgba(236, 248, 244, 0.72);
   backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 16px 36px rgba(42, 101, 101, 0.12);
 }
 
 .poster-card__credo-list {
@@ -493,8 +493,8 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   padding: 0 16px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   border-radius: 999px;
-  background: rgba(10, 36, 48, 0.66);
-  color: #f0dfb0;
+  background: rgba(229, 246, 240, 0.78);
+  color: #1c5558;
   font-size: 17px;
   letter-spacing: 0.06em;
   text-align: center;
@@ -538,20 +538,20 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   inset: 48px;
   background:
     radial-gradient(circle at 38% 32%, rgba(216, 185, 114, 0.38), transparent 34%),
-    linear-gradient(180deg, rgba(11, 39, 53, 0.94), rgba(6, 19, 27, 0.98));
+    linear-gradient(180deg, rgba(238, 249, 245, 0.96), rgba(199, 231, 226, 0.98));
   border: 1px solid rgba(139, 208, 203, 0.18);
 }
 
 .poster-card__ornament-title {
   margin: 0;
-  color: #f0dfb0;
+  color: #1c5558;
   font-size: 24px;
   letter-spacing: 0.16em;
 }
 
 .poster-card__ornament-copy {
   margin: 0;
-  color: rgba(244, 239, 226, 0.74);
+  color: rgba(35, 83, 86, 0.74);
   font-size: 15px;
   line-height: 1.9;
 }
@@ -568,17 +568,17 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   padding: 24px 26px;
   border-radius: 26px;
   border: 1px solid rgba(139, 208, 203, 0.14);
-  background: rgba(7, 27, 37, 0.54);
+  background: rgba(239, 249, 246, 0.72);
 }
 
 .poster-card__story-title {
-  color: #f4efe2;
+  color: #173d42;
   font-size: 29px;
   line-height: 1.65;
 }
 
 .poster-card__story-copy {
-  color: rgba(244, 239, 226, 0.7);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 16px;
   line-height: 1.9;
 }
@@ -597,7 +597,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.2);
-  background: rgba(10, 36, 48, 0.66);
+  background: rgba(229, 246, 240, 0.78);
   color: rgba(216, 185, 114, 0.96);
   font-size: 15px;
   letter-spacing: 0.1em;
@@ -627,7 +627,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
 }
 
 .poster-card__signature {
-  color: rgba(244, 239, 226, 0.76);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 17px;
 }
 
@@ -638,8 +638,8 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   border-radius: 24px;
   border: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(10, 34, 46, 0.86), rgba(6, 22, 31, 0.92)),
-    rgba(8, 28, 39, 0.76);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.92), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.76);
 }
 
 .poster-card__url-head {
@@ -656,13 +656,13 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
 }
 
 .poster-card__url-tip {
-  color: rgba(139, 208, 203, 0.7);
+  color: rgba(54, 116, 116, 0.7);
   font-size: 13px;
 }
 
 .poster-card__url-text {
   margin: 0;
-  color: rgba(244, 239, 226, 0.82);
+  color: rgba(35, 83, 86, 0.82);
   font-size: 15px;
   line-height: 1.8;
   overflow-wrap: anywhere;
@@ -676,7 +676,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   padding: 18px;
   border: 1px solid rgba(216, 185, 114, 0.22);
   border-radius: 28px;
-  background: rgba(8, 28, 39, 0.78);
+  background: rgba(239, 249, 246, 0.84);
   backdrop-filter: blur(12px);
 }
 
@@ -705,9 +705,9 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
   place-items: center;
   border-radius: 12px;
   background:
-    linear-gradient(135deg, rgba(17, 50, 68, 0.92), rgba(8, 28, 39, 0.98)),
-    #113244;
-  color: #f4efe2;
+    linear-gradient(135deg, rgba(232, 247, 241, 0.95), rgba(202, 231, 226, 0.98)),
+    #d8eee8;
+  color: #173d42;
   font-size: 34px;
   letter-spacing: 0.26em;
 }
@@ -724,7 +724,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
 }
 
 .poster-card__qr-copy span {
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
   font-size: 16px;
   line-height: 1.8;
 }

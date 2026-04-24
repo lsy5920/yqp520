@@ -92,16 +92,16 @@ function formatCharacter(character: string): string {
   gap: 12px;
   max-width: 100%;
   padding: 10px 18px 12px;
-  border: 1px solid rgba(216, 185, 114, 0.14);
+  border: 1px solid rgba(84, 154, 151, 0.22);
   border-radius: 999px;
   background:
-    radial-gradient(circle at 18% 50%, rgba(139, 208, 203, 0.16), transparent 26%),
-    radial-gradient(circle at 82% 40%, rgba(216, 185, 114, 0.14), transparent 24%),
-    linear-gradient(180deg, rgba(6, 23, 31, 0.62), rgba(7, 24, 36, 0.74)),
-    rgba(5, 18, 28, 0.54);
+    radial-gradient(circle at 18% 50%, rgba(255, 255, 255, 0.56), transparent 28%),
+    radial-gradient(circle at 82% 40%, rgba(95, 188, 181, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(247, 252, 244, 0.74), rgba(216, 241, 235, 0.82)),
+    rgba(246, 251, 244, 0.68);
   box-shadow:
-    0 16px 36px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 16px 36px rgba(37, 103, 101, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   animation: music-lyric-overlay-float 7.2s ease-in-out infinite;
 }
@@ -111,7 +111,8 @@ function formatCharacter(character: string): string {
   position: absolute;
   inset: 4px;
   border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.06);
+  border: 1px solid rgba(84, 154, 151, 0.12);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.28);
   pointer-events: none;
 }
 
@@ -119,9 +120,9 @@ function formatCharacter(character: string): string {
   content: '';
   position: absolute;
   inset: auto 18px 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(216, 185, 114, 0), rgba(216, 185, 114, 0.42), rgba(216, 185, 114, 0));
-  opacity: 0.42;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(84, 154, 151, 0), rgba(84, 154, 151, 0.42), rgba(255, 255, 255, 0.62), rgba(84, 154, 151, 0));
+  opacity: 0.5;
 }
 
 .music-lyric-overlay__seal,
@@ -139,14 +140,14 @@ function formatCharacter(character: string): string {
   place-items: center;
   border-radius: 999px;
   background:
-    linear-gradient(180deg, rgba(120, 17, 26, 0.94), rgba(61, 8, 13, 0.96)),
-    rgba(61, 8, 13, 0.94);
-  color: rgba(243, 224, 170, 0.94);
+    linear-gradient(180deg, rgba(74, 171, 166, 0.9), rgba(31, 101, 103, 0.94)),
+    rgba(74, 171, 166, 0.86);
+  color: rgba(247, 252, 244, 0.96);
   font-size: 0.92rem;
   letter-spacing: 0.1em;
   box-shadow:
-    inset 0 0 0 1px rgba(241, 217, 160, 0.12),
-    0 8px 16px rgba(0, 0, 0, 0.16);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 16px rgba(37, 103, 101, 0.16);
 }
 
 .music-lyric-overlay__current {
@@ -154,7 +155,7 @@ function formatCharacter(character: string): string {
   flex-wrap: wrap;
   justify-content: center;
   max-width: 100%;
-  color: #f3e2b3;
+  color: #173d42;
   font-size: clamp(1rem, 2vw, 1.36rem);
   line-height: 1.5;
   text-align: center;
@@ -164,8 +165,8 @@ function formatCharacter(character: string): string {
   display: inline-block;
   white-space: pre;
   text-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.18),
-    0 0 16px rgba(216, 185, 114, 0.14);
+    0 4px 14px rgba(255, 255, 255, 0.42),
+    0 0 16px rgba(74, 171, 166, 0.18);
   opacity: 0;
   transform: translateY(10px) scale(0.92);
   filter: blur(6px);

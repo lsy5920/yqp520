@@ -575,7 +575,7 @@ async function generateMemberCardQr(): Promise<void> {
       width: 180,
       color: {
         dark: '#102734',
-        light: '#f4efe2',
+        light: '#edf7f1',
       },
     })
     isQrReady.value = true
@@ -746,7 +746,7 @@ async function exportCardImage(): Promise<{ dataUrl: string; fileName: string } 
     const dataUrl = await toPng(cloneElement, {
       cacheBust: true,
       pixelRatio: 1,
-      backgroundColor: '#06131b',
+      backgroundColor: '#edf7f1',
       width: props.exportWidth,
       height: props.exportHeight,
       canvasWidth: props.exportWidth,
@@ -1151,8 +1151,8 @@ watch(
   background:
     radial-gradient(circle at 18% 10%, rgba(139, 208, 203, 0.1), transparent 18%),
     radial-gradient(circle at 86% 14%, rgba(216, 185, 114, 0.12), transparent 16%),
-    linear-gradient(180deg, rgba(8, 29, 40, 0.94), rgba(4, 18, 28, 0.98)),
-    rgba(4, 18, 28, 0.96);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.9), rgba(224, 243, 237, 0.96)),
+    rgba(236, 248, 244, 0.88);
   box-shadow: var(--shadow-strong);
 }
 
@@ -1204,7 +1204,7 @@ watch(
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.18);
-  background: rgba(7, 31, 43, 0.4);
+  background: rgba(239, 249, 246, 0.68);
   color: var(--color-text-soft);
   font-size: 0.82rem;
   letter-spacing: 0.08em;
@@ -1256,8 +1256,8 @@ watch(
   border: 1px solid rgba(216, 185, 114, 0.14);
   background:
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.06), transparent 28%),
-    linear-gradient(180deg, rgba(8, 29, 40, 0.7), rgba(4, 18, 28, 0.94)),
-    rgba(5, 18, 28, 0.78);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.72), rgba(224, 243, 237, 0.94)),
+    rgba(236, 248, 244, 0.78);
   overflow: hidden;
 }
 
@@ -1286,7 +1286,7 @@ watch(
   padding: 12px 14px;
   border-radius: 18px;
   border: 1px solid rgba(147, 203, 198, 0.14);
-  background: rgba(7, 27, 37, 0.48);
+  background: rgba(239, 249, 246, 0.7);
 }
 
 .member-card-studio__summary-item span {
@@ -1311,7 +1311,7 @@ watch(
   padding: 18px;
   border-radius: 24px;
   border: 1px solid rgba(147, 203, 198, 0.14);
-  background: rgba(7, 27, 37, 0.5);
+  background: rgba(239, 249, 246, 0.72);
 }
 
 .member-card-studio__copy-card {
@@ -1361,7 +1361,7 @@ watch(
   border: 1px solid rgba(216, 185, 114, 0.18);
   background:
     radial-gradient(circle at 32% 28%, rgba(139, 208, 203, 0.16), transparent 30%),
-    linear-gradient(180deg, rgba(8, 29, 40, 0.9), rgba(6, 19, 27, 0.96));
+    linear-gradient(180deg, rgba(248, 253, 249, 0.88), rgba(224, 243, 237, 0.96));
 }
 
 .member-card-studio__portrait-preview img {
@@ -1373,7 +1373,7 @@ watch(
 .member-card-studio__portrait-preview--empty {
   background:
     radial-gradient(circle at 32% 28%, rgba(216, 185, 114, 0.22), transparent 30%),
-    linear-gradient(180deg, rgba(8, 29, 40, 0.9), rgba(6, 19, 27, 0.96));
+    linear-gradient(180deg, rgba(248, 253, 249, 0.88), rgba(224, 243, 237, 0.96));
 }
 
 .member-card-studio__portrait-placeholder {
@@ -1444,7 +1444,7 @@ watch(
 }
 
 .member-card-studio__input::placeholder {
-  color: rgba(244, 239, 226, 0.42);
+  color: rgba(35, 83, 86, 0.46);
 }
 
 .member-card-studio__input:focus {
@@ -1493,8 +1493,8 @@ watch(
   border-radius: 24px;
   border: 1px solid rgba(216, 185, 114, 0.2);
   background:
-    linear-gradient(180deg, rgba(8, 29, 40, 0.96), rgba(5, 18, 28, 0.98)),
-    rgba(5, 18, 28, 0.94);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.92), rgba(224, 243, 237, 0.98)),
+    rgba(236, 248, 244, 0.94);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(22px);
   transform: translateX(-50%);

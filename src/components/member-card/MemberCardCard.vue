@@ -305,7 +305,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   container-type: inline-size;
   border-radius: 38px;
   border: 1px solid rgba(216, 185, 114, 0.24);
-  color: #f4efe2;
+  color: #173d42;
   background:
     radial-gradient(circle at 14% 10%, rgba(241, 217, 160, 0.18), transparent 20%),
     radial-gradient(circle at 86% 16%, rgba(139, 208, 203, 0.12), transparent 22%),
@@ -412,12 +412,12 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__rail-number {
-  color: rgba(244, 239, 226, 0.74);
+  color: rgba(35, 83, 86, 0.74);
   font-size: 11px;
 }
 
 .member-card-card__rail-time {
-  color: rgba(244, 239, 226, 0.48);
+  color: rgba(35, 83, 86, 0.5);
   font-size: 10px;
 }
 
@@ -474,7 +474,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__subtitle {
-  color: rgba(244, 239, 226, 0.74);
+  color: rgba(35, 83, 86, 0.74);
   font-size: 12px;
   line-height: 1.64;
   letter-spacing: 0.12em;
@@ -493,14 +493,14 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.14);
-  background: rgba(7, 27, 37, 0.32);
-  color: rgba(244, 239, 226, 0.9);
+  background: rgba(239, 249, 246, 0.64);
+  color: rgba(35, 83, 86, 0.9);
   font-size: 0.8rem;
   letter-spacing: 0.06em;
 }
 
 .member-card-card__meta-chip--strong {
-  color: #f0dfb0;
+  color: #8c7130;
   border-color: rgba(216, 185, 114, 0.28);
 }
 
@@ -515,7 +515,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   border: 1px solid rgba(241, 217, 160, 0.34);
   background:
     linear-gradient(180deg, #7b151d, #360a0f),
-    rgba(7, 27, 37, 0.94);
+    rgba(236, 248, 244, 0.94);
   box-shadow:
     inset 0 0 0 8px rgba(241, 217, 160, 0.06),
     0 16px 32px rgba(0, 0, 0, 0.24);
@@ -538,7 +538,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 .member-card-card__seal-bottom {
   position: relative;
   z-index: 1;
-  color: rgba(244, 239, 226, 0.9);
+  color: rgba(35, 83, 86, 0.9);
   font-size: 11px;
   letter-spacing: 0.16em;
 }
@@ -590,7 +590,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   border: 1px solid rgba(241, 217, 160, 0.12);
   background:
     radial-gradient(circle at 32% 30%, rgba(216, 185, 114, 0.24), transparent 30%),
-    linear-gradient(145deg, rgba(16, 49, 66, 0.96), rgba(6, 19, 27, 0.98));
+    linear-gradient(145deg, rgba(248, 253, 249, 0.94), rgba(219, 241, 235, 0.98));
 }
 
 .member-card-card__portrait-image,
@@ -606,7 +606,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__portrait-fallback span {
-  color: #f0dfb0;
+  color: #8c7130;
   font-size: clamp(3rem, 4.6vw, 4.8rem);
   letter-spacing: 0.2em;
 }
@@ -617,19 +617,19 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   padding: 10px 12px;
   border-radius: 16px;
   border: 1px solid rgba(241, 217, 160, 0.14);
-  background: linear-gradient(180deg, rgba(6, 19, 27, 0.52), rgba(6, 19, 27, 0.9));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(224, 243, 237, 0.9));
 }
 
 .member-card-card__portrait-kicker,
 .member-card-card__portrait-detail {
   margin: 0;
-  color: rgba(244, 239, 226, 0.68);
+  color: rgba(35, 83, 86, 0.68);
   font-size: 11px;
   letter-spacing: 0.16em;
 }
 
 .member-card-card__portrait-name {
-  color: #f0dfb0;
+  color: #8c7130;
   font-size: 15px;
   line-height: 1.2;
   letter-spacing: 0.12em;
@@ -647,19 +647,19 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   padding: 11px 13px;
   border-radius: 18px;
   border: 1px solid rgba(147, 203, 198, 0.14);
-  background: rgba(7, 27, 37, 0.52);
+  background: rgba(239, 249, 246, 0.68);
 }
 
 .member-card-card__panel--identity {
   background:
-    linear-gradient(180deg, rgba(16, 42, 57, 0.52), rgba(7, 27, 37, 0.94)),
-    rgba(7, 27, 37, 0.52);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.58), rgba(224, 243, 237, 0.94)),
+    rgba(236, 248, 244, 0.72);
 }
 
 .member-card-card__panel--tags {
   background:
-    linear-gradient(180deg, rgba(32, 23, 12, 0.22), rgba(7, 27, 37, 0.94)),
-    rgba(7, 27, 37, 0.52);
+    linear-gradient(180deg, rgba(255, 248, 230, 0.52), rgba(224, 243, 237, 0.94)),
+    rgba(236, 248, 244, 0.72);
 }
 
 .member-card-card__panel-head {
@@ -683,7 +683,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__identity-line {
-  color: #f0dfb0;
+  color: #8c7130;
   font-size: 1.08rem;
   line-height: 1.52;
   letter-spacing: 0.12em;
@@ -711,7 +711,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__identity-value {
-  color: rgba(244, 239, 226, 0.94);
+  color: rgba(35, 83, 86, 0.94);
   font-size: 0.88rem;
   line-height: 1.54;
   overflow-wrap: anywhere;
@@ -732,7 +732,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.18);
   background: rgba(8, 31, 43, 0.44);
-  color: #f0dfb0;
+  color: #8c7130;
   font-size: 0.82rem;
   letter-spacing: 0.06em;
 }
@@ -755,13 +755,13 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   padding: 12px 14px;
   border-radius: 18px;
   border: 1px solid rgba(147, 203, 198, 0.14);
-  background: rgba(7, 27, 37, 0.54);
+  background: rgba(239, 249, 246, 0.7);
 }
 
 .member-card-card__story-card--signature {
   background:
-    linear-gradient(180deg, rgba(28, 21, 13, 0.22), rgba(7, 27, 37, 0.94)),
-    rgba(7, 27, 37, 0.52);
+    linear-gradient(180deg, rgba(255, 248, 230, 0.52), rgba(224, 243, 237, 0.94)),
+    rgba(236, 248, 244, 0.72);
 }
 
 .member-card-card__story-head {
@@ -781,7 +781,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 .member-card-card__story-text {
   margin: 0;
   align-self: stretch;
-  color: rgba(244, 239, 226, 0.92);
+  color: rgba(35, 83, 86, 0.92);
   font-size: 0.92rem;
   line-height: 1.76;
   word-break: break-word;
@@ -812,7 +812,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__story-note strong {
-  color: rgba(244, 239, 226, 0.88);
+  color: rgba(35, 83, 86, 0.88);
   font-size: 0.88rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -844,7 +844,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__signature {
-  color: #f0dfb0;
+  color: #8c7130;
   font-size: 0.9rem;
   letter-spacing: 0.16em;
 }
@@ -856,7 +856,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__stamp {
-  color: rgba(244, 239, 226, 0.56);
+  color: rgba(35, 83, 86, 0.58);
   font-size: 0.8rem;
   letter-spacing: 0.16em;
 }
@@ -871,8 +871,8 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
   border-radius: 18px;
   border: 1px solid rgba(216, 185, 114, 0.16);
   background:
-    linear-gradient(180deg, rgba(16, 42, 57, 0.64), rgba(7, 27, 37, 0.92)),
-    rgba(7, 27, 37, 0.52);
+    linear-gradient(180deg, rgba(248, 253, 249, 0.66), rgba(224, 243, 237, 0.92)),
+    rgba(236, 248, 244, 0.72);
 }
 
 .member-card-card__qr-shell {
@@ -915,7 +915,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__qr-copy strong {
-  color: #f0dfb0;
+  color: #8c7130;
   font-size: 0.82rem;
   line-height: 1.62;
   overflow-wrap: anywhere;
@@ -935,7 +935,7 @@ const identityItemList = computed<Array<{ label: string; value: string }>>(() =>
 }
 
 .member-card-card__footer-mark strong {
-  color: rgba(244, 239, 226, 0.52);
+  color: rgba(35, 83, 86, 0.54);
   font-size: 11px;
   letter-spacing: 0.14em;
 }

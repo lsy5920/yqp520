@@ -491,8 +491,8 @@ async function generatePosterQr(): Promise<void> {
       margin: 1,
       width: 240,
       color: {
-        dark: '#102734',
-        light: '#f4efe2',
+        dark: '#173d42',
+        light: '#173d42',
       },
     })
     isQrReady.value = true
@@ -546,7 +546,7 @@ async function exportPosterImage(): Promise<{ dataUrl: string; fileName: string 
     const dataUrl = await toPng(exportElement, {
       cacheBust: true,
       pixelRatio: 1,
-      backgroundColor: '#07161f',
+      backgroundColor: '#edf7f1',
       width: props.exportWidth,
       height: props.exportHeight,
       canvasWidth: props.exportWidth,
@@ -778,9 +778,9 @@ onBeforeUnmount(() => {
   padding: 24px;
   border-radius: 28px;
   background:
-    linear-gradient(180deg, rgba(8, 30, 42, 0.92), rgba(5, 18, 28, 0.96)),
-    rgba(5, 18, 28, 0.94);
-  border: 1px solid rgba(216, 185, 114, 0.18);
+    linear-gradient(180deg, rgba(247, 252, 244, 0.78), rgba(246, 251, 244, 0.9)),
+    rgba(246, 251, 244, 0.86);
+  border: 1px solid rgba(84, 154, 151, 0.22);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
 }
 
@@ -806,13 +806,13 @@ onBeforeUnmount(() => {
 .poster-studio__title {
   font-size: 28px;
   line-height: 1.3;
-  color: #f4efe2;
+  color: #173d42;
 }
 
 .poster-studio__desc,
 .poster-studio__label,
 .poster-studio__helper {
-  color: rgba(244, 239, 226, 0.72);
+  color: rgba(35, 83, 86, 0.72);
 }
 
 .poster-studio__desc {
@@ -828,9 +828,9 @@ onBeforeUnmount(() => {
 .poster-studio__textarea {
   width: 100%;
   border-radius: 18px;
-  border: 1px solid rgba(216, 185, 114, 0.18);
+  border: 1px solid rgba(84, 154, 151, 0.22);
   background: rgba(255, 255, 255, 0.04);
-  color: #f4efe2;
+  color: #173d42;
 }
 
 .poster-studio__input {
@@ -873,13 +873,13 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   border: 1px solid rgba(216, 185, 114, 0.16);
   background: rgba(255, 255, 255, 0.04);
-  color: #f4efe2;
+  color: #173d42;
   cursor: pointer;
 }
 
 .poster-studio__button--primary {
-  background: linear-gradient(135deg, rgba(216, 185, 114, 0.92), rgba(170, 128, 53, 0.94));
-  color: #102734;
+  background: linear-gradient(135deg, rgba(74, 171, 166, 0.88), rgba(207, 239, 231, 0.96));
+  color: #173d42;
 }
 
 .poster-studio__button--ghost {
@@ -897,7 +897,7 @@ onBeforeUnmount(() => {
   width: min(100%, 420px);
   overflow: hidden;
   border-radius: 32px;
-  background: rgba(7, 22, 31, 0.82);
+  background: rgba(234, 245, 239, 0.86);
   box-shadow: 0 24px 56px rgba(0, 0, 0, 0.24);
 }
 
