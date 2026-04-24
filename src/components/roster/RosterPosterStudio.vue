@@ -49,6 +49,9 @@ const shareUrl = ref<string>('')
 // 这里记录导出状态，避免用户重复连点。
 const isExporting = ref<boolean>(false)
 
+// 这里记录海报功能是否展开，默认折叠可以减少详情页首屏压力。
+const isPosterExpanded = ref<boolean>(false)
+
 // 这里记录当前提示语，给用户清楚说明现在能做什么。
 const actionMessage = ref<string>('名帖已经备好，可以保存成图、复制链接或直接分享。')
 
@@ -98,6 +101,16 @@ const qrHint = computed<string>(() => (
  * 用途：暂缓和不予收录状态不再提供名帖导出
  */
 const isLinkOnlyMode = computed<boolean>(() => !props.allowPosterActions)
+
+/**
+ * 切换海报功能展开状态
+ * 用途：让用户点击按钮后再展开或收起海报预览与操作区
+ * 入参：无
+ * 返回值：无返回值
+ */
+function togglePosterExpanded(): void {
+  isPosterExpanded.value = !isPosterExpanded.value
+}
 
 /**
  * 更新预览缩放比例
@@ -570,6 +583,15 @@ watch(
   },
 )
 
+watch(
+  () => isPosterExpanded.value,
+  async () => {
+    // 这里等待展开后的预览节点渲染完成，再重新计算缩放比例。
+    await nextTick()
+    updatePreviewScale()
+  },
+)
+
 onMounted(async () => {
   await generatePosterQr()
   await nextTick()
@@ -582,17 +604,25 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="roster-poster-studio">
+  <section class="roster-poster-studio" :class="{ 'roster-poster-studio--expanded': isPosterExpanded }">
     <div class="roster-poster-studio__panel">
       <div class="roster-poster-studio__header">
         <p class="roster-poster-studio__eyebrow">云栖名帖</p>
         <h2 class="roster-poster-studio__title">
-          {{ isLinkOnlyMode ? '当前状态不再提供名帖导出' : '把这张云栖名帖保存下来，也可直接分享出去' }}
+          {{ isPosterExpanded ? (isLinkOnlyMode ? '当前状态不再提供名帖导出' : '把这张云栖名帖保存下来，也可直接分享出去') : '云栖名帖海报功能已收起' }}
         </h2>
-        <p class="roster-poster-studio__desc">{{ actionMessage }}</p>
+        <p class="roster-poster-studio__desc">
+          {{ isPosterExpanded ? actionMessage : '点击下方按钮后，再展开预览、保存、分享和复制链接功能。' }}
+        </p>
       </div>
 
-      <div class="roster-poster-studio__meta">
+      <div class="roster-poster-studio__fold-card">
+        <span>当前道号</span>
+        <strong>{{ entry.daohao || '云栖同门' }}</strong>
+        <p>{{ entry.hallLabel }} · {{ entry.positionLabel }} · {{ entry.statusLabel }}</p>
+      </div>
+
+      <div v-if="isPosterExpanded" class="roster-poster-studio__meta">
         <p>公开道号：{{ entry.daohao }}</p>
         <p>公开性别：{{ entry.genderLabel }}</p>
         <p>门中分工：{{ entry.positionLabel }}</p>
@@ -603,7 +633,14 @@ onBeforeUnmount(() => {
 
       <div class="roster-poster-studio__actions">
         <button
-          v-if="!isLinkOnlyMode"
+          type="button"
+          class="roster-poster-studio__button roster-poster-studio__button--primary"
+          @click="togglePosterExpanded"
+        >
+          {{ isPosterExpanded ? '收起海报功能' : '展开海报功能' }}
+        </button>
+        <button
+          v-if="isPosterExpanded && !isLinkOnlyMode"
           type="button"
           class="roster-poster-studio__button"
           :disabled="isExporting"
@@ -612,7 +649,7 @@ onBeforeUnmount(() => {
           {{ isExporting ? '生成中...' : '保存成图' }}
         </button>
         <button
-          v-if="!isLinkOnlyMode"
+          v-if="isPosterExpanded && !isLinkOnlyMode"
           type="button"
           class="roster-poster-studio__button roster-poster-studio__button--primary"
           :disabled="isExporting"
@@ -621,6 +658,7 @@ onBeforeUnmount(() => {
           {{ isExporting ? '生成中...' : '分享名帖' }}
         </button>
         <button
+          v-if="isPosterExpanded"
           type="button"
           class="roster-poster-studio__button roster-poster-studio__button--ghost"
           @click="handleCopyLink"
@@ -628,7 +666,7 @@ onBeforeUnmount(() => {
           复制链接
         </button>
         <button
-          v-if="lastError"
+          v-if="isPosterExpanded && lastError"
           type="button"
           class="roster-poster-studio__button roster-poster-studio__button--ghost"
           :disabled="isExporting"
@@ -639,7 +677,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="roster-poster-studio__preview">
+    <div v-if="isPosterExpanded" class="roster-poster-studio__preview">
       <div ref="previewViewportElement" class="roster-poster-studio__card-shell" :style="previewCardStyle">
         <div class="roster-poster-studio__preview-canvas" :style="previewCanvasStyle">
           <div ref="posterSourceElement" class="roster-poster-studio__poster-source" :style="previewSourceStyle">
@@ -662,6 +700,10 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 430px);
   gap: 24px;
   align-items: start;
+}
+
+.roster-poster-studio:not(.roster-poster-studio--expanded) {
+  grid-template-columns: 1fr;
 }
 
 .roster-poster-studio__panel,
@@ -707,6 +749,41 @@ onBeforeUnmount(() => {
 .roster-poster-studio__desc {
   font-size: 14px;
   line-height: 1.74;
+}
+
+.roster-poster-studio__fold-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(216, 185, 114, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(139, 208, 203, 0.12), transparent 32%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.roster-poster-studio__fold-card span,
+.roster-poster-studio__fold-card strong,
+.roster-poster-studio__fold-card p {
+  margin: 0;
+}
+
+.roster-poster-studio__fold-card span {
+  color: #8bd0cb;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+.roster-poster-studio__fold-card strong {
+  color: #f4efe2;
+  font-size: clamp(1.6rem, 4vw, 2.5rem);
+  line-height: 1.18;
+}
+
+.roster-poster-studio__fold-card p {
+  color: rgba(244, 239, 226, 0.72);
+  line-height: 1.7;
 }
 
 .roster-poster-studio__meta {
