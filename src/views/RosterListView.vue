@@ -453,7 +453,15 @@ onBeforeUnmount(() => {
 }
 
 .roster-list-toolbar,
-.roster-list-poster,
+.roster-list-poster {
+  display: grid;
+  gap: 18px;
+}
+
+.roster-list-poster {
+  align-items: start;
+}
+
 .roster-wooden-field {
   position: relative;
   display: grid;
@@ -469,7 +477,6 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-strong);
   isolation: isolate;
 }
-
 .roster-wooden-field::before,
 .roster-wooden-field::after,
 .roster-wooden-field__sky {

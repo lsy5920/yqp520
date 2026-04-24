@@ -42,6 +42,9 @@ const shareUrl = ref<string>('')
 // 这里记录当前是否正在导出海报，避免用户连续重复点击。
 const isExporting = ref<boolean>(false)
 
+// 这里记录招募海报功能是否展开，默认折叠可以避免公开名录首屏被海报占满。
+const isPosterExpanded = ref<boolean>(false)
+
 // 这里给用户展示当前动作提示，便于知道二维码、导出和分享处于什么状态。
 const actionMessage = ref<string>('招募海报已经备好，可直接保存成图或分享给同道。')
 
@@ -101,6 +104,16 @@ const qrHint = computed<string>(() => (
  * 返回值：返回流程摘要字符串
  */
 const processSummary = computed<string>(() => props.template.processList.join(' · '))
+
+/**
+ * 切换招募海报展开状态
+ * 用途：让用户点击按钮后再展开或收起招募海报预览与操作区
+ * 入参：无
+ * 返回值：无返回值
+ */
+function togglePosterExpanded(): void {
+  isPosterExpanded.value = !isPosterExpanded.value
+}
 
 /**
  * 更新预览缩放比例
@@ -520,10 +533,23 @@ watch(
   },
 )
 
+watch(
+  () => isPosterExpanded.value,
+  async (expanded) => {
+    // 这里展开后再绑定预览监听，避免默认折叠时仍渲染大海报。
+    await nextTick()
+
+    if (expanded) {
+      bindPreviewObserver()
+      return
+    }
+
+    clearPreviewObserver()
+  },
+)
+
 onMounted(async () => {
   await generatePosterQr()
-  await nextTick()
-  bindPreviewObserver()
 })
 
 onBeforeUnmount(() => {
@@ -534,9 +560,13 @@ onBeforeUnmount(() => {
 <template>
   <section
     class="roster-registration-poster-studio"
-    :class="{ 'roster-registration-poster-studio--reduced': reduceMotion }"
+    :class="{
+      'roster-registration-poster-studio--reduced': reduceMotion,
+      'roster-registration-poster-studio--collapsed': !isPosterExpanded,
+      'roster-registration-poster-studio--expanded': isPosterExpanded,
+    }"
   >
-    <div class="roster-registration-poster-studio__preview">
+    <div v-if="isPosterExpanded" class="roster-registration-poster-studio__preview">
       <div
         ref="previewViewportElement"
         class="roster-registration-poster-studio__card-shell"
@@ -563,12 +593,20 @@ onBeforeUnmount(() => {
       <div class="roster-registration-poster-studio__header">
         <p class="roster-registration-poster-studio__eyebrow">官方招募海报</p>
         <h2 class="roster-registration-poster-studio__title">
-          把这张云栖名册招募海报发出去，让同道先观名录，再循帖入山
+          {{ isPosterExpanded ? '把这张云栖名册招募海报发出去，让同道先观名录，再循帖入山' : '云栖名册招募海报已收起' }}
         </h2>
-        <p class="roster-registration-poster-studio__desc">{{ actionMessage }}</p>
+        <p class="roster-registration-poster-studio__desc">
+          {{ isPosterExpanded ? actionMessage : '点击下方按钮后，再展开海报预览、保存和分享功能。' }}
+        </p>
       </div>
 
-      <div class="roster-registration-poster-studio__meta">
+      <div class="roster-registration-poster-studio__fold-card">
+        <span>固定官方海报</span>
+        <strong>{{ template.title }}</strong>
+        <p>扫码落点：云栖名册公开名录页</p>
+      </div>
+
+      <div v-if="isPosterExpanded" class="roster-registration-poster-studio__meta">
         <p>落点页面：云栖名册公开名录页</p>
         <p>导出比例：4:5 竖版，固定 {{ template.exportWidth }} × {{ template.exportHeight }}</p>
         <p>官方流程：{{ processSummary }}</p>
@@ -578,6 +616,14 @@ onBeforeUnmount(() => {
       <div class="roster-registration-poster-studio__actions">
         <button
           type="button"
+          class="roster-registration-poster-studio__button roster-registration-poster-studio__button--primary"
+          @click="togglePosterExpanded"
+        >
+          {{ isPosterExpanded ? '收起海报功能' : '展开海报功能' }}
+        </button>
+        <button
+          v-if="isPosterExpanded"
+          type="button"
           class="roster-registration-poster-studio__button"
           :disabled="isExporting"
           @click="handleSave"
@@ -585,6 +631,7 @@ onBeforeUnmount(() => {
           {{ isExporting ? '生成中...' : '保存海报' }}
         </button>
         <button
+          v-if="isPosterExpanded"
           type="button"
           class="roster-registration-poster-studio__button roster-registration-poster-studio__button--primary"
           :disabled="isExporting"
@@ -593,7 +640,7 @@ onBeforeUnmount(() => {
           {{ isExporting ? '生成中...' : '分享海报' }}
         </button>
         <button
-          v-if="lastError"
+          v-if="isPosterExpanded && lastError"
           type="button"
           class="roster-registration-poster-studio__button roster-registration-poster-studio__button--ghost"
           :disabled="isExporting"
@@ -603,7 +650,7 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="roster-registration-poster-studio__note">
+      <div v-if="isPosterExpanded" class="roster-registration-poster-studio__note">
         <p class="roster-registration-poster-studio__note-title">使用说明</p>
         <p>
           这是一张固定版官方招募海报，不接用户填写。扫码后会先进入公开名录页，方便先看同门，再决定是否登记入册。
@@ -619,6 +666,10 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 430px);
   gap: 24px;
   align-items: stretch;
+}
+
+.roster-registration-poster-studio--collapsed {
+  grid-template-columns: 1fr;
 }
 
 .roster-registration-poster-studio__preview,
@@ -696,6 +747,41 @@ onBeforeUnmount(() => {
 .roster-registration-poster-studio__note p {
   font-size: 14px;
   line-height: 1.78;
+}
+
+.roster-registration-poster-studio__fold-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(216, 185, 114, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(139, 208, 203, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.roster-registration-poster-studio__fold-card span,
+.roster-registration-poster-studio__fold-card strong,
+.roster-registration-poster-studio__fold-card p {
+  margin: 0;
+}
+
+.roster-registration-poster-studio__fold-card span {
+  color: #8bd0cb;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+.roster-registration-poster-studio__fold-card strong {
+  color: #f4efe2;
+  font-size: clamp(1.45rem, 4vw, 2.35rem);
+  line-height: 1.18;
+}
+
+.roster-registration-poster-studio__fold-card p {
+  color: rgba(244, 239, 226, 0.72);
+  line-height: 1.7;
 }
 
 .roster-registration-poster-studio__meta {
