@@ -927,13 +927,46 @@ onBeforeUnmount(() => {
   }
 
   .roster-jade-field__grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 10px;
   }
 
   .roster-jade-pendant {
-    width: min(100%, 210px);
+    width: min(100%, 158px);
+    min-height: 238px;
     transform: rotate(calc(var(--jade-rotate) * 0.45));
+  }
+
+  .roster-jade-pendant__cord {
+    height: 32px;
+  }
+
+  .roster-jade-pendant__body {
+    width: 100%;
+    min-height: 168px;
+    padding: 38px 12px 20px;
+  }
+
+  .roster-jade-pendant__hole {
+    top: 14px;
+    width: 22px;
+    height: 22px;
+    border-width: 5px;
+  }
+
+  .roster-jade-pendant__name {
+    font-size: 1.22rem;
+  }
+
+  .roster-jade-pendant__hall,
+  .roster-jade-pendant__number,
+  .roster-jade-pendant__status {
+    font-size: 0.72rem;
+  }
+
+  .roster-jade-pendant__tassel {
+    width: 28px;
+    height: 44px;
   }
 
   .roster-list-toolbar__chips {

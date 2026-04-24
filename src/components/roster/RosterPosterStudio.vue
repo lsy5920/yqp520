@@ -604,15 +604,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="roster-poster-studio" :class="{ 'roster-poster-studio--expanded': isPosterExpanded }">
-    <div class="roster-poster-studio__panel">
+  <section v-if="!isPosterExpanded" class="roster-poster-studio roster-poster-studio--collapsed">
+    <div class="roster-poster-studio__panel roster-poster-studio__panel--collapsed">
       <div class="roster-poster-studio__header">
         <p class="roster-poster-studio__eyebrow">云栖名帖</p>
         <h2 class="roster-poster-studio__title">
-          {{ isPosterExpanded ? (isLinkOnlyMode ? '当前状态不再提供名帖导出' : '把这张云栖名帖保存下来，也可直接分享出去') : '云栖名帖海报功能已收起' }}
+          云栖名帖海报功能已收起
         </h2>
         <p class="roster-poster-studio__desc">
-          {{ isPosterExpanded ? actionMessage : '点击下方按钮后，再展开预览、保存、分享和复制链接功能。' }}
+          点击下方按钮后，再展开海报预览、保存、分享和复制链接功能。
         </p>
       </div>
 
@@ -622,7 +622,29 @@ onBeforeUnmount(() => {
         <p>{{ entry.hallLabel }} · {{ entry.positionLabel }} · {{ entry.statusLabel }}</p>
       </div>
 
-      <div v-if="isPosterExpanded" class="roster-poster-studio__meta">
+      <div class="roster-poster-studio__actions">
+        <button
+          type="button"
+          class="roster-poster-studio__button roster-poster-studio__button--primary"
+          @click="togglePosterExpanded"
+        >
+          展开海报功能
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section v-else class="roster-poster-studio roster-poster-studio--expanded">
+    <div class="roster-poster-studio__panel">
+      <div class="roster-poster-studio__header">
+        <p class="roster-poster-studio__eyebrow">云栖名帖</p>
+        <h2 class="roster-poster-studio__title">
+          {{ isLinkOnlyMode ? '当前状态不再提供名帖导出' : '把这张云栖名帖保存下来，也可直接分享出去' }}
+        </h2>
+        <p class="roster-poster-studio__desc">{{ actionMessage }}</p>
+      </div>
+
+      <div class="roster-poster-studio__meta">
         <p>公开道号：{{ entry.daohao }}</p>
         <p>公开性别：{{ entry.genderLabel }}</p>
         <p>门中分工：{{ entry.positionLabel }}</p>
@@ -637,10 +659,10 @@ onBeforeUnmount(() => {
           class="roster-poster-studio__button roster-poster-studio__button--primary"
           @click="togglePosterExpanded"
         >
-          {{ isPosterExpanded ? '收起海报功能' : '展开海报功能' }}
+          收起海报功能
         </button>
         <button
-          v-if="isPosterExpanded && !isLinkOnlyMode"
+          v-if="!isLinkOnlyMode"
           type="button"
           class="roster-poster-studio__button"
           :disabled="isExporting"
@@ -649,7 +671,7 @@ onBeforeUnmount(() => {
           {{ isExporting ? '生成中...' : '保存成图' }}
         </button>
         <button
-          v-if="isPosterExpanded && !isLinkOnlyMode"
+          v-if="!isLinkOnlyMode"
           type="button"
           class="roster-poster-studio__button roster-poster-studio__button--primary"
           :disabled="isExporting"
@@ -658,7 +680,6 @@ onBeforeUnmount(() => {
           {{ isExporting ? '生成中...' : '分享名帖' }}
         </button>
         <button
-          v-if="isPosterExpanded"
           type="button"
           class="roster-poster-studio__button roster-poster-studio__button--ghost"
           @click="handleCopyLink"
@@ -666,7 +687,7 @@ onBeforeUnmount(() => {
           复制链接
         </button>
         <button
-          v-if="isPosterExpanded && lastError"
+          v-if="lastError"
           type="button"
           class="roster-poster-studio__button roster-poster-studio__button--ghost"
           :disabled="isExporting"
@@ -677,7 +698,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="isPosterExpanded" class="roster-poster-studio__preview">
+    <div class="roster-poster-studio__preview">
       <div ref="previewViewportElement" class="roster-poster-studio__card-shell" :style="previewCardStyle">
         <div class="roster-poster-studio__preview-canvas" :style="previewCanvasStyle">
           <div ref="posterSourceElement" class="roster-poster-studio__poster-source" :style="previewSourceStyle">
