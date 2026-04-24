@@ -81,6 +81,7 @@ const {
   latestResult,
   participantTitle,
   phase,
+  remainingSeconds,
   remainingTimeText,
   restartExam,
   resultLead,
@@ -297,6 +298,12 @@ const shouldShowRetakeNotice = computed<boolean>(() => Boolean(latestResult.valu
  * 用途：给页面根节点统一加锁，避免答题时背景还能点到和滚动到
  */
 const isExamDialogOpen = computed<boolean>(() => phase.value === 'exam' && isExamDialogVisible.value)
+
+/**
+ * 倒计时是否进入提醒状态。
+ * 用途：剩余时间较少时给手机端时间玉牌增加暖色提示；入参无；返回值为是否需要提醒。
+ */
+const isAssessmentTimeRunningLow = computed<boolean>(() => remainingSeconds.value > 0 && remainingSeconds.value <= 300)
 
 /**
  * 格式化交卷时间
@@ -833,10 +840,17 @@ onBeforeUnmount(() => {
       data-reveal
     >
       <div class="assessment-ready">
-        <article class="assessment-ready__main content-card content-card--soft">
+        <article class="assessment-ready__main content-card content-card--soft assessment-ready__trial-card">
+          <div class="assessment-ready__seal" aria-hidden="true">问</div>
           <p class="eyebrow">问心考核</p>
           <h2>{{ siteContent.assessment.paper.title }}</h2>
           <p class="assessment-ready__lead">{{ siteContent.assessment.paper.lead }}</p>
+
+          <div class="assessment-ready__quick-stats" aria-label="考核关键信息">
+            <span>{{ siteContent.assessment.paper.totalQuestions }} 题</span>
+            <span>{{ siteContent.assessment.paper.durationMinutes }} 分钟</span>
+            <span>{{ siteContent.assessment.paper.passScore }} 分合格</span>
+          </div>
 
           <div class="assessment-ready__field">
             <label class="assessment-ready__label" for="assessment-participant-title">同门称呼</label>
@@ -871,7 +885,7 @@ onBeforeUnmount(() => {
           </div>
         </article>
 
-        <article class="content-card">
+        <article class="content-card assessment-ready__rule-card">
           <p class="eyebrow">答卷规则</p>
           <h3>固定三十题，分七章问心</h3>
 
@@ -959,8 +973,11 @@ onBeforeUnmount(() => {
                       <h2 :id="'assessment-exam-dialog-title'">{{ participantTitle }} · 正在问心</h2>
                     </div>
 
-                    <div class="assessment-exam__overview-side">
-                      <div class="assessment-exam__time-card">
+                      <div class="assessment-exam__overview-side">
+                        <div
+                          class="assessment-exam__time-card"
+                          :class="{ 'assessment-exam__time-card--warning': isAssessmentTimeRunningLow }"
+                        >
                         <span>剩余时间</span>
                         <strong>{{ remainingTimeText }}</strong>
                       </div>
@@ -975,7 +992,11 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
 
-                  <div class="assessment-exam__progress-meta">
+                    <div class="assessment-exam__progress-ribbon" aria-hidden="true">
+                      <span :style="{ width: `${Math.max(4, Math.round((answeredCount / Math.max(totalQuestions, 1)) * 100))}%` }"></span>
+                    </div>
+
+                    <div class="assessment-exam__progress-meta">
                     <span>当前章节：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
                     <span>已答题数：{{ answeredCount }} / {{ totalQuestions }}</span>
                     <span>未答题数：{{ unansweredCount }}</span>
@@ -1060,12 +1081,22 @@ onBeforeUnmount(() => {
                           :aria-expanded="shouldShowExamOrderDetails ? 'true' : 'false'"
                           @click="toggleExamOrderCollapsed"
                         >
-                          {{ shouldShowExamOrderDetails ? '收起题号' : '展开题号' }}
+                          {{ shouldShowExamOrderDetails ? '收起题卷目录' : '打开题卷目录' }}
                         </button>
                       </div>
                     </div>
 
-                    <p v-if="isExamMobileLayout && !shouldShowExamOrderDetails" class="assessment-exam__compact-summary">
+                    <button
+                      v-if="isExamMobileLayout && !shouldShowExamOrderDetails"
+                      type="button"
+                      class="assessment-exam__catalog-entry"
+                      @click="toggleExamOrderCollapsed"
+                    >
+                      <span>题卷目录</span>
+                      <strong>{{ examOrderCollapsedSummaryText }}</strong>
+                    </button>
+
+                    <p v-if="!isExamMobileLayout && !shouldShowExamOrderDetails" class="assessment-exam__compact-summary">
                       {{ examOrderCollapsedSummaryText }}
                     </p>
 
@@ -2485,6 +2516,386 @@ onBeforeUnmount(() => {
     min-height: 42px;
     border-radius: 14px;
     font-size: 0.86rem;
+  }
+}
+.assessment-ready__trial-card,
+.assessment-ready__rule-card,
+.assessment-exam__overview,
+.assessment-exam__chapter-card,
+.assessment-exam__order-card,
+.assessment-result__summary {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(83, 145, 138, 0.2);
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.82), transparent 34%),
+    radial-gradient(circle at 88% 16%, rgba(152, 211, 202, 0.2), transparent 34%),
+    linear-gradient(145deg, rgba(250, 255, 252, 0.94), rgba(222, 242, 236, 0.8));
+  box-shadow: 0 24px 56px rgba(54, 106, 105, 0.16);
+}
+
+.assessment-ready__trial-card::before,
+.assessment-ready__rule-card::before,
+.assessment-result__summary::before {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  content: '';
+  border: 1px solid rgba(186, 151, 76, 0.2);
+  border-radius: 24px;
+  background:
+    linear-gradient(120deg, transparent 0 45%, rgba(255, 255, 255, 0.5) 50%, transparent 56% 100%),
+    repeating-linear-gradient(115deg, rgba(49, 121, 105, 0.04) 0 1px, transparent 1px 26px);
+  background-size: 240% 100%, auto;
+  animation: assessment-paper-shine 7s ease-in-out infinite;
+}
+
+.assessment-ready__seal {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid rgba(186, 151, 76, 0.36);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(229, 247, 242, 0.92), rgba(142, 199, 190, 0.7));
+  color: #1f5b58;
+  font-size: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 14px 28px rgba(67, 128, 123, 0.18);
+  transform: rotate(8deg);
+}
+
+.assessment-ready__quick-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.assessment-ready__quick-stats span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid rgba(83, 145, 138, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  color: #1d5659;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.assessment-ready__input,
+.assessment-ready__intro-card,
+.assessment-ready__score-card,
+.assessment-ready__chapter-card,
+.assessment-result__stat-card,
+.assessment-result__section-card {
+  border-color: rgba(83, 145, 138, 0.2);
+  background: rgba(250, 255, 252, 0.68);
+  color: #173d42;
+}
+
+.assessment-exam-dialog__backdrop {
+  background:
+    radial-gradient(circle at 24% 14%, rgba(214, 244, 237, 0.58), transparent 34%),
+    linear-gradient(180deg, rgba(242, 252, 249, 0.72), rgba(191, 222, 216, 0.82));
+  backdrop-filter: blur(14px);
+}
+
+.assessment-exam-dialog__panel {
+  border-color: rgba(83, 145, 138, 0.24);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.9), transparent 34%),
+    linear-gradient(180deg, rgba(245, 255, 251, 0.94), rgba(220, 241, 236, 0.9));
+}
+
+.assessment-exam__overview-head h2,
+.assessment-result__summary-head h2,
+.assessment-ready h2,
+.assessment-ready h3,
+.assessment-exam__chapter-title h2,
+.assessment-exam__order-head h3 {
+  color: #173d42;
+}
+
+.assessment-exam__time-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(83, 145, 138, 0.24);
+  background:
+    radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.75), transparent 45%),
+    linear-gradient(145deg, rgba(231, 250, 245, 0.94), rgba(163, 211, 201, 0.72));
+  color: #173d42;
+  box-shadow: 0 16px 30px rgba(65, 130, 122, 0.16);
+}
+
+.assessment-exam__time-card--warning {
+  border-color: rgba(183, 119, 52, 0.38);
+  background: linear-gradient(145deg, rgba(255, 246, 226, 0.96), rgba(232, 200, 139, 0.76));
+  animation: assessment-time-pulse 1.6s ease-in-out infinite;
+}
+
+.assessment-exam__time-card span,
+.assessment-exam__time-card strong,
+.assessment-exam__progress-meta span,
+.assessment-exam__chapter-meta span,
+.assessment-ready__notice,
+.assessment-ready__helper,
+.assessment-result__footer-meta span,
+.assessment-result__retake-note {
+  color: rgba(23, 61, 66, 0.78);
+}
+
+.assessment-exam__time-card strong {
+  color: #173d42;
+}
+
+.assessment-exam__progress-ribbon {
+  position: relative;
+  height: 10px;
+  margin-top: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(83, 145, 138, 0.14);
+}
+
+.assessment-exam__progress-ribbon span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(73, 151, 138, 0.78), rgba(211, 188, 112, 0.88), rgba(115, 190, 178, 0.82));
+  box-shadow: 0 0 18px rgba(83, 145, 138, 0.32);
+  transition: width 0.36s ease;
+}
+
+.assessment-exam__section-pill {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(83, 145, 138, 0.18);
+  background: rgba(250, 255, 252, 0.66);
+  color: #173d42;
+  box-shadow: 0 12px 26px rgba(58, 116, 112, 0.1);
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.assessment-exam__section-pill:hover,
+.assessment-exam__section-pill--active {
+  transform: translateY(-3px) rotate(-0.4deg);
+  border-color: rgba(186, 151, 76, 0.42);
+  background: linear-gradient(145deg, rgba(234, 250, 244, 0.96), rgba(197, 230, 222, 0.8));
+  box-shadow: 0 18px 34px rgba(58, 116, 112, 0.16);
+}
+
+.assessment-exam__catalog-entry {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px solid rgba(83, 145, 138, 0.24);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.72), transparent 40%),
+    linear-gradient(145deg, rgba(235, 250, 245, 0.9), rgba(202, 232, 224, 0.78));
+  color: #173d42;
+  text-align: left;
+  box-shadow: 0 12px 24px rgba(60, 118, 114, 0.12);
+}
+
+.assessment-exam__catalog-entry span {
+  font-size: 0.78rem;
+  color: rgba(35, 83, 86, 0.64);
+}
+
+.assessment-exam__catalog-entry strong {
+  font-size: 0.92rem;
+  color: #173d42;
+}
+
+.assessment-exam__order-button,
+.assessment-result__order-button {
+  border-color: rgba(83, 145, 138, 0.2);
+  background: rgba(255, 255, 255, 0.62);
+  color: #1d5659;
+}
+
+.assessment-exam__order-button--active,
+.assessment-result__order-button--active {
+  border-color: rgba(186, 151, 76, 0.52);
+  background: linear-gradient(145deg, rgba(212, 236, 229, 0.96), rgba(179, 218, 209, 0.86));
+  color: #173d42;
+}
+
+.assessment-exam__order-button--answered,
+.assessment-result__order-button--answered {
+  background: rgba(222, 244, 238, 0.86);
+}
+
+.assessment-result__summary {
+  border-radius: 34px;
+}
+
+.assessment-result__score-badge {
+  border-color: rgba(83, 145, 138, 0.22);
+  background: linear-gradient(145deg, rgba(234, 250, 244, 0.98), rgba(178, 218, 209, 0.8));
+  color: #173d42;
+  box-shadow: 0 18px 36px rgba(58, 116, 112, 0.16);
+}
+
+.assessment-result__score-badge--passed {
+  border-color: rgba(186, 151, 76, 0.44);
+  background: radial-gradient(circle at 28% 0%, rgba(255, 255, 255, 0.8), transparent 42%), linear-gradient(145deg, rgba(232, 247, 241, 0.98), rgba(209, 188, 113, 0.34));
+}
+
+@keyframes assessment-paper-shine {
+  0%, 100% { background-position: 170% 0, 0 0; }
+  50% { background-position: -90% 0, 0 0; }
+}
+
+@keyframes assessment-time-pulse {
+  0%, 100% { box-shadow: 0 16px 30px rgba(183, 119, 52, 0.12); }
+  50% { box-shadow: 0 16px 34px rgba(183, 119, 52, 0.28); }
+}
+
+@media (max-width: 720px) {
+  .page--assessment { gap: 22px; }
+
+  .assessment-ready__trial-card,
+  .assessment-ready__rule-card { border-radius: 26px; }
+
+  .assessment-ready__seal {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    font-size: 1.18rem;
+  }
+
+  .assessment-ready__quick-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .assessment-ready__quick-stats span { justify-content: flex-start; }
+
+  .assessment-exam-dialog__panel {
+    overflow: hidden;
+    padding: 10px 8px;
+  }
+
+  .assessment-exam--dialog {
+    display: grid;
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .assessment-exam__sticky {
+    position: relative;
+    top: auto;
+  }
+
+  .assessment-exam__overview {
+    padding: 14px 12px;
+    border-radius: 22px;
+  }
+
+  .assessment-exam__overview-head { align-items: stretch; }
+  .assessment-exam__overview-head h2 { font-size: 1.08rem; }
+
+  .assessment-exam__overview-side {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .assessment-exam__time-card {
+    min-height: 54px;
+    padding: 8px 12px;
+    border-radius: 18px;
+  }
+
+  .assessment-exam__temporary-exit {
+    min-width: 76px;
+    min-height: 54px;
+    padding: 0 10px;
+  }
+
+  .assessment-exam__progress-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assessment-exam__progress-meta span:last-child { grid-column: 1 / -1; }
+  .assessment-exam__section-track { grid-auto-columns: minmax(126px, 46vw); }
+
+  .assessment-exam__body {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 2px 8px;
+  }
+
+  .assessment-exam__chapter-card,
+  .assessment-exam__order-card {
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .assessment-exam__question-workspace { gap: 10px; }
+
+  .assessment-exam__order-card:has(.assessment-exam__order-grid) {
+    position: fixed;
+    right: 10px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 22;
+    max-height: min(62vh, 460px);
+    overflow: auto;
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(34, 82, 82, 0.28);
+    animation: assessment-catalog-rise 0.28s ease both;
+  }
+
+  .assessment-exam__order-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+  .assessment-exam__actions--dialog {
+    position: relative;
+    z-index: 25;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 8px;
+    padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+    border: 1px solid rgba(83, 145, 138, 0.2);
+    background: rgba(245, 255, 251, 0.9);
+    backdrop-filter: blur(18px);
+  }
+
+  .assessment-exam__actions--dialog .ink-button { min-height: 48px; }
+  .assessment-result__summary { border-radius: 26px; }
+}
+
+@keyframes assessment-catalog-rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assessment-ready__trial-card::before,
+  .assessment-ready__rule-card::before,
+  .assessment-result__summary::before,
+  .assessment-exam__time-card--warning,
+  .assessment-exam__order-card:has(.assessment-exam__order-grid) {
+    animation: none;
+  }
+
+  .assessment-exam__section-pill,
+  .assessment-exam__progress-ribbon span {
+    transition: none;
   }
 }
 </style>
