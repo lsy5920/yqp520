@@ -3,7 +3,6 @@ import { computed, onMounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import MusicLyricOverlay from '@/components/music/MusicLyricOverlay.vue'
 import MusicPlaybackOverlay from '@/components/music/MusicPlaybackOverlay.vue'
-import MusicPlayer from '@/components/music/MusicPlayer.vue'
 import BackTopButton from '@/components/layout/BackTopButton.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
 import SiteHeader from '@/components/layout/SiteHeader.vue'
@@ -16,36 +15,35 @@ const {
   currentLyricLine,
   desiredPlaying,
   confirmPlaybackPrompt,
+  currentTimeSeconds,
   hasAvailableTrack,
   initializeAudio,
   isPlaybackPromptVisible,
   isPlaying,
   lastError,
+  nextLyricLine,
   playbackPromptActionText,
   playbackPromptDescription,
   playbackPromptResumeText,
   playbackPromptTitle,
+  setVolume,
   statusText,
-  shouldShowLyricOverlay,
   togglePlayback,
+  volume,
 } = useSiteAudio(siteContent.musicTracks)
 
 // 这里读取当前路由，方便给特定页面单独抬高悬浮控件。
 const route = useRoute()
 
-// 这里给特定页面预留播放器和返回顶部按钮的位置，避免和底部操作条挤在一起。
+// 这里给特定页面预留返回顶部按钮的位置，避免和底部操作条挤在一起。
 const siteShellStyle = computed<Record<string, string>>(() => {
   if (route.name !== 'memberCard') {
     return {} as Record<string, string>
   }
 
   return {
-    '--site-player-bottom': '118px',
-    '--site-player-bottom-mobile': '118px',
     '--site-backtop-bottom': '214px',
     '--site-backtop-bottom-mobile': '214px',
-    '--site-lyric-bottom': '44px',
-    '--site-lyric-bottom-mobile': '44px',
   }
 })
 
@@ -81,8 +79,20 @@ onMounted(() => {
     <BackTopButton />
 
     <MusicLyricOverlay
+      :cover-text="currentTrack?.coverText ?? '待置入曲目'"
       :current-line="currentLyricLine?.text ?? ''"
-      :visible="shouldShowLyricOverlay"
+      :current-time-seconds="currentTimeSeconds"
+      :desired-playing="desiredPlaying"
+      :has-track="hasAvailableTrack"
+      :is-playing="isPlaying"
+      :last-error="lastError"
+      :next-line="nextLyricLine?.text ?? ''"
+      :status-text="statusText"
+      :track-name="currentTrack?.name ?? '云栖清音'"
+      :visible="hasAvailableTrack"
+      :volume="volume"
+      @toggle-play="togglePlayback"
+      @volume-change="setVolume"
     />
 
     <MusicPlaybackOverlay
@@ -96,15 +106,5 @@ onMounted(() => {
       @confirm-play="confirmPlaybackPrompt"
     />
 
-    <MusicPlayer
-      :cover-text="currentTrack?.coverText ?? '待置入曲目'"
-      :desired-playing="desiredPlaying"
-      :has-track="hasAvailableTrack"
-      :is-playing="isPlaying"
-      :last-error="lastError"
-      :status-text="statusText"
-      :track-name="currentTrack?.name ?? '云栖清音'"
-      @toggle-play="togglePlayback"
-    />
   </div>
 </template>

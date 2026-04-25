@@ -960,14 +960,6 @@ export function useSiteAudio(tracks: readonly MusicTrack[] = []) {
   })
 
   /**
-   * 是否显示歌词浮层
-   * 用途：只有真正播放到歌词区间时才显示，减少正文遮挡。
-   */
-  const shouldShowLyricOverlay = computed<boolean>(() => (
-    isPlaying.value && Boolean(currentLyricLine.value?.text)
-  ))
-
-  /**
    * 浮窗主标题
    * 用途：根据不同触发原因，输出更贴合场景的标题文案。
    */
@@ -1042,7 +1034,6 @@ export function useSiteAudio(tracks: readonly MusicTrack[] = []) {
     togglePlayback,
     pauseAudio,
     statusText: readonly(statusText),
-    shouldShowLyricOverlay,
     tracks: readonly(trackList),
     volume: readonly(volume),
     waitingForGestureRetry: readonly(waitingForGestureRetry),
