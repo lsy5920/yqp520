@@ -1,9 +1,14 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import RosterPosterStudio from '@/components/roster/RosterPosterStudio.vue'
+import { ASSESSMENT_RESULT_STORAGE_KEY, useAssessmentStorage } from '@/composables/useAssessmentStorage'
 import { useRevealMotion } from '@/composables/useRevealMotion'
+import { assessmentPaperConfig } from '@/data/assessmentContent'
 import {
   createEmptyRosterCardForm,
+  getRosterBondOption,
+  getRosterIdentityOption,
   rosterBondOptions,
   rosterContent,
   rosterCoverOptions,
@@ -13,7 +18,8 @@ import {
 } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { checkRosterNameAvailable, submitRosterEntry } from '@/services/roster'
-import type { RosterBondKey, RosterCardFormValue, RosterCoverKey, RosterIdentityKey, RosterRegistrationStepKey } from '@/types/roster'
+import type { AssessmentResult } from '@/types/assessment'
+import type { PublicRosterCard, RosterBondKey, RosterCardFormValue, RosterCoverKey, RosterIdentityKey, RosterRegistrationStepKey } from '@/types/roster'
 import {
   clearRosterCardDraft,
   getRosterCoverGradient,
@@ -23,11 +29,26 @@ import {
   validateRosterCardForm,
 } from '@/utils/roster'
 
+// 这里定义登记资格提示结构，方便模板统一展示未考核、未达标和已合格状态。
+interface RosterAssessmentGateView {
+  /** 用途：是否允许进入登记；入参含义：无；返回值含义：无 */
+  allowed: boolean
+  /** 用途：提示标题；入参含义：无；返回值含义：无 */
+  title: string
+  /** 用途：提示正文；入参含义：无；返回值含义：无 */
+  description: string
+  /** 用途：成绩说明；入参含义：无；返回值含义：无 */
+  scoreText: string
+}
+
 // 这里保存页面根节点，用于统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
 
 // 这里启用页面显现动效，让手机卷轴进入时更顺滑。
 useRevealMotion({ rootRef: pageRef })
+
+// 这里拿到考核本地存储读取工具，登记资格只做本机拦截。
+const { safeReadJson } = useAssessmentStorage()
 
 // 这里保存当前步骤，手机端一次只聚焦一段内容。
 const activeStepKey = ref<RosterRegistrationStepKey>('basic')
@@ -47,11 +68,17 @@ const isSubmitting = ref<boolean>(false)
 // 这里记录校验和提交错误，方便用户按提示修改。
 const errorList = ref<string[]>([])
 
-// 这里记录成功弹窗提示，提交完成后提醒用户等待审核。
+// 这里记录最近一次问心榜考核结果，登记页会据此决定是否放行。
+const latestAssessmentResult = ref<AssessmentResult | null>(null)
+
+// 这里记录成功弹窗提示，提交完成后提醒用户保存待审名册令。
 const successMessage = ref<string>('')
 
 // 这里记录成功回执号，方便弹窗里展示登记已经成功。
 const successReceiptCode = ref<string>('')
+
+// 这里记录登记成功后用于生成待审海报的公开安全数据。
+const successPosterEntry = ref<PublicRosterCard | null>(null)
 
 // 这里计算当前步骤序号，供下一步和上一步使用。
 const activeStepIndex = computed<number>(() => rosterRegistrationSteps.findIndex((step) => step.key === activeStepKey.value))
@@ -70,15 +97,146 @@ const previewCardStyle = computed<Record<string, string>>(() => ({
 // 这里计算已完成步骤数量，用于顶部进度条。
 const finishedStepPercent = computed<string>(() => `${((activeStepIndex.value + 1) / rosterRegistrationSteps.length) * 100}%`)
 
+// 这里计算当前考核是否达到登记门槛，题卷版本、合格标记和分数都必须满足。
+const canRegisterRoster = computed<boolean>(() => isAssessmentResultQualified(latestAssessmentResult.value))
+
+// 这里计算登记资格提示内容，模板按它显示引导卡或合格提示。
+const assessmentGateView = computed<RosterAssessmentGateView>(() => {
+  const result = latestAssessmentResult.value
+
+  if (!result) {
+    return {
+      allowed: false,
+      title: '先过问心榜，再递名册令',
+      description: '本机还没有找到最近一次入派考核结果。请先完成问心考核，达到八十分合格后再回来登记。',
+      scoreText: `当前题卷：${assessmentPaperConfig.version} · 合格线 ${assessmentPaperConfig.passScore} 分`,
+    }
+  }
+
+  if (result.paperVersion !== assessmentPaperConfig.version) {
+    return {
+      allowed: false,
+      title: '题卷已经更新，请重新考核',
+      description: '你本机保存的是旧版问心榜结果。为保证入册口径一致，请按当前题卷重新完成考核。',
+      scoreText: `旧题卷：${result.paperVersion || '未知'} · 当前题卷：${assessmentPaperConfig.version}`,
+    }
+  }
+
+  if (!isAssessmentResultQualified(result)) {
+    return {
+      allowed: false,
+      title: '问心榜尚未达标',
+      description: '登记需要当前题卷考核合格，且分数不低于八十分。先温一遍立派全典，再回来会稳很多。',
+      scoreText: `最近成绩：${Number(result.score || 0)} / ${Number(result.totalScore || assessmentPaperConfig.totalScore)} 分 · 合格线 ${assessmentPaperConfig.passScore} 分`,
+    }
+  }
+
+  return {
+    allowed: true,
+    title: '问心榜已合格',
+    description: '本机最近一次考核已经达到登记门槛，可以继续递交云栖名册令。',
+    scoreText: `最近成绩：${result.score} / ${result.totalScore} 分 · 已通过`,
+  }
+})
+
 // 这里在页面打开时恢复本地草稿。
 onMounted(() => {
   formValue.value = loadRosterCardDraft(createEmptyRosterCardForm())
+  refreshAssessmentResult()
+  window.addEventListener('focus', refreshAssessmentResult)
+  document.addEventListener('visibilitychange', refreshAssessmentResult)
+})
+
+// 这里在页面离开时清理监听，避免重复进入登记页后多次读取本地记录。
+onUnmounted(() => {
+  window.removeEventListener('focus', refreshAssessmentResult)
+  document.removeEventListener('visibilitychange', refreshAssessmentResult)
 })
 
 // 这里监听表单变化自动保存草稿，避免误刷新丢失。
 watch(formValue, (nextValue) => {
   saveRosterCardDraft(nextValue)
 }, { deep: true })
+
+/**
+ * 刷新考核结果
+ * 用途：从浏览器本地读取最近一次问心榜成绩
+ * 入参：无
+ * 返回值：无返回值
+ */
+function refreshAssessmentResult(): void {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    return
+  }
+
+  latestAssessmentResult.value = safeReadJson<AssessmentResult>(ASSESSMENT_RESULT_STORAGE_KEY)
+}
+
+/**
+ * 判断考核结果是否合格
+ * 用途：登记页展示和提交前二次拦截共用同一套门槛
+ * 入参：result 为本机保存的最近一次考核结果
+ * 返回值：合格返回 true，否则返回 false
+ */
+function isAssessmentResultQualified(result: AssessmentResult | null): boolean {
+  if (!result) {
+    return false
+  }
+
+  const score = Number(result.score)
+  return result.paperVersion === assessmentPaperConfig.version
+    && result.passed === true
+    && Number.isFinite(score)
+    && score >= assessmentPaperConfig.passScore
+}
+
+/**
+ * 构造待审海报数据
+ * 用途：登记成功后只用公开安全字段生成待云司审核海报
+ * 入参：form 为已清洗表单，publicSlug 为提交成功后的公开标识
+ * 返回值：返回可供海报组件使用的名帖数据
+ */
+function buildPendingPosterEntry(form: RosterCardFormValue, publicSlug: string): PublicRosterCard {
+  const identityKey = (form.identityKey || 'wanderer') as RosterIdentityKey
+  const bondKey = (form.bondKey || 'quiet') as RosterBondKey
+  const identity = getRosterIdentityOption(identityKey)
+  const bond = getRosterBondOption(bondKey)
+  const createdAt = new Date().toISOString()
+
+  return {
+    id: publicSlug,
+    publicSlug,
+    jianghuName: form.jianghuName,
+    displayTitle: '待云司审核',
+    entryNo: null,
+    identityKey: identity.key,
+    identityLabel: identity.label,
+    regionText: form.isRegionPublic ? form.regionText : '云深不知处',
+    motto: form.motto,
+    storyText: form.isStoryPublic ? form.storyText : '此位同门选择把故事藏进云雾里。',
+    skillTags: [...form.skillTags],
+    bondKey: bond.key,
+    bondLabel: bond.label,
+    bondText: form.bondText || bond.description,
+    coverKey: form.coverKey,
+    heatValue: 0,
+    featuredLevel: 0,
+    approvedAt: '',
+    createdAt,
+  }
+}
+
+/**
+ * 关闭成功弹窗
+ * 用途：用户保存或复制后关闭待审海报弹窗
+ * 入参：无
+ * 返回值：无返回值
+ */
+function closeSuccessDialog(): void {
+  successMessage.value = ''
+  successReceiptCode.value = ''
+  successPosterEntry.value = null
+}
 
 /**
  * 切换步骤
@@ -218,6 +376,13 @@ async function handleSubmit(): Promise<void> {
   errorList.value = []
   successMessage.value = ''
   successReceiptCode.value = ''
+  successPosterEntry.value = null
+
+  refreshAssessmentResult()
+  if (!canRegisterRoster.value) {
+    errorList.value = [assessmentGateView.value.description]
+    return
+  }
 
   if (!isSupabaseConfigured()) {
     errorList.value = [getSupabaseConfigErrorText()]
@@ -233,11 +398,17 @@ async function handleSubmit(): Promise<void> {
   isSubmitting.value = true
 
   try {
-    const result = await submitRosterEntry({ form: normalizedForm.value })
+    const submittedForm = {
+      ...normalizedForm.value,
+      skillTags: [...normalizedForm.value.skillTags],
+    }
+    const result = await submitRosterEntry({ form: submittedForm })
     clearRosterCardDraft()
     formValue.value = createEmptyRosterCardForm()
     activeStepKey.value = 'basic'
-    successMessage.value = `名帖已递入云栖案头，回执号：${result.publicSlug}。执事审核后即可公开入册。`
+    successReceiptCode.value = result.publicSlug
+    successPosterEntry.value = buildPendingPosterEntry(submittedForm, result.publicSlug)
+    successMessage.value = `名帖已递入云栖案头，回执号：${result.publicSlug}。请保存待审名册令，分享给云司扫码审核。`
   } catch (error) {
     errorList.value = [error instanceof Error ? error.message : '提交名帖失败，请稍后重试。']
   } finally {
@@ -262,6 +433,18 @@ async function handleSubmit(): Promise<void> {
         <RouterLink class="roster-ghost-link" to="/roster/list">先去翻看名册</RouterLink>
       </div>
 
+      <section v-if="!canRegisterRoster" class="roster-assessment-gate reveal-on-scroll">
+        <div class="roster-assessment-gate__cloud" aria-hidden="true"></div>
+        <span>{{ assessmentGateView.scoreText }}</span>
+        <h2>{{ assessmentGateView.title }}</h2>
+        <p>{{ assessmentGateView.description }}</p>
+        <div class="roster-assessment-gate__actions">
+          <RouterLink class="roster-button" to="/join#exam">去入派考核</RouterLink>
+          <button type="button" class="roster-button roster-button--ghost" @click="refreshAssessmentResult">我已考完，重新检查</button>
+        </div>
+      </section>
+
+      <template v-else>
       <div class="roster-step-track" aria-label="登记步骤">
         <button
           v-for="step in rosterRegistrationSteps"
@@ -406,6 +589,7 @@ async function handleSubmit(): Promise<void> {
           </button>
         </div>
       </section>
+      </template>
     </section>
 
     <div v-if="successMessage" class="roster-success-dialog" role="dialog" aria-modal="true" aria-label="名帖递交成功">
@@ -414,7 +598,13 @@ async function handleSubmit(): Promise<void> {
         <h2>名帖已递交，待审核</h2>
         <p>{{ successMessage }}</p>
         <small v-if="successReceiptCode">回执号：{{ successReceiptCode }}</small>
-        <button type="button" class="roster-button" @click="successMessage = ''">我知道了</button>
+        <RosterPosterStudio
+          v-if="successPosterEntry"
+          :entry="successPosterEntry"
+          status="pending"
+          :allow-poster-actions="true"
+        />
+        <button type="button" class="roster-button roster-success-dialog__close" @click="closeSuccessDialog">关闭弹窗</button>
       </div>
     </div>
   </main>
@@ -740,6 +930,76 @@ async function handleSubmit(): Promise<void> {
   background: rgba(127, 29, 29, 0.22);
 }
 
+.roster-assessment-gate {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  overflow: hidden;
+  padding: clamp(24px, 5vw, 42px);
+  border: 1px solid rgba(96, 170, 184, 0.24);
+  border-radius: 36px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #103f4a;
+  box-shadow: 0 28px 70px rgba(55, 143, 158, 0.18);
+  backdrop-filter: blur(24px);
+}
+
+.roster-assessment-gate__cloud {
+  position: absolute;
+  right: -58px;
+  bottom: -56px;
+  width: 250px;
+  height: 170px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 28% 44%, rgba(255, 255, 255, 0.98), transparent 34%),
+    radial-gradient(circle at 62% 48%, rgba(175, 231, 236, 0.42), transparent 42%);
+  pointer-events: none;
+  animation: registrationCloudDrift 12s ease-in-out infinite alternate;
+}
+
+.roster-assessment-gate > *:not(.roster-assessment-gate__cloud) {
+  position: relative;
+  z-index: 1;
+}
+
+.roster-assessment-gate span {
+  color: #0d7c8a;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.roster-assessment-gate h2,
+.roster-assessment-gate p {
+  margin: 0;
+}
+
+.roster-assessment-gate h2 {
+  color: #103f4a;
+  font-size: clamp(1.8rem, 6vw, 3.4rem);
+  line-height: 1.08;
+}
+
+.roster-assessment-gate p {
+  max-width: 42em;
+  color: rgba(16, 63, 74, 0.72);
+  line-height: 1.8;
+}
+
+.roster-assessment-gate__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.roster-assessment-gate__actions .roster-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .roster-success-dialog {
   position: fixed;
   inset: 0;
@@ -754,7 +1014,9 @@ async function handleSubmit(): Promise<void> {
 .roster-success-dialog__card {
   display: grid;
   gap: 12px;
-  width: min(100%, 390px);
+  width: min(100%, 880px);
+  max-height: calc(100dvh - 44px);
+  overflow: auto;
   padding: 28px 22px;
   border: 1px solid rgba(47, 155, 145, 0.28);
   border-radius: 28px;
@@ -764,6 +1026,11 @@ async function handleSubmit(): Promise<void> {
   color: #123a3c;
   text-align: center;
   box-shadow: 0 28px 70px rgba(28, 74, 75, 0.22);
+}
+
+.roster-success-dialog__close {
+  justify-self: center;
+  min-width: 180px;
 }
 
 .roster-success-dialog__card span {
@@ -1184,10 +1451,15 @@ async function handleSubmit(): Promise<void> {
   .cloud-roster-registration .roster-tag-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .roster-assessment-gate__actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud-registration-sky__cloud {
+  .cloud-registration-sky__cloud,
+  .roster-assessment-gate__cloud {
     animation: none !important;
   }
 }

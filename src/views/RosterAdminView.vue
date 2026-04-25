@@ -1,10 +1,10 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { useRevealMotion } from '@/composables/useRevealMotion'
 import { rosterBondOptions, rosterContent, rosterCoverOptions, rosterIdentityOptions } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
-import { deleteAdminRosterEntry, listAdminRosterEntries, listRosterReviewLogs, saveAdminRosterEntry } from '@/services/roster'
+import { deleteAdminRosterEntry, getAdminRosterEntryBySlug, listAdminRosterEntries, listRosterReviewLogs, saveAdminRosterEntry } from '@/services/roster'
 import type { AdminRosterCardRecord, AdminRosterCardSavePayload, RosterCardStatus, RosterReviewLogRecord } from '@/types/roster'
 import { formatRosterDate, getRosterCoverGradient, normalizeRosterSkillTags } from '@/utils/roster'
 import { useRosterAuth } from '@/composables/useRosterAuth'
@@ -14,6 +14,9 @@ const pageRef = ref<HTMLElement | null>(null)
 
 // 这里启用统一显现动效。
 useRevealMotion({ rootRef: pageRef })
+
+// 这里读取审核台地址参数，扫码审核会带 entry 参数直达某一张名帖。
+const route = useRoute()
 
 // 这里接入名册登录状态，显示当前执事和退出按钮。
 const { adminProfile, logoutRosterAdmin } = useRosterAuth()
@@ -67,6 +70,11 @@ onMounted(() => {
   void loadEntryList()
 })
 
+// 这里监听扫码入口切换，同一个审核台页面也能直接跳到新的名帖。
+watch(() => route.query.entry, () => {
+  void selectEntryFromRouteQuery()
+})
+
 /**
  * 加载后台列表
  * 用途：按状态和关键词查询新名帖表
@@ -86,13 +94,66 @@ async function loadEntryList(): Promise<void> {
 
   try {
     entryList.value = await listAdminRosterEntries({ status: selectedStatus.value, keyword: keyword.value })
-    if (!selectedEntry.value && entryList.value.length > 0) {
+    const hasDirectEntry = await selectEntryFromRouteQuery()
+    if (!hasDirectEntry && !selectedEntry.value && entryList.value.length > 0) {
       await selectEntry(entryList.value[0]!)
     }
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '加载审核台失败，请稍后重试。'
   } finally {
     isLoading.value = false
+  }
+}
+
+/**
+ * 读取直达名帖参数
+ * 用途：从地址栏 entry 查询参数中取出公开标识
+ * 入参：无
+ * 返回值：返回公开标识，没有时返回空字符串
+ */
+function getRouteEntrySlug(): string {
+  const rawValue = route.query.entry
+  return Array.isArray(rawValue) ? String(rawValue[0] || '') : String(rawValue || '')
+}
+
+/**
+ * 按扫码参数选择名帖
+ * 用途：云司从二维码进入审核台时自动打开对应待审名帖
+ * 入参：无
+ * 返回值：如果地址里存在直达参数并已处理，则返回 true，否则返回 false
+ */
+async function selectEntryFromRouteQuery(): Promise<boolean> {
+  const entrySlug = getRouteEntrySlug().trim()
+
+  if (!entrySlug) {
+    return false
+  }
+
+  if (selectedEntry.value?.publicSlug === entrySlug) {
+    return true
+  }
+
+  try {
+    const directEntry = await getAdminRosterEntryBySlug(entrySlug)
+    if (!directEntry) {
+      errorMessage.value = '没有找到二维码对应的名帖，请确认这张海报是否来自当前名册系统。'
+      return true
+    }
+
+    // 这里把直达名帖补进当前列表，避免筛选条件不包含它时左侧没有选中项。
+    const existsIndex = entryList.value.findIndex((item) => item.id === directEntry.id)
+    if (existsIndex >= 0) {
+      entryList.value[existsIndex] = directEntry
+    } else {
+      entryList.value = [directEntry, ...entryList.value]
+    }
+
+    await selectEntry(directEntry)
+    successMessage.value = `已打开「${directEntry.jianghuName}」的审核名帖。`
+    return true
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '直达名帖加载失败，请稍后再试。'
+    return true
   }
 }
 

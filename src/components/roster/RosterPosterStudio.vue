@@ -4,15 +4,21 @@ import { toPng } from 'html-to-image'
 import { toDataURL } from 'qrcode'
 import RosterPosterCard from '@/components/roster/RosterPosterCard.vue'
 import type { PublicRosterCard } from '@/types/roster'
-import { resolveRosterEntryUrl } from '@/utils/roster'
+import { resolveRosterReviewUrl } from '@/utils/roster'
+
+// 这里定义海报状态，工作台会按状态切换按钮和说明文案。
+type RosterPosterStatus = 'pending' | 'approved'
 
 // 这里定义海报工作台入参，默认允许导出和分享。
 const props = withDefaults(defineProps<{
   /** 用途：公开名帖数据；入参含义：无；返回值含义：无 */
   entry: PublicRosterCard
+  /** 用途：海报状态；入参含义：pending 为待审，approved 为已入册；返回值含义：无 */
+  status?: RosterPosterStatus
   /** 用途：是否允许海报操作；入参含义：无；返回值含义：无 */
   allowPosterActions?: boolean
 }>(), {
+  status: 'approved',
   allowPosterActions: true,
 })
 
@@ -32,7 +38,26 @@ const isExporting = ref<boolean>(false)
 const lastError = ref<string>('')
 
 // 这里计算二维码提示文案。
-const qrHint = computed<string>(() => `${props.entry.jianghuName} 的云栖名帖链接`)
+const qrHint = computed<string>(() => `${props.entry.jianghuName} 的云海名册令链接`)
+
+// 这里计算当前是否是待审海报，面板说明会跟着切换。
+const isPendingPoster = computed<boolean>(() => props.status === 'pending')
+
+// 这里计算工作台眉题，方便用户看懂当前海报用途。
+const panelEyebrow = computed<string>(() => (isPendingPoster.value ? '待审名册令' : '正式名册令'))
+
+// 这里计算工作台标题，待审时强调保存分享给云司。
+const panelTitle = computed<string>(() => (isPendingPoster.value ? '保存此令，交由云司审核' : '把这封云海名帖带走'))
+
+// 这里计算工作台说明，明确二维码会动态流转。
+const panelLead = computed<string>(() => (
+  isPendingPoster.value
+    ? `为「${props.entry.jianghuName}」生成待审海报，二维码会带云司进入审核，审核通过后同一链接会进入公开详情。`
+    : `为「${props.entry.jianghuName}」生成正式入册海报，二维码会进入公开名帖详情。`
+))
+
+// 这里计算复制按钮文案，待审海报复制的是审核入口。
+const copyButtonText = computed<string>(() => (isPendingPoster.value ? '复制审核链接' : '复制名帖链接'))
 
 // 这里在组件挂载时生成二维码。
 onMounted(() => {
@@ -52,7 +77,7 @@ watch(() => props.entry.publicSlug, () => {
  */
 async function refreshQrCode(): Promise<void> {
   lastError.value = ''
-  shareUrl.value = resolveRosterEntryUrl(props.entry.publicSlug)
+  shareUrl.value = resolveRosterReviewUrl(props.entry.publicSlug)
 
   try {
     qrCodeUrl.value = await toDataURL(shareUrl.value, {
@@ -86,7 +111,7 @@ async function exportPoster(): Promise<{ dataUrl: string; fileName: string }> {
 
   return {
     dataUrl,
-    fileName: `云栖名帖-${props.entry.jianghuName || '同门'}-${Date.now()}.png`,
+    fileName: `云海名册令-${props.entry.jianghuName || '同门'}-${Date.now()}.png`,
   }
 }
 
@@ -133,12 +158,12 @@ async function handleCopyLink(): Promise<void> {
 <template>
   <section class="cloud-poster-studio">
     <div class="cloud-poster-studio__panel">
-      <p>云笺海报</p>
-      <h2>把这封云中名帖带走</h2>
-      <span>为「{{ entry.jianghuName }}」生成可分享的云海名帖海报，二维码直达详情页。</span>
+      <p>{{ panelEyebrow }}</p>
+      <h2>{{ panelTitle }}</h2>
+      <span>{{ panelLead }}</span>
       <div v-if="allowPosterActions" class="cloud-poster-studio__actions">
-        <button type="button" :disabled="isExporting" @click="handleDownload">{{ isExporting ? '导出中……' : '下载海报' }}</button>
-        <button type="button" @click="handleCopyLink">复制链接</button>
+        <button type="button" :disabled="isExporting" @click="handleDownload">{{ isExporting ? '保存中……' : '保存海报' }}</button>
+        <button type="button" @click="handleCopyLink">{{ copyButtonText }}</button>
         <button v-if="lastError" type="button" @click="refreshQrCode">重试二维码</button>
       </div>
       <small v-if="lastError">{{ lastError }}</small>
@@ -146,7 +171,7 @@ async function handleCopyLink(): Promise<void> {
 
     <div class="cloud-poster-studio__preview">
       <div ref="posterSourceElement" class="cloud-poster-studio__source">
-        <RosterPosterCard :entry="entry" :qr-code-url="qrCodeUrl" :qr-hint="qrHint" />
+        <RosterPosterCard :entry="entry" :qr-code-url="qrCodeUrl" :qr-hint="qrHint" :status="status" />
       </div>
     </div>
   </section>

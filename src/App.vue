@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { RouterView, useRoute } from 'vue-router'
+import { onMounted } from 'vue'
+import { RouterView } from 'vue-router'
 import MusicLyricOverlay from '@/components/music/MusicLyricOverlay.vue'
 import MusicPlaybackOverlay from '@/components/music/MusicPlaybackOverlay.vue'
-import BackTopButton from '@/components/layout/BackTopButton.vue'
 import SiteFooter from '@/components/layout/SiteFooter.vue'
 import SiteHeader from '@/components/layout/SiteHeader.vue'
 import { useSiteAudio } from '@/composables/useSiteAudio'
@@ -32,21 +31,6 @@ const {
   volume,
 } = useSiteAudio(siteContent.musicTracks)
 
-// 这里读取当前路由，方便给特定页面单独抬高悬浮控件。
-const route = useRoute()
-
-// 这里给特定页面预留返回顶部按钮的位置，避免和底部操作条挤在一起。
-const siteShellStyle = computed<Record<string, string>>(() => {
-  if (route.name !== 'memberCard') {
-    return {} as Record<string, string>
-  }
-
-  return {
-    '--site-backtop-bottom': '214px',
-    '--site-backtop-bottom-mobile': '214px',
-  }
-})
-
 // 这里在应用挂载后初始化音频系统，恢复上次的用户选择。
 onMounted(() => {
   initializeAudio()
@@ -54,7 +38,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="site-shell" :style="siteShellStyle">
+  <div class="site-shell">
     <a class="skip-link" href="#site-main">跳到主要内容</a>
 
     <div class="site-background" aria-hidden="true">
@@ -75,8 +59,6 @@ onMounted(() => {
     </main>
 
     <SiteFooter />
-
-    <BackTopButton />
 
     <MusicLyricOverlay
       :cover-text="currentTrack?.coverText ?? '待置入曲目'"

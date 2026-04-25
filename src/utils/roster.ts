@@ -160,6 +160,18 @@ export function resolveRosterEntryUrl(publicSlug: string): string {
 }
 
 /**
+ * 生成名帖动态审核链接
+ * 用途：让二维码在待审时进入审核流，入册后自动进入公开详情
+ * 入参：publicSlug 为公开链接标识
+ * 返回值：返回完整动态审核入口地址
+ */
+export function resolveRosterReviewUrl(publicSlug: string): string {
+  const baseUrl = window.location.origin
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
+  return `${baseUrl}${basePath}/roster/review/${encodeURIComponent(publicSlug)}`
+}
+
+/**
  * 保存名帖草稿
  * 用途：用户填写时自动保存，避免刷新页面丢失
  * 入参：form 为当前表单

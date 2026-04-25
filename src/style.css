@@ -26,8 +26,6 @@
   --touch-target: 44px;
   --site-player-bottom: 20px;
   --site-player-bottom-mobile: 10px;
-  --site-backtop-bottom: 104px;
-  --site-backtop-bottom-mobile: 130px;
 }
 
 * {
@@ -795,29 +793,10 @@ img {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.back-top-button {
-  position: fixed;
-  right: 26px;
-  bottom: calc(var(--site-backtop-bottom, 104px) + env(safe-area-inset-bottom));
-  z-index: 9;
-  min-width: 110px;
-  min-height: 48px;
-  padding: 12px 20px;
-  border-radius: 999px;
-  border: 1px solid rgba(55, 139, 137, 0.34);
-  background: rgba(246, 251, 244, 0.82);
-  color: var(--color-text);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(20px);
-  cursor: pointer;
-}
-
 .page-fade-enter-active,
 .page-fade-leave-active,
 .drawer-fade-enter-active,
-.drawer-fade-leave-active,
-.utility-fade-enter-active,
-.utility-fade-leave-active {
+.drawer-fade-leave-active {
   transition:
     opacity 280ms ease,
     transform 280ms ease;
@@ -826,9 +805,7 @@ img {
 .page-fade-enter-from,
 .page-fade-leave-to,
 .drawer-fade-enter-from,
-.drawer-fade-leave-to,
-.utility-fade-enter-from,
-.utility-fade-leave-to {
+.drawer-fade-leave-to {
   opacity: 0;
   transform: translateY(10px);
 }
@@ -1174,17 +1151,8 @@ img {
     line-height: 1.16;
   }
 
-  .ink-button,
-  .back-top-button {
+  .ink-button {
     min-height: 46px;
-  }
-
-  .back-top-button {
-    right: 12px;
-    bottom: calc(var(--site-backtop-bottom-mobile, 130px) + env(safe-area-inset-bottom));
-    min-width: 92px;
-    padding: 10px 14px;
-    font-size: 0.92rem;
   }
 }
 
@@ -1645,7 +1613,6 @@ body * {
 .site-nav__link,
 .site-footer__link,
 .ink-button,
-.back-top-button,
 .home-action,
 .home-mini-button,
 .anchor-list a,
@@ -1737,8 +1704,6 @@ body * {
 .site-shell {
   --site-player-bottom: 24px;
   --site-player-bottom-mobile: 16px;
-  --site-backtop-bottom: 116px;
-  --site-backtop-bottom-mobile: 152px;
 }
 
 .site-footer {
@@ -1862,16 +1827,6 @@ body * {
   .roster-button {
     width: 100%;
   }
-
-  .back-top-button {
-    right: 10px;
-    min-width: var(--touch-target);
-    width: var(--touch-target);
-    padding: 0;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-
   .roster-filter-track,
   .roster-step-track,
   .roster-tag-list {
@@ -1920,9 +1875,7 @@ body * {
   .page-fade-enter-from,
   .page-fade-leave-to,
   .drawer-fade-enter-from,
-  .drawer-fade-leave-to,
-  .utility-fade-enter-from,
-  .utility-fade-leave-to {
+  .drawer-fade-leave-to {
     opacity: 1 !important;
     transform: none !important;
   }

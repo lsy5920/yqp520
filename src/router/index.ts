@@ -12,6 +12,7 @@ const MemberCardView = () => import('@/views/MemberCardView.vue')
 const RosterRegistrationView = () => import('@/views/RosterRegistrationView.vue')
 const RosterListView = () => import('@/views/RosterListView.vue')
 const RosterEntryDetailView = () => import('@/views/RosterEntryDetailView.vue')
+const RosterReviewRedirectView = () => import('@/views/RosterReviewRedirectView.vue')
 const RosterAdminLoginView = () => import('@/views/RosterAdminLoginView.vue')
 const RosterAdminView = () => import('@/views/RosterAdminView.vue')
 
@@ -82,6 +83,12 @@ export const routes: RouteRecordRaw[] = [
     name: 'rosterEntryDetail',
     component: RosterEntryDetailView,
     meta: { title: '云栖名帖详情' },
+  },
+  {
+    path: '/roster/review/:publicSlug',
+    name: 'rosterReviewRedirect',
+    component: RosterReviewRedirectView,
+    meta: { title: '云海名册令' },
   },
   {
     path: '/roster/admin/login',

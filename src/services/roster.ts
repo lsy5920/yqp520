@@ -486,6 +486,37 @@ export async function listAdminRosterEntries(options: ListAdminRosterEntriesOpti
 }
 
 /**
+ * 按公开标识获取后台名帖
+ * 用途：云司扫码进入审核台时直接打开对应待审名帖
+ * 入参：publicSlug 为二维码里的公开链接标识
+ * 返回值：找到时返回后台名帖记录，找不到时返回 null
+ */
+export async function getAdminRosterEntryBySlug(publicSlug: string): Promise<AdminRosterCardRecord | null> {
+  await requireRosterAdminProfile()
+  const normalizedSlug = publicSlug.trim()
+
+  if (!normalizedSlug) {
+    return null
+  }
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await withRosterTimeout(
+    supabase
+      .from('yunqi_roster_cards')
+      .select('*')
+      .eq('public_slug', normalizedSlug)
+      .maybeSingle(),
+    '加载指定名帖超时，请稍后重试。',
+  )
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  return data ? mapAdminRosterCard(data as RosterCardRow) : null
+}
+
+/**
  * 获取审核日志
  * 用途：后台选择名帖后查看最近处理记录
  * 入参：cardId 为名帖编号
