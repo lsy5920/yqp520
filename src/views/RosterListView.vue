@@ -853,9 +853,17 @@ function openCard(card: PublicRosterCard): void {
     font-size: clamp(2.4rem, 15vw, 4.2rem);
   }
 
-  .cloud-roster-islands,
   .cloud-card-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .cloud-roster-islands {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cloud-roster-island:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 
   .cloud-roster-command {
@@ -863,8 +871,44 @@ function openCard(card: PublicRosterCard): void {
     border-radius: 26px;
   }
 
+  .cloud-roster-hero__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cloud-roster-hero__actions a {
+    min-width: 0;
+    padding: 0 12px;
+    text-align: center;
+  }
+
   .cloud-person-card {
-    min-height: 266px;
+    min-height: 244px;
+    padding: 15px;
+    border-radius: 26px;
+    gap: 9px;
+  }
+
+  .cloud-person-card header,
+  .cloud-person-card footer {
+    display: grid;
+    gap: 4px;
+  }
+
+  .cloud-person-card strong {
+    font-size: clamp(1.55rem, 8vw, 2.15rem);
+  }
+
+  .cloud-person-card p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    font-size: 0.92rem;
+  }
+
+  .cloud-person-card__tags i:nth-child(n + 3) {
+    display: none;
   }
 
   .cloud-roster-floating {

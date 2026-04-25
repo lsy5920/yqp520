@@ -756,6 +756,24 @@ async function handleLogout(): Promise<void> {
   .cloud-roster-admin-page .roster-admin-shell {
     width: min(100vw - 20px, 720px) !important;
   }
+
+  .cloud-roster-admin-page .roster-admin-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cloud-roster-admin-page .roster-admin-toolbar input {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .cloud-roster-admin-page .roster-admin-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cloud-roster-admin-page .roster-admin-form label.wide {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

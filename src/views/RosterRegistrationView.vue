@@ -1157,9 +1157,32 @@ async function handleSubmit(): Promise<void> {
     width: min(100vw - 20px, 430px);
   }
 
+  .cloud-roster-registration .roster-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .cloud-roster-registration .roster-choice-grid,
   .cloud-roster-registration .roster-cover-grid {
-    grid-template-columns: 1fr !important;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .cloud-roster-registration .roster-field:has(textarea),
+  .cloud-roster-registration .roster-tag-panel,
+  .cloud-roster-registration .roster-preview-card,
+  .cloud-roster-registration .roster-pledge-box,
+  .cloud-roster-registration .roster-message {
+    grid-column: 1 / -1;
+  }
+
+  .cloud-roster-registration .roster-choice-card,
+  .cloud-roster-registration .roster-cover-card {
+    min-height: 116px;
+    padding: 12px;
+  }
+
+  .cloud-roster-registration .roster-tag-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

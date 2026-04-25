@@ -409,9 +409,28 @@ async function loadEntryDetail(): Promise<void> {
     font-size: clamp(3.2rem, 18vw, 5.4rem);
   }
 
-  .cloud-detail-grid,
   .cloud-detail-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cloud-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .cloud-detail-panel {
+    padding: 18px 14px;
+    border-radius: 26px;
+  }
+
+  .cloud-detail-panel--story {
+    grid-column: 1 / -1;
+  }
+
+  .cloud-detail-actions a {
+    min-width: 0;
+    padding: 0 12px;
+    text-align: center;
   }
 }
 
