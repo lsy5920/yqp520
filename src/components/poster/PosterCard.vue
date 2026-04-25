@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 
 /**
@@ -135,11 +135,11 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   height: 100%;
   overflow: hidden;
   border-radius: 34px;
-  color: #2b2118;
+  color: #17342f;
   background:
-    radial-gradient(circle at 16% 10%, rgba(179, 30, 24, 0.16), transparent 23%),
-    radial-gradient(circle at 86% 18%, rgba(188, 145, 65, 0.24), transparent 24%),
-    linear-gradient(145deg, #f8eed7 0%, #ead8b8 48%, #d9c195 100%);
+    radial-gradient(circle at 16% 10%, rgba(15, 111, 102, 0.16), transparent 23%),
+    radial-gradient(circle at 86% 18%, rgba(112, 158, 147, 0.24), transparent 24%),
+    linear-gradient(145deg, #edf7f3 0%, #d6e9e2 48%, #a9cdc2 100%);
   box-shadow: 0 30px 72px rgba(13, 10, 6, 0.34);
 }
 
@@ -154,8 +154,8 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
 .poster-card__paper-texture {
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(78, 52, 29, 0.05) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(78, 52, 29, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 52, 47, 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(23, 52, 47, 0.04) 1px, transparent 1px),
     radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.34), transparent 18%),
     radial-gradient(circle at 78% 74%, rgba(79, 50, 24, 0.10), transparent 22%);
   background-size: 36px 36px, 42px 42px, auto, auto;
@@ -172,13 +172,13 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
 
 .poster-card__ink-mountain--back {
   height: 34%;
-  background: linear-gradient(180deg, rgba(43, 33, 24, 0), rgba(43, 33, 24, 0.34));
+  background: linear-gradient(180deg, rgba(23, 52, 47, 0), rgba(23, 52, 47, 0.34));
   clip-path: polygon(0 100%, 0 62%, 13% 42%, 30% 68%, 46% 28%, 64% 66%, 80% 36%, 100% 64%, 100% 100%);
 }
 
 .poster-card__ink-mountain--front {
   height: 24%;
-  background: linear-gradient(180deg, rgba(25, 20, 16, 0), rgba(25, 20, 16, 0.74));
+  background: linear-gradient(180deg, rgba(16, 37, 31, 0), rgba(16, 37, 31, 0.74));
   clip-path: polygon(0 100%, 0 70%, 18% 46%, 36% 74%, 54% 38%, 74% 78%, 90% 52%, 100% 72%, 100% 100%);
 }
 
@@ -186,7 +186,7 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   width: 420px;
   height: 120px;
   border-radius: 999px;
-  background: rgba(255, 248, 230, 0.42);
+  background: rgba(244, 251, 247, 0.42);
   filter: blur(22px);
   animation: poster-card-mist 8s ease-in-out infinite;
 }
@@ -204,9 +204,9 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
 
 .poster-card__gold-border {
   inset: 26px;
-  border: 2px solid rgba(143, 98, 35, 0.45);
+  border: 2px solid rgba(62, 111, 101, 0.45);
   border-radius: 28px;
-  box-shadow: inset 0 0 0 1px rgba(255, 246, 209, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(244, 251, 247, 0.45);
 }
 
 .poster-card__content {
@@ -242,7 +242,7 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
 .poster-card__signature small,
 .poster-card__qr-copy span {
   margin: 0;
-  color: rgba(73, 47, 25, 0.72);
+  color: rgba(23, 52, 47, 0.72);
   letter-spacing: 0.12em;
 }
 
@@ -250,7 +250,7 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
 .poster-card__section-label {
   font-size: 28px;
   font-weight: 800;
-  color: #8f241d;
+  color: #0f6f66;
 }
 
 .poster-card__title {
@@ -258,8 +258,8 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   font-size: 92px;
   line-height: 1.04;
   letter-spacing: 0.08em;
-  color: #221812;
-  text-shadow: 0 4px 0 rgba(255, 246, 209, 0.48);
+  color: #10251f;
+  text-shadow: 0 4px 0 rgba(244, 251, 247, 0.48);
 }
 
 .poster-card__subtitle {
@@ -272,9 +272,9 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   gap: 8px;
   width: 150px;
   height: 170px;
-  border: 2px solid rgba(143, 36, 29, 0.55);
+  border: 2px solid rgba(15, 111, 102, 0.55);
   border-radius: 26px;
-  color: #8f241d;
+  color: #0f6f66;
   background: rgba(255, 246, 229, 0.44);
   transform: rotate(4deg);
 }
@@ -298,18 +298,18 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   align-items: stretch;
   min-height: 0;
   padding: 34px;
-  border: 1px solid rgba(143, 98, 35, 0.34);
+  border: 1px solid rgba(62, 111, 101, 0.34);
   border-radius: 34px;
-  background: rgba(255, 248, 230, 0.62);
-  box-shadow: inset 0 0 40px rgba(104, 67, 28, 0.08);
+  background: rgba(244, 251, 247, 0.62);
+  box-shadow: inset 0 0 40px rgba(23, 52, 47, 0.08);
 }
 
 .poster-card__edict-side {
   display: grid;
   place-items: center;
   border-radius: 999px;
-  color: #f7ead1;
-  background: linear-gradient(180deg, #8f241d, #531811);
+  color: #edf7f3;
+  background: linear-gradient(180deg, #0f6f66, #0b4f49);
   font-size: 72px;
   font-weight: 900;
   writing-mode: vertical-rl;
@@ -320,7 +320,7 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   font-size: 54px;
   line-height: 1.42;
   font-weight: 900;
-  color: #2b2118;
+  color: #17342f;
 }
 
 .poster-card__motto {
@@ -338,17 +338,17 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   display: grid;
   place-items: center;
   min-height: 76px;
-  border: 1px solid rgba(143, 98, 35, 0.34);
+  border: 1px solid rgba(62, 111, 101, 0.34);
   border-radius: 999px;
-  color: #3d2a1b;
-  background: rgba(255, 248, 230, 0.54);
+  color: #21443d;
+  background: rgba(244, 251, 247, 0.54);
   font-size: 24px;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 
 .poster-card__signature span {
-  color: #2b2118;
+  color: #17342f;
   font-size: 28px;
   font-weight: 900;
 }
@@ -366,8 +366,8 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   max-width: 390px;
   padding: 18px;
   border-radius: 26px;
-  background: rgba(255, 248, 230, 0.66);
-  border: 1px solid rgba(143, 98, 35, 0.34);
+  background: rgba(244, 251, 247, 0.66);
+  border: 1px solid rgba(62, 111, 101, 0.34);
 }
 
 .poster-card__qr-box {
@@ -376,8 +376,8 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   width: 150px;
   height: 150px;
   border-radius: 22px;
-  background: #fff8e8;
-  color: #8f241d;
+  background: #f4fbf7;
+  color: #0f6f66;
   font-size: 62px;
   font-weight: 900;
 }
@@ -389,7 +389,7 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
 }
 
 .poster-card__qr-copy strong {
-  color: #221812;
+  color: #10251f;
   font-size: 26px;
 }
 
@@ -404,3 +404,4 @@ const displaySignature = computed<string>(() => normalizeText(props.signature, '
   transition: none !important;
 }
 </style>
+

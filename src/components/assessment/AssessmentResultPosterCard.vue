@@ -176,19 +176,19 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
   height: 100%;
   overflow: hidden;
   border-radius: 34px;
-  color: #281c14;
+  color: #17342f;
   background:
-    radial-gradient(circle at 18% 12%, rgba(143, 36, 29, 0.16), transparent 24%),
-    radial-gradient(circle at 84% 16%, rgba(194, 151, 69, 0.24), transparent 22%),
-    linear-gradient(145deg, #fbefd6 0%, #ead5ad 52%, #caaa72 100%);
+    radial-gradient(circle at 18% 12%, rgba(15, 111, 102, 0.16), transparent 24%),
+    radial-gradient(circle at 84% 16%, rgba(112, 158, 147, 0.24), transparent 22%),
+    linear-gradient(145deg, #edf7f3 0%, #d6e9e2 52%, #9fc8bd 100%);
   box-shadow: 0 30px 72px rgba(12, 8, 4, 0.34);
 }
 
 .assessment-result-poster-card--passed {
   background:
     radial-gradient(circle at 18% 12%, rgba(41, 108, 78, 0.18), transparent 24%),
-    radial-gradient(circle at 84% 16%, rgba(194, 151, 69, 0.24), transparent 22%),
-    linear-gradient(145deg, #f8efd8 0%, #e7d0a2 52%, #b99658 100%);
+    radial-gradient(circle at 84% 16%, rgba(112, 158, 147, 0.24), transparent 22%),
+    linear-gradient(145deg, #edf7f3 0%, #d6e9e2 52%, #9fc8bd 100%);
 }
 
 .assessment-result-poster-card__texture,
@@ -202,8 +202,8 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 .assessment-result-poster-card__texture {
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(70, 45, 22, 0.05) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(70, 45, 22, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 52, 47, 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(23, 52, 47, 0.04) 1px, transparent 1px),
     radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.36), transparent 20%);
   background-size: 38px 38px, 44px 44px, auto;
   opacity: 0.58;
@@ -217,13 +217,13 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 
 .assessment-result-poster-card__mountain--back {
   height: 35%;
-  background: linear-gradient(180deg, transparent, rgba(47, 33, 22, 0.38));
+  background: linear-gradient(180deg, transparent, rgba(23, 52, 47, 0.38));
   clip-path: polygon(0 100%, 0 58%, 14% 38%, 32% 70%, 49% 30%, 66% 72%, 83% 42%, 100% 68%, 100% 100%);
 }
 
 .assessment-result-poster-card__mountain--front {
   height: 24%;
-  background: linear-gradient(180deg, transparent, rgba(31, 23, 17, 0.72));
+  background: linear-gradient(180deg, transparent, rgba(16, 37, 31, 0.72));
   clip-path: polygon(0 100%, 0 72%, 18% 48%, 38% 78%, 56% 42%, 73% 78%, 91% 54%, 100% 72%, 100% 100%);
 }
 
@@ -249,9 +249,9 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 
 .assessment-result-poster-card__border {
   inset: 26px;
-  border: 2px solid rgba(133, 88, 32, 0.44);
+  border: 2px solid rgba(62, 111, 101, 0.44);
   border-radius: 28px;
-  box-shadow: inset 0 0 0 1px rgba(255, 247, 219, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(244, 251, 247, 0.42);
 }
 
 .assessment-result-poster-card__content {
@@ -282,7 +282,7 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 .assessment-result-poster-card__eyebrow,
 .assessment-result-poster-card__section-label {
   margin: 0;
-  color: #8f241d;
+  color: #0f6f66;
   font-size: 28px;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -290,7 +290,7 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 
 .assessment-result-poster-card__title {
   margin: 0;
-  color: #211711;
+  color: #10251f;
   font-size: 88px;
   line-height: 1.04;
   letter-spacing: 0.08em;
@@ -300,7 +300,7 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 .assessment-result-poster-card__signature small,
 .assessment-result-poster-card__qr-copy span {
   margin: 0;
-  color: rgba(73, 47, 25, 0.72);
+  color: rgba(23, 52, 47, 0.72);
   font-size: 22px;
   letter-spacing: 0.12em;
 }
@@ -311,10 +311,10 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
   gap: 8px;
   width: 154px;
   height: 174px;
-  border: 2px solid rgba(143, 36, 29, 0.55);
+  border: 2px solid rgba(15, 111, 102, 0.55);
   border-radius: 26px;
-  background: rgba(255, 248, 230, 0.50);
-  color: #8f241d;
+  background: rgba(244, 251, 247, 0.50);
+  color: #0f6f66;
   transform: rotate(4deg);
 }
 
@@ -339,10 +339,10 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 .assessment-result-poster-card__score-panel,
 .assessment-result-poster-card__edict,
 .assessment-result-poster-card__qr-panel {
-  border: 1px solid rgba(133, 88, 32, 0.34);
+  border: 1px solid rgba(62, 111, 101, 0.34);
   border-radius: 32px;
-  background: rgba(255, 248, 230, 0.62);
-  box-shadow: inset 0 0 40px rgba(104, 67, 28, 0.08);
+  background: rgba(244, 251, 247, 0.62);
+  box-shadow: inset 0 0 40px rgba(23, 52, 47, 0.08);
 }
 
 .assessment-result-poster-card__score-panel {
@@ -354,13 +354,13 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 }
 
 .assessment-result-poster-card__score-panel strong {
-  color: #8f241d;
+  color: #0f6f66;
   font-size: 136px;
   line-height: 0.9;
 }
 
 .assessment-result-poster-card__score-panel span {
-  color: #3a2719;
+  color: #21443d;
   font-size: 30px;
   font-weight: 900;
 }
@@ -368,8 +368,8 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 .assessment-result-poster-card__score-panel em {
   padding: 12px 22px;
   border-radius: 999px;
-  background: #8f241d;
-  color: #fff1d7;
+  background: #0f6f66;
+  color: #edf7f3;
   font-size: 24px;
   font-style: normal;
 }
@@ -381,7 +381,7 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 
 .assessment-result-poster-card__official-copy {
   margin: 0;
-  color: #2c2017;
+  color: #17342f;
   font-size: 42px;
   line-height: 1.45;
   font-weight: 900;
@@ -399,8 +399,8 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
   place-items: center;
   min-height: 58px;
   border-radius: 999px;
-  background: rgba(143, 98, 35, 0.12);
-  color: #3a2719;
+  background: rgba(62, 111, 101, 0.12);
+  color: #21443d;
   font-size: 20px;
   font-weight: 800;
 }
@@ -412,7 +412,7 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 }
 
 .assessment-result-poster-card__signature strong {
-  color: #211711;
+  color: #10251f;
   font-size: 28px;
 }
 
@@ -431,8 +431,8 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
   width: 146px;
   height: 146px;
   border-radius: 22px;
-  background: #fff8e8;
-  color: #8f241d;
+  background: #f4fbf7;
+  color: #0f6f66;
   font-size: 62px;
   font-weight: 900;
 }
@@ -444,7 +444,7 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
 }
 
 .assessment-result-poster-card__qr-copy strong {
-  color: #211711;
+  color: #10251f;
   font-size: 26px;
 }
 
@@ -459,4 +459,5 @@ const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖
   transition: none !important;
 }
 </style>
+
 
