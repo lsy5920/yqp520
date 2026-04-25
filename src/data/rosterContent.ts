@@ -56,7 +56,7 @@ export const rosterContent = {
     eyebrow: '云栖名册 · 江湖卡册',
     title: '翻开同门名帖，遇见各路云栖侠影',
     lead: '为手机端重新打造的沉浸式名册：每一张卡都是一位同门的江湖印记。',
-    searchPlaceholder: '搜索江湖名、真实姓名、地域或专长',
+    searchPlaceholder: '搜索江湖名、编号、地域或专长',
     emptyText: '此处暂未寻到同门踪迹，换个关键词或身份试试看。',
   },
   registration: {
@@ -145,7 +145,8 @@ export function createEmptyPublicRosterCard(): PublicRosterCard {
     id: '',
     publicSlug: '',
     jianghuName: '未署名同门',
-    titleName: '云栖新客',
+    displayTitle: '待授编号',
+    entryNo: null,
     identityKey: identity.key,
     identityLabel: identity.label,
     regionText: '云深不知处',
@@ -162,5 +163,6 @@ export function createEmptyPublicRosterCard(): PublicRosterCard {
     createdAt: '',
   }
 }
+
 
 

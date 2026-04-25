@@ -70,7 +70,7 @@ interface RosterReviewLogRow {
 
 // 这里定义公开列表筛选参数。
 export interface ListPublicRosterEntriesOptions {
-  /** 用途：搜索关键字；入参含义：按江湖名、真实姓名、地域、宣言和标签检索；返回值含义：无 */
+  /** 用途：搜索关键字；入参含义：按江湖名、编号、地域、宣言和标签检索；返回值含义：无 */
   keyword?: string
   /** 用途：身份筛选；入参含义：为空时查全部；返回值含义：无 */
   identityKey?: string
@@ -156,7 +156,8 @@ function mapPublicRosterCard(row: RosterCardRow): PublicRosterCard {
     id: row.id,
     publicSlug: row.public_slug,
     jianghuName: row.jianghu_name,
-    titleName: row.title_name,
+    displayTitle: row.entry_no ? `云栖第 ${row.entry_no} 号` : '待授编号',
+    entryNo: row.entry_no,
     identityKey: identity.key,
     identityLabel: identity.label,
     regionText: row.is_region_public ? row.region_text : '云深不知处',
@@ -184,6 +185,7 @@ function mapAdminRosterCard(row: RosterCardRow): AdminRosterCardRecord {
   return {
     ...mapPublicRosterCard({ ...row, is_region_public: true, is_story_public: true }),
     status: row.status,
+    titleName: row.title_name,
     entryNo: row.entry_no,
     isPublic: row.is_public,
     isRegionPublic: row.is_region_public,
@@ -413,9 +415,6 @@ export async function listPublicRosterEntries(options: ListPublicRosterEntriesOp
   }
 
   const keyword = options.keyword?.trim()
-  if (keyword) {
-    query = query.or(`jianghu_name.ilike.%${keyword}%,title_name.ilike.%${keyword}%,region_text.ilike.%${keyword}%,motto.ilike.%${keyword}%`)
-  }
 
   const { data, error } = await withRosterTimeout(query, '加载云栖名册超时，请稍后重试。')
 
@@ -425,7 +424,7 @@ export async function listPublicRosterEntries(options: ListPublicRosterEntriesOp
 
   const rows = (data || []) as RosterCardRow[]
   const filteredRows = keyword
-    ? rows.filter((row) => [row.jianghu_name, row.title_name, row.region_text, row.motto, ...(row.skill_tags || [])].some((item) => item.includes(keyword)))
+    ? rows.filter((row) => [row.jianghu_name, String(row.entry_no || ''), row.region_text, row.motto, ...(row.skill_tags || [])].some((item) => item.includes(keyword)))
     : rows
 
   return filteredRows.map(mapPublicRosterCard)
@@ -510,45 +509,20 @@ export async function listRosterReviewLogs(cardId: string): Promise<RosterReview
 }
 
 /**
- * 保存后台名帖
- * 用途：审核台编辑展示字段、状态和备注
- * 入参：payload 为后台保存载荷
- * 返回值：返回保存后的名帖和日志编号
- */
-export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload): Promise<{ entry: AdminRosterCardRecord; logId: string }> {
-  const adminProfile = await requireRosterAdminProfile()
-  const supabase = getSupabaseClient()
-
-  const { data: oldRow, error: oldError } = await supabase
-    .from('yunqi_roster_cards')
-    .select('*')
-    .eq('id', payload.id)
-    .single()
-
-  if (oldError || !oldRow) {
-    throw new Error(resolveRosterErrorMessage(oldError) || '没有找到要保存的名帖。')
-  }
-
-  const oldCard = oldRow as RosterCardRow
-  const nextEntryNo = payload.status === 'approved'
-    ? (payload.entryNo && isValidRosterEntryNo(payload.entryNo) ? payload.entryNo : await getNextAvailableRosterEntryNo())
-    : null
-
-/**
- * ????????
- * ????????????? 4?????????????
- * ???entryNo ??????
- * ?????? 4 ??? 0 ??? true
+ * 校验入册编号
+ * 用途：确认后台手动填写的编号符合规则
+ * 入参：entryNo 为后台填写的编号
+ * 返回值：编号为正整数且不包含数字 4 时返回 true
  */
 function isValidRosterEntryNo(entryNo: number): boolean {
   return Number.isInteger(entryNo) && entryNo > 0 && !String(entryNo).includes('4')
 }
 
 /**
- * ?????????
- * ?????????????????????????????
- * ????
- * ??????????? 4 ???
+ * 获取下一个可用编号
+ * 用途：审核通过时自动按最大编号顺延生成新编号
+ * 入参：无
+ * 返回值：返回不包含数字 4 的下一个编号
  */
 async function getNextAvailableRosterEntryNo(): Promise<number> {
   const supabase = getSupabaseClient()
@@ -573,8 +547,33 @@ async function getNextAvailableRosterEntryNo(): Promise<number> {
   return nextEntryNo
 }
 
+/**
+ * 保存后台名帖
+ * 用途：审核台编辑展示字段、状态和备注
+ * 入参：payload 为后台保存载荷
+ * 返回值：返回保存后的名帖和日志编号
+ */
+export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload): Promise<{ entry: AdminRosterCardRecord; logId: string }> {
+  const adminProfile = await requireRosterAdminProfile()
+  const supabase = getSupabaseClient()
+
+  const { data: oldRow, error: oldError } = await supabase
+    .from('yunqi_roster_cards')
+    .select('*')
+    .eq('id', payload.id)
+    .single()
+
+  if (oldError || !oldRow) {
+    throw new Error(resolveRosterErrorMessage(oldError) || '没有找到要保存的名帖。')
+  }
+
+  const oldCard = oldRow as RosterCardRow
+  const nextEntryNo = payload.status === 'approved'
+    ? (payload.entryNo && isValidRosterEntryNo(payload.entryNo) ? payload.entryNo : await getNextAvailableRosterEntryNo())
+    : null
+
   if (payload.status === 'approved' && payload.entryNo && !isValidRosterEntryNo(payload.entryNo)) {
-    throw new Error('????????? 0 ??????????? 4?')
+    throw new Error('入册编号必须是大于 0 的整数，并且不能包含数字 4。')
   }
 
   const updatePayload = {

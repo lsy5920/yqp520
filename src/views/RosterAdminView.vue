@@ -265,7 +265,7 @@ async function handleLogout(): Promise<void> {
             @click="selectEntry(entry)"
           >
             <strong>{{ entry.jianghuName }}</strong>
-            <span>{{ entry.titleName }} · {{ entry.status }}</span>
+            <span>{{ entry.titleName }} · {{ entry.status }} · {{ entry.entryNo ? `编号 ${entry.entryNo}` : '待授编号' }}</span>
             <small>{{ formatRosterDate(entry.createdAt) }}</small>
           </button>
           <p v-if="!isLoading && entryList.length === 0">暂无符合条件的名帖。</p>
@@ -275,12 +275,14 @@ async function handleLogout(): Promise<void> {
           <article class="roster-admin-preview" :style="previewStyle">
             <span>{{ editForm.identityKey }}</span>
             <strong>{{ editForm.jianghuName }}</strong>
+            <em>{{ editForm.entryNo ? `编号 ${editForm.entryNo}` : '待授编号' }}</em>
             <p>{{ editForm.motto }}</p>
           </article>
 
           <div class="roster-admin-form">
             <label><span>江湖名</span><input v-model="editForm.jianghuName" type="text" /></label>
             <label><span>真实姓名</span><input v-model="editForm.titleName" type="text" /></label>
+            <label><span>入册编号</span><input v-model.number="editForm.entryNo" min="1" type="number" placeholder="已入册时自动生成，可手动修改" /></label>
             <label><span>身份</span><select v-model="editForm.identityKey"><option v-for="item in rosterIdentityOptions" :key="item.key" :value="item.key">{{ item.label }}</option></select></label>
             <label><span>地域</span><input v-model="editForm.regionText" type="text" /></label>
             <label><span>宣言</span><input v-model="editForm.motto" type="text" /></label>

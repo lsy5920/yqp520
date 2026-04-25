@@ -93,7 +93,7 @@ async function loadEntryDetail(): Promise<void> {
             <small>{{ formatRosterDate(entry.approvedAt) }} 入册</small>
           </header>
           <h1>{{ entry.jianghuName }}</h1>
-          <em>{{ entry.titleName }}</em>
+          <em>{{ entry.displayTitle }}</em>
           <p>{{ entry.motto }}</p>
           <div class="roster-detail-card__tags">
             <i v-for="tag in entry.skillTags" :key="tag">#{{ tag }}</i>

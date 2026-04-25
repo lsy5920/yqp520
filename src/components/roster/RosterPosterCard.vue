@@ -27,7 +27,7 @@ const props = defineProps<{
       <small>{{ formatRosterDate(entry.approvedAt) }}</small>
     </header>
     <section class="roster-poster-card__body">
-      <p>{{ entry.identityLabel }} · {{ entry.titleName }}</p>
+      <p>{{ entry.identityLabel }} · {{ entry.displayTitle }}</p>
       <h2>{{ entry.jianghuName }}</h2>
       <blockquote>{{ entry.motto }}</blockquote>
       <div class="roster-poster-card__tags">
@@ -37,7 +37,7 @@ const props = defineProps<{
     <footer>
       <div>
         <strong>{{ entry.bondLabel }}</strong>
-        <span>{{ entry.regionText }}</span>
+        <span>{{ entry.entryNo ? `编号 ${entry.entryNo}` : '待授编号' }}</span>
       </div>
       <img v-if="qrCodeUrl" :src="qrCodeUrl" :alt="qrHint || '名帖二维码'" />
       <small v-else>扫码同游云栖</small>
@@ -161,3 +161,4 @@ const props = defineProps<{
   50% { transform: translate3d(-20px, 18px, 0); opacity: 1; }
 }
 </style>
+

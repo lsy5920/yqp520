@@ -193,7 +193,7 @@ function openCard(card: PublicRosterCard): void {
             <small>{{ formatRosterDate(card.approvedAt) }}</small>
           </div>
           <strong>{{ card.jianghuName }}</strong>
-          <em>{{ card.titleName }}</em>
+          <em>{{ card.displayTitle }}</em>
           <p>{{ card.motto }}</p>
           <div class="roster-public-card__tags">
             <i v-for="tag in card.skillTags.slice(0, 4)" :key="tag">#{{ tag }}</i>

@@ -86,6 +86,34 @@ alter table public.yunqi_roster_cards
 add constraint yunqi_roster_cards_entry_no_check
 check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0));
 
+-- 这里给历史已入册且公开的名帖补发编号，避免前台和后台一直显示待授编号。
+do $$
+declare
+  card_record record;
+  next_entry_no integer;
+begin
+  select coalesce(max(entry_no), 0) + 1 into next_entry_no from public.yunqi_roster_cards;
+
+  for card_record in
+    select id
+    from public.yunqi_roster_cards
+    where status = 'approved'
+      and entry_no is null
+    order by coalesce(approved_at, created_at), created_at, id
+  loop
+    while position('4' in next_entry_no::text) > 0 loop
+      next_entry_no := next_entry_no + 1;
+    end loop;
+
+    update public.yunqi_roster_cards
+    set entry_no = next_entry_no
+    where id = card_record.id;
+
+    next_entry_no := next_entry_no + 1;
+  end loop;
+end;
+$$;
+
 -- 这里创建审核日志表，记录每次后台保存和状态变化。
 create table if not exists public.yunqi_roster_card_review_logs (
   id uuid primary key default gen_random_uuid(),
