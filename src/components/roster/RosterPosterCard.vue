@@ -68,7 +68,7 @@ const qrCaption = computed<string>(() => (isPending.value ? '保存此令，分�
     </header>
 
     <section class="cloud-poster-card__body">
-      <p>{{ entry.identityLabel }} · {{ entry.bondLabel }}</p>
+      <p>{{ entry.identityLabel }} · {{ entry.genderLabel }} · {{ entry.bondLabel }}</p>
       <h3>{{ entry.jianghuName }}</h3>
       <blockquote>{{ entry.motto }}</blockquote>
       <div class="cloud-poster-card__tags">

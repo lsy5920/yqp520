@@ -7,7 +7,7 @@ import { createEmptyPublicRosterCard, rosterContent } from '@/data/rosterContent
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { getPublicRosterEntryBySlug } from '@/services/roster'
 import type { PublicRosterCard } from '@/types/roster'
-import { formatRosterDate, getRosterCoverGradient } from '@/utils/roster'
+import { formatRosterDate, getRosterCoverGradient, getRosterGenderGlowStyle } from '@/utils/roster'
 
 // 这里保存页面根节点，供详情页显现动效使用。
 const pageRef = ref<HTMLElement | null>(null)
@@ -30,6 +30,7 @@ const errorMessage = ref<string>('')
 // 这里计算当前名帖封面背景。
 const detailStyle = computed<Record<string, string>>(() => ({
   '--roster-card-gradient': getRosterCoverGradient(entry.value.coverKey),
+  ...getRosterGenderGlowStyle(entry.value.genderKey),
 }))
 
 // 这里计算公开标签汇总，避免空标签撑出无意义区域。
@@ -102,7 +103,7 @@ async function loadEntryDetail(): Promise<void> {
         <article class="cloud-detail-hero" :style="detailStyle" data-reveal>
           <span class="cloud-detail-hero__mist" aria-hidden="true"></span>
           <header>
-            <span>{{ entry.identityLabel }}</span>
+            <span>{{ entry.identityLabel }} · {{ entry.genderLabel }}</span>
             <small>{{ formatRosterDate(entry.approvedAt) }} 入册</small>
           </header>
           <div class="cloud-detail-hero__name">
@@ -122,6 +123,11 @@ async function loadEntryDetail(): Promise<void> {
           <article class="cloud-detail-panel" data-reveal>
             <span>所在江湖</span>
             <p>{{ entry.regionText }}</p>
+          </article>
+
+          <article class="cloud-detail-panel" data-reveal>
+            <span>玉佩光效</span>
+            <p>{{ entry.genderLabel }} · {{ entry.genderKey === 'male' ? '青蓝玉光' : entry.genderKey === 'female' ? '粉红玉光' : '清白本色' }}</p>
           </article>
 
           <article class="cloud-detail-panel" data-reveal>
@@ -219,6 +225,7 @@ async function loadEntryDetail(): Promise<void> {
 
 .cloud-detail-hero {
   --roster-card-gradient: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(198, 239, 238, 0.72), rgba(255, 245, 191, 0.68));
+  --roster-gender-glow: rgba(255, 255, 255, 0);
   position: relative;
   display: grid;
   min-height: 520px;
@@ -233,6 +240,18 @@ async function loadEntryDetail(): Promise<void> {
     inset 0 1px 0 rgba(255, 255, 255, 0.86),
     0 36px 92px rgba(55, 143, 158, 0.22);
   backdrop-filter: blur(24px);
+}
+
+.cloud-detail-hero::before {
+  position: absolute;
+  inset: -120px auto auto -90px;
+  width: 340px;
+  height: 340px;
+  border-radius: 999px;
+  background: var(--roster-gender-glow);
+  content: '';
+  filter: blur(36px);
+  pointer-events: none;
 }
 
 .cloud-detail-hero__mist {

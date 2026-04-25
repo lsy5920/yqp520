@@ -48,6 +48,7 @@ create table if not exists public.yunqi_roster_cards (
   jianghu_name text not null,
   title_name text not null default '云栖同门',
   identity_key text not null,
+  gender_key text not null default 'unspecified',
   region_text text not null default '云深不知处',
   motto text not null,
   story_text text not null,
@@ -71,6 +72,7 @@ create table if not exists public.yunqi_roster_cards (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
   constraint yunqi_roster_cards_identity_check check (identity_key in ('swordsman','healer','strategist','artisan','wanderer','guardian')),
+  constraint yunqi_roster_cards_gender_check check (gender_key in ('male','female','unspecified')),
   constraint yunqi_roster_cards_bond_check check (bond_key in ('seeking','companion','mentor','quiet')),
   constraint yunqi_roster_cards_cover_check check (cover_key in ('mist','sword','bamboo','moon','gold','jade')),
   constraint yunqi_roster_cards_status_check check (status in ('pending','approved','deferred','rejected')),
@@ -81,6 +83,14 @@ create table if not exists public.yunqi_roster_cards (
 
 -- 这里兼容已经存在的新版名帖表；旧版新表如果缺少入册编号字段，就补上。
 alter table public.yunqi_roster_cards add column if not exists entry_no integer;
+alter table public.yunqi_roster_cards add column if not exists gender_key text not null default 'unspecified';
+update public.yunqi_roster_cards
+set gender_key = 'unspecified'
+where gender_key is null or gender_key not in ('male','female','unspecified');
+alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_cards_gender_check;
+alter table public.yunqi_roster_cards
+add constraint yunqi_roster_cards_gender_check
+check (gender_key in ('male','female','unspecified'));
 alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_cards_entry_no_check;
 alter table public.yunqi_roster_cards
 add constraint yunqi_roster_cards_entry_no_check
@@ -130,6 +140,7 @@ create table if not exists public.yunqi_roster_card_review_logs (
 -- 这里补齐索引，保证手机端搜索、筛选和后台审核更稳。
 create index if not exists idx_yunqi_roster_cards_public on public.yunqi_roster_cards(status, is_public, featured_level, approved_at desc);
 create index if not exists idx_yunqi_roster_cards_identity on public.yunqi_roster_cards(identity_key);
+create index if not exists idx_yunqi_roster_cards_gender on public.yunqi_roster_cards(gender_key);
 create unique index if not exists idx_yunqi_roster_cards_entry_no_unique on public.yunqi_roster_cards(entry_no) where entry_no is not null;
 create index if not exists idx_yunqi_roster_cards_created on public.yunqi_roster_cards(created_at desc);
 create index if not exists idx_yunqi_roster_card_logs_card on public.yunqi_roster_card_review_logs(card_id, created_at desc);
@@ -237,6 +248,7 @@ begin
       jianghu_name,
       title_name,
       identity_key,
+      gender_key,
       region_text,
       motto,
       story_text,
@@ -267,6 +279,11 @@ begin
         when coalesce(position_key, '') in ('yunsi_shi') then 'guardian'
         when coalesce(position_key, '') in ('yunsi_cai') then 'artisan'
         else 'wanderer'
+      end,
+      case
+        when lower(coalesce(gender, '')) = 'male' then 'male'
+        when lower(coalesce(gender, '')) = 'female' then 'female'
+        else 'unspecified'
       end,
       coalesce(nullif(current_city, ''), '云深不知处'),
       coalesce(nullif(entry_intent, ''), '旧册有名，今朝重归云栖。'),
@@ -303,6 +320,19 @@ begin
     where card.public_slug = coalesce(nullif(old_entry.public_slug, ''), 'legacy-' || old_entry.id::text)
       and public.clean_yunqi_roster_legacy_text(old_entry.secular_name) <> ''
       and card.title_name in ('云栖旧友', '云栖同门', '待补真实姓名');
+
+    -- 这里补救已经迁移过的旧数据：如果新版性别仍未选择，就从旧表 gender 安全回填。
+    update public.yunqi_roster_cards as card
+    set gender_key = case
+          when lower(coalesce(old_entry.gender, '')) = 'male' then 'male'
+          when lower(coalesce(old_entry.gender, '')) = 'female' then 'female'
+          else 'unspecified'
+        end,
+        internal_note = trim(card.internal_note || '；已从旧表回填性别。')
+    from public.yunqi_roster_entries as old_entry
+    where card.public_slug = coalesce(nullif(old_entry.public_slug, ''), 'legacy-' || old_entry.id::text)
+      and card.gender_key = 'unspecified'
+      and lower(coalesce(old_entry.gender, '')) in ('male','female');
   end if;
 end;
 $$;

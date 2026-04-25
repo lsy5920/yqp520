@@ -2,11 +2,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useRevealMotion } from '@/composables/useRevealMotion'
-import { rosterBondOptions, rosterContent, rosterCoverOptions, rosterIdentityOptions } from '@/data/rosterContent'
+import { rosterBondOptions, rosterContent, rosterCoverOptions, rosterGenderOptions, rosterIdentityOptions } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { deleteAdminRosterEntry, getAdminRosterEntryBySlug, listAdminRosterEntries, listRosterReviewLogs, saveAdminRosterEntry } from '@/services/roster'
 import type { AdminRosterCardRecord, AdminRosterCardSavePayload, RosterCardStatus, RosterReviewLogRecord } from '@/types/roster'
-import { formatRosterDate, getRosterCoverGradient, normalizeRosterSkillTags } from '@/utils/roster'
+import { formatRosterDate, getRosterCoverGradient, getRosterGenderGlowStyle, normalizeRosterSkillTags } from '@/utils/roster'
 import { useRosterAuth } from '@/composables/useRosterAuth'
 
 // 这里保存页面根节点，供后台卡片显现动效使用。
@@ -63,6 +63,7 @@ const statusOptions: Array<{ key: RosterCardStatus | ''; label: string }> = [
 // 这里计算当前选中名帖的预览背景。
 const previewStyle = computed<Record<string, string>>(() => ({
   '--roster-card-gradient': getRosterCoverGradient((editForm.value?.coverKey || selectedEntry.value?.coverKey || 'mist') as never),
+  ...getRosterGenderGlowStyle(editForm.value?.genderKey || selectedEntry.value?.genderKey || 'unspecified'),
 }))
 
 // 这里页面进入时加载审核列表。
@@ -187,6 +188,7 @@ function buildEditForm(entry: AdminRosterCardRecord): AdminRosterCardSavePayload
     jianghuName: entry.jianghuName,
     titleName: entry.titleName,
     identityKey: entry.identityKey,
+    genderKey: entry.genderKey,
     regionText: entry.regionText,
     motto: entry.motto,
     storyText: entry.storyText,
@@ -331,7 +333,7 @@ async function handleLogout(): Promise<void> {
             @click="selectEntry(entry)"
           >
             <strong>{{ entry.jianghuName }}</strong>
-            <span>{{ entry.titleName }} · {{ entry.status }} · {{ entry.entryNo ? `编号 ${entry.entryNo}` : '待授编号' }}</span>
+            <span>{{ entry.titleName }} · {{ entry.genderLabel }} · {{ entry.status }} · {{ entry.entryNo ? `编号 ${entry.entryNo}` : '待授编号' }}</span>
             <small>{{ formatRosterDate(entry.createdAt) }}</small>
           </button>
           <p v-if="!isLoading && entryList.length === 0">暂无符合条件的名帖。</p>
@@ -339,7 +341,7 @@ async function handleLogout(): Promise<void> {
 
         <section v-if="editForm" class="roster-admin-editor reveal-on-scroll">
           <article class="roster-admin-preview" :style="previewStyle">
-            <span>{{ editForm.identityKey }}</span>
+            <span>{{ editForm.identityKey }} · {{ rosterGenderOptions.find((item) => item.key === editForm?.genderKey)?.label || '未选择' }}</span>
             <strong>{{ editForm.jianghuName }}</strong>
             <em>{{ editForm.entryNo ? `编号 ${editForm.entryNo}` : '待授编号' }}</em>
             <p>{{ editForm.motto }}</p>
@@ -350,6 +352,7 @@ async function handleLogout(): Promise<void> {
             <label><span>真实姓名</span><input v-model="editForm.titleName" type="text" /></label>
             <label><span>入册编号</span><input v-model.number="editForm.entryNo" min="1" type="number" placeholder="已入册时自动生成，可手动修改" /></label>
             <label><span>身份</span><select v-model="editForm.identityKey"><option v-for="item in rosterIdentityOptions" :key="item.key" :value="item.key">{{ item.label }}</option></select></label>
+            <label><span>性别</span><select v-model="editForm.genderKey"><option v-for="item in rosterGenderOptions" :key="item.key" :value="item.key">{{ item.label }} · {{ item.glowLabel }}</option></select></label>
             <label><span>地域</span><input v-model="editForm.regionText" type="text" /></label>
             <label><span>宣言</span><input v-model="editForm.motto" type="text" /></label>
             <label class="wide"><span>故事</span><textarea v-model="editForm.storyText"></textarea></label>
@@ -538,12 +541,26 @@ async function handleLogout(): Promise<void> {
 }
 
 .roster-admin-preview {
+  --roster-gender-glow: rgba(255, 255, 255, 0);
+  position: relative;
   display: grid;
   gap: 10px;
   min-height: 210px;
   padding: 22px;
   border-radius: 24px;
   background: var(--roster-card-gradient);
+}
+
+.roster-admin-preview::after {
+  position: absolute;
+  inset: -24px auto auto -24px;
+  width: 190px;
+  height: 190px;
+  border-radius: 999px;
+  background: var(--roster-gender-glow);
+  content: '';
+  filter: blur(24px);
+  pointer-events: none;
 }
 
 .roster-admin-preview span,
@@ -790,6 +807,18 @@ async function handleLogout(): Promise<void> {
     radial-gradient(circle at 22% 42%, rgba(255, 255, 255, 0.92), transparent 34%),
     radial-gradient(circle at 62% 48%, rgba(175, 231, 236, 0.42), transparent 42%);
   content: '';
+  pointer-events: none;
+}
+
+.cloud-roster-admin-page .roster-admin-preview::after {
+  position: absolute;
+  inset: -28px auto auto -28px;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: var(--roster-gender-glow);
+  content: '';
+  filter: blur(28px);
   pointer-events: none;
 }
 

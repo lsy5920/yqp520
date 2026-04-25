@@ -12,6 +12,7 @@ import {
   rosterBondOptions,
   rosterContent,
   rosterCoverOptions,
+  rosterGenderOptions,
   rosterIdentityOptions,
   rosterRegistrationSteps,
   rosterSkillPresets,
@@ -19,7 +20,7 @@ import {
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { checkRosterNameAvailable, submitRosterEntry } from '@/services/roster'
 import type { AssessmentResult } from '@/types/assessment'
-import type { PublicRosterCard, RosterBondKey, RosterCardFormValue, RosterCoverKey, RosterIdentityKey, RosterRegistrationStepKey } from '@/types/roster'
+import type { PublicRosterCard, RosterBondKey, RosterCardFormValue, RosterCoverKey, RosterGenderKey, RosterIdentityKey, RosterRegistrationStepKey } from '@/types/roster'
 import {
   clearRosterCardDraft,
   getRosterCoverGradient,
@@ -211,6 +212,8 @@ function buildPendingPosterEntry(form: RosterCardFormValue, publicSlug: string):
     entryNo: null,
     identityKey: identity.key,
     identityLabel: identity.label,
+    genderKey: form.genderKey,
+    genderLabel: rosterGenderOptions.find((item) => item.key === form.genderKey)?.label || '未选择',
     regionText: form.isRegionPublic ? form.regionText : '云深不知处',
     motto: form.motto,
     storyText: form.isStoryPublic ? form.storyText : '此位同门选择把故事藏进云雾里。',
@@ -282,6 +285,16 @@ function goPreviousStep(): void {
  */
 function selectIdentity(key: RosterIdentityKey): void {
   formValue.value.identityKey = key
+}
+
+/**
+ * 选择性别
+ * 用途：登记页性别卡片点击后写入表单，后续用于玉佩光效
+ * 入参：key 为性别键名
+ * 返回值：无返回值
+ */
+function selectGender(key: RosterGenderKey): void {
+  formValue.value.genderKey = key
 }
 
 /**
@@ -482,6 +495,23 @@ async function handleSubmit(): Promise<void> {
             <span>所在地域</span>
             <input v-model="formValue.regionText" maxlength="18" placeholder="例如：江南一带 / 云深不知处" type="text" />
           </label>
+          <div class="roster-gender-panel">
+            <span>性别光效</span>
+            <div class="roster-gender-options">
+              <button
+                v-for="item in rosterGenderOptions"
+                :key="item.key"
+                type="button"
+                class="roster-gender-card"
+                :class="[`roster-gender-card--${item.key}`, { 'roster-gender-card--active': formValue.genderKey === item.key }]"
+                @click="selectGender(item.key)"
+              >
+                <strong>{{ item.label }}</strong>
+                <small>{{ item.description }}</small>
+                <em>{{ item.glowLabel }}</em>
+              </button>
+            </div>
+          </div>
           <div class="roster-choice-grid">
             <button
               v-for="item in rosterIdentityOptions"
@@ -562,6 +592,7 @@ async function handleSubmit(): Promise<void> {
           <div class="roster-preview-card" :style="previewCardStyle">
             <span>{{ normalizedForm.titleName }}</span>
             <strong>{{ normalizedForm.jianghuName || '你的江湖名' }}</strong>
+            <em>{{ rosterGenderOptions.find((item) => item.key === normalizedForm.genderKey)?.label || '未选择' }}</em>
             <p>{{ normalizedForm.motto || '你的江湖宣言会出现在这里。' }}</p>
           </div>
         </div>
@@ -806,6 +837,76 @@ async function handleSubmit(): Promise<void> {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.roster-gender-panel,
+.roster-gender-options {
+  display: grid;
+  gap: 10px;
+}
+
+.roster-gender-panel {
+  grid-column: 1 / -1;
+}
+
+.roster-gender-panel > span {
+  color: #ffe1a3;
+  font-weight: 700;
+}
+
+.roster-gender-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.roster-gender-card {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  min-height: 118px;
+  overflow: hidden;
+  padding: 14px;
+  border: 1px solid rgba(231, 190, 107, 0.18);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8efd8;
+  text-align: left;
+}
+
+.roster-gender-card::before {
+  position: absolute;
+  inset: -45% -20% auto;
+  height: 96px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0);
+  content: '';
+  filter: blur(16px);
+  pointer-events: none;
+}
+
+.roster-gender-card--male::before {
+  background: rgba(88, 210, 255, 0.42);
+}
+
+.roster-gender-card--female::before {
+  background: rgba(255, 151, 205, 0.42);
+}
+
+.roster-gender-card strong,
+.roster-gender-card small,
+.roster-gender-card em {
+  position: relative;
+  z-index: 1;
+}
+
+.roster-gender-card em {
+  color: rgba(248, 239, 216, 0.72);
+  font-style: normal;
+}
+
+.roster-gender-card--active {
+  border-color: rgba(255, 225, 163, 0.95);
+  box-shadow: 0 0 0 2px rgba(231, 190, 107, 0.16), 0 16px 36px rgba(0, 0, 0, 0.28);
+  transform: translateY(-2px);
 }
 
 .roster-choice-grid--single {
@@ -1315,6 +1416,7 @@ async function handleSubmit(): Promise<void> {
 
 .cloud-roster-registration .roster-choice-card,
 .cloud-roster-registration .roster-cover-card,
+.cloud-roster-registration .roster-gender-card,
 .cloud-roster-registration .roster-tag-list button,
 .cloud-roster-registration .roster-tag-input button,
 .cloud-roster-registration .roster-switch,
@@ -1327,6 +1429,7 @@ async function handleSubmit(): Promise<void> {
 
 .cloud-roster-registration .roster-choice-card--active,
 .cloud-roster-registration .roster-cover-card--active,
+.cloud-roster-registration .roster-gender-card--active,
 .cloud-roster-registration .roster-tag-list .roster-tag--active {
   border-color: rgba(16, 126, 146, 0.42) !important;
   background: linear-gradient(135deg, rgba(121, 214, 220, 0.9), rgba(255, 245, 191, 0.86)) !important;
@@ -1341,6 +1444,18 @@ async function handleSubmit(): Promise<void> {
 .cloud-roster-registration .roster-cover-card {
   color: #103f4a !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+.cloud-roster-registration .roster-gender-panel > span,
+.cloud-roster-registration .roster-gender-card strong {
+  color: #0d7c8a !important;
+  font-weight: 900;
+}
+
+.cloud-roster-registration .roster-gender-card small,
+.cloud-roster-registration .roster-gender-card em {
+  color: rgba(16, 63, 74, 0.66) !important;
+  line-height: 1.55;
 }
 
 .cloud-roster-registration .roster-preview-card {
@@ -1429,7 +1544,8 @@ async function handleSubmit(): Promise<void> {
   }
 
   .cloud-roster-registration .roster-choice-grid,
-  .cloud-roster-registration .roster-cover-grid {
+  .cloud-roster-registration .roster-cover-grid,
+  .cloud-roster-registration .roster-gender-options {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }

@@ -1,5 +1,5 @@
-﻿import type { RosterCardFormValue, RosterCoverKey } from '@/types/roster'
-import { getRosterBondOption, getRosterCoverOption, getRosterIdentityOption } from '@/data/rosterContent'
+﻿import type { RosterCardFormValue, RosterCoverKey, RosterGenderKey } from '@/types/roster'
+import { getRosterBondOption, getRosterCoverOption, getRosterGenderOption, getRosterIdentityOption } from '@/data/rosterContent'
 
 // 这里定义名帖草稿本地存储键名，避免和旧名册草稿混用。
 const ROSTER_CARD_DRAFT_KEY = 'yunqi-roster-card-draft-v1'
@@ -46,6 +46,16 @@ export function normalizeRosterSkillTags(tags: string[]): string[] {
 }
 
 /**
+ * 清洗性别键名
+ * 用途：把未知性别值统一兜底为未选择，避免数据库约束报错
+ * 入参：value 为原始性别键名
+ * 返回值：返回合法性别键名
+ */
+export function normalizeRosterGenderKey(value: string): RosterGenderKey {
+  return value === 'male' || value === 'female' || value === 'unspecified' ? value : 'unspecified'
+}
+
+/**
  * 清洗登记表单
  * 用途：提交、保存草稿和后台编辑前统一整理数据
  * 入参：form 为原始登记表单
@@ -56,6 +66,7 @@ export function normalizeRosterCardForm(form: RosterCardFormValue): RosterCardFo
     jianghuName: normalizeRosterShortText(form.jianghuName),
     titleName: normalizeRosterShortText(form.titleName),
     identityKey: form.identityKey,
+    genderKey: normalizeRosterGenderKey(form.genderKey),
     regionText: normalizeRosterShortText(form.regionText, '云深不知处'),
     motto: normalizeRosterShortText(form.motto),
     storyText: normalizeRosterLongText(form.storyText),
@@ -230,6 +241,36 @@ export function getRosterCoverGradient(coverKey: RosterCoverKey): string {
 }
 
 /**
+ * 获取性别光效样式
+ * 用途：让玉佩、后台预览和卷轴统一使用同一套光效
+ * 入参：genderKey 为性别键名
+ * 返回值：返回 CSS 变量对象
+ */
+export function getRosterGenderGlowStyle(genderKey: RosterGenderKey): Record<string, string> {
+  if (genderKey === 'male') {
+    return {
+      '--roster-gender-glow': 'rgba(88, 210, 255, 0.58)',
+      '--roster-gender-glow-strong': 'rgba(38, 172, 215, 0.82)',
+      '--roster-gender-ink': '#087896',
+    }
+  }
+
+  if (genderKey === 'female') {
+    return {
+      '--roster-gender-glow': 'rgba(255, 151, 205, 0.56)',
+      '--roster-gender-glow-strong': 'rgba(221, 91, 151, 0.78)',
+      '--roster-gender-ink': '#b94d7b',
+    }
+  }
+
+  return {
+    '--roster-gender-glow': 'rgba(255, 255, 255, 0)',
+    '--roster-gender-glow-strong': 'rgba(255, 255, 255, 0)',
+    '--roster-gender-ink': '#6f8e8a',
+  }
+}
+
+/**
  * 格式化日期
  * 用途：把数据库时间变成用户看得懂的中文日期
  * 入参：value 为数据库时间字符串
@@ -254,17 +295,20 @@ export function formatRosterDate(value: string): string {
  * 入参：card 为公开名帖
  * 返回值：返回补齐中文文案后的名帖
  */
-export function hydratePublicRosterCard<T extends { identityKey: string; bondKey: string }>(card: T): T & {
+export function hydratePublicRosterCard<T extends { identityKey: string; bondKey: string; genderKey?: string }>(card: T): T & {
   identityLabel: string
   bondLabel: string
+  genderLabel: string
 } {
   const identity = getRosterIdentityOption(card.identityKey as never)
   const bond = getRosterBondOption(card.bondKey as never)
+  const gender = getRosterGenderOption(normalizeRosterGenderKey(card.genderKey || 'unspecified'))
 
   return {
     ...card,
     identityLabel: identity.label,
     bondLabel: bond.label,
+    genderLabel: gender.label,
   }
 }
 

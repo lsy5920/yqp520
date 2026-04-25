@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
+import { gsap } from 'gsap'
+import { useReducedMotion } from '@/composables/useReducedMotion'
 import { useRevealMotion } from '@/composables/useRevealMotion'
 import { rosterContent, rosterIdentityOptions } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { listPublicRosterEntries } from '@/services/roster'
 import type { PublicRosterCard, RosterIdentityKey } from '@/types/roster'
-import { formatRosterDate, getRosterCoverGradient } from '@/utils/roster'
+import { formatRosterDate, getRosterGenderGlowStyle } from '@/utils/roster'
 
 /**
  * 云岛展示项类型
@@ -38,14 +40,39 @@ interface RosterCloudLayer {
   delay: string
 }
 
+/**
+ * 玉佩布局样式类型
+ * 用途：约束每枚玉佩稳定漂浮所需的 CSS 变量；入参无；返回值无
+ */
+interface RosterPendantStyle extends Record<string, string> {
+  /** 用途：横向错位值。 */
+  '--jade-x': string
+  /** 用途：纵向错位值。 */
+  '--jade-y': string
+  /** 用途：旋转角度。 */
+  '--jade-rotate': string
+  /** 用途：缩放比例。 */
+  '--jade-scale': string
+  /** 用途：入场与漂浮延迟。 */
+  '--jade-delay': string
+  /** 用途：漂浮距离。 */
+  '--jade-float': string
+  /** 用途：性别柔光。 */
+  '--roster-gender-glow': string
+  /** 用途：性别强光。 */
+  '--roster-gender-glow-strong': string
+  /** 用途：性别文字颜色。 */
+  '--roster-gender-ink': string
+}
+
 // 这里保存页面根节点，供显现动效扫描。
 const pageRef = ref<HTMLElement | null>(null)
 
 // 这里启用显现动效，让云海模块分层进入视线。
 useRevealMotion({ rootRef: pageRef })
 
-// 这里拿到路由实例，用于点击云笺后进入详情。
-const router = useRouter()
+// 这里读取系统减少动态效果偏好，决定是否关闭玉佩循环漂浮和卷轴展开动画。
+const prefersReducedMotion = useReducedMotion()
 
 // 这里保存搜索关键字。
 const keyword = ref<string>('')
@@ -58,6 +85,12 @@ const cardList = ref<PublicRosterCard[]>([])
 
 // 这里保存被按下或键盘聚焦点亮的名帖编号。
 const glowingCardId = ref<string>('')
+
+// 这里保存当前展开卷轴的名帖，空值表示没有打开详情浮层。
+const selectedCard = ref<PublicRosterCard | null>(null)
+
+// 这里保存卷轴浮层节点，方便 GSAP 执行展开动画。
+const scrollDialogRef = ref<HTMLElement | null>(null)
 
 // 这里记录加载状态。
 const isLoading = ref<boolean>(false)
@@ -117,6 +150,25 @@ onBeforeUnmount(() => {
     window.clearTimeout(searchTimer)
   }
 })
+
+// 这里监听被选中的玉佩，让卷轴在节点出现后慢慢展开。
+watch(selectedCard, async (nextCard) => {
+  if (!nextCard || prefersReducedMotion.value) {
+    return
+  }
+
+  await nextTick()
+
+  if (!scrollDialogRef.value) {
+    return
+  }
+
+  gsap.fromTo(
+    scrollDialogRef.value,
+    { opacity: 0, scaleX: 0.26, scaleY: 0.92, y: 28, filter: 'blur(10px)' },
+    { opacity: 1, scaleX: 1, scaleY: 1, y: 0, filter: 'blur(0px)', duration: 0.86, ease: 'power3.out' },
+  )
+}, { flush: 'post' })
 
 /**
  * 加载公开名帖列表
@@ -192,14 +244,69 @@ function clearGlow(): void {
 }
 
 /**
- * 打开名帖详情
- * 用途：点击云笺进入详情页
+ * 生成稳定随机数
+ * 用途：根据名帖编号生成固定漂浮位置，刷新后不会乱跳
+ * 入参：seed 为名帖标识，salt 为扰动编号
+ * 返回值：返回 0 到 1 之间的小数
+ */
+function createStableRandom(seed: string, salt: number): number {
+  let hash = 2166136261 + salt * 16777619
+
+  for (const char of seed) {
+    hash ^= char.charCodeAt(0)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return ((hash >>> 0) % 10000) / 10000
+}
+
+/**
+ * 生成玉佩漂浮样式
+ * 用途：给每枚玉佩提供稳定错位、旋转、缩放和性别光效
+ * 入参：card 为公开名帖，index 为当前列表序号
+ * 返回值：返回 CSS 变量对象
+ */
+function resolvePendantStyle(card: PublicRosterCard, index: number): RosterPendantStyle {
+  const seed = card.publicSlug || card.id || String(index)
+  const x = Math.round((createStableRandom(seed, 1) - 0.5) * 36)
+  const y = Math.round((createStableRandom(seed, 2) - 0.5) * 46)
+  const rotate = Math.round((createStableRandom(seed, 3) - 0.5) * 16)
+  const scale = 0.92 + createStableRandom(seed, 4) * 0.18
+  const float = 10 + Math.round(createStableRandom(seed, 5) * 12)
+  const glowStyle = getRosterGenderGlowStyle(card.genderKey)
+
+  return {
+    '--jade-x': `${x}px`,
+    '--jade-y': `${y}px`,
+    '--jade-rotate': `${rotate}deg`,
+    '--jade-scale': scale.toFixed(2),
+    '--jade-delay': `${(index * 0.08 + createStableRandom(seed, 6) * 0.8).toFixed(2)}s`,
+    '--jade-float': `${float}px`,
+    '--roster-gender-glow': glowStyle['--roster-gender-glow'] || 'rgba(255, 255, 255, 0)',
+    '--roster-gender-glow-strong': glowStyle['--roster-gender-glow-strong'] || 'rgba(255, 255, 255, 0)',
+    '--roster-gender-ink': glowStyle['--roster-gender-ink'] || '#6f8e8a',
+  }
+}
+
+/**
+ * 打开名帖卷轴
+ * 用途：点击玉佩后在当前页面放大并展开公开信息
  * 入参：card 为公开名帖
  * 返回值：无返回值
  */
 function openCard(card: PublicRosterCard): void {
   playSoftTapFeedback()
-  void router.push(`/roster/entry/${card.publicSlug}`)
+  selectedCard.value = card
+}
+
+/**
+ * 关闭名帖卷轴
+ * 用途：用户点击遮罩或关闭按钮后收起公开信息
+ * 入参：无
+ * 返回值：无返回值
+ */
+function closeScroll(): void {
+  selectedCard.value = null
 }
 </script>
 
@@ -279,8 +386,8 @@ function openCard(card: PublicRosterCard): void {
           <button type="button" @click="loadCardList">重新寻访</button>
         </div>
 
-        <div v-else-if="isLoading" class="cloud-card-grid" aria-label="名册加载中">
-          <article v-for="index in 6" :key="index" class="cloud-person-card cloud-person-card--skeleton"></article>
+        <div v-else-if="isLoading" class="jade-pendant-field" aria-label="名册加载中">
+          <article v-for="index in 6" :key="index" class="jade-pendant-skeleton"></article>
         </div>
 
         <div v-else-if="cardList.length === 0" class="cloud-state-card">
@@ -289,16 +396,15 @@ function openCard(card: PublicRosterCard): void {
           <RouterLink to="/roster">我来递一张名帖</RouterLink>
         </div>
 
-        <div v-else class="cloud-card-grid">
-          <article
+        <div v-else class="jade-pendant-field">
+          <button
             v-for="(card, index) in cardList"
             :key="card.id"
-            v-memo="[card.id, card.heatValue, glowingCardId === card.id]"
-            class="cloud-person-card"
-            :class="{ 'cloud-person-card--glow': glowingCardId === card.id }"
-            :style="{ '--roster-card-gradient': getRosterCoverGradient(card.coverKey), '--cloud-card-delay': `${index * 0.045}s` }"
-            role="button"
-            tabindex="0"
+            v-memo="[card.id, card.heatValue, card.genderKey, glowingCardId === card.id]"
+            type="button"
+            class="jade-pendant"
+            :class="[`jade-pendant--${card.genderKey}`, { 'jade-pendant--active': glowingCardId === card.id }]"
+            :style="resolvePendantStyle(card, index)"
             :aria-label="`打开${card.jianghuName}的云栖名帖`"
             @click="openCard(card)"
             @keydown.enter.prevent="openCard(card)"
@@ -309,23 +415,67 @@ function openCard(card: PublicRosterCard): void {
             @pointerleave="clearGlow"
             @pointerup="clearGlow"
           >
-            <span class="cloud-person-card__mist" aria-hidden="true"></span>
-            <header>
-              <span>{{ card.identityLabel }}</span>
-              <small>{{ formatRosterDate(card.approvedAt) }}</small>
-            </header>
-            <strong>{{ card.jianghuName }}</strong>
-            <em>{{ card.displayTitle }}</em>
-            <p>{{ card.motto }}</p>
-            <div class="cloud-person-card__tags">
-              <i v-for="tag in card.skillTags.slice(0, 4)" :key="tag">#{{ tag }}</i>
-            </div>
-            <footer>
-              <span>{{ card.regionText }}</span>
-              <b>热度 {{ card.heatValue }}</b>
-            </footer>
-          </article>
+            <span class="jade-pendant__glow" aria-hidden="true"></span>
+            <span class="jade-pendant__body">
+              <i class="jade-pendant__hole" aria-hidden="true"></i>
+              <small>{{ card.identityLabel }}</small>
+              <strong>{{ card.jianghuName }}</strong>
+              <em>{{ card.displayTitle }}</em>
+              <b>{{ card.genderLabel }}</b>
+            </span>
+            <span class="jade-pendant__shadow" aria-hidden="true"></span>
+          </button>
         </div>
+      </section>
+
+      <section v-if="selectedCard" class="jade-scroll-overlay" role="dialog" aria-modal="true" :aria-label="`${selectedCard.jianghuName}的公开名帖卷轴`" @click.self="closeScroll">
+        <article ref="scrollDialogRef" class="jade-scroll" :style="getRosterGenderGlowStyle(selectedCard.genderKey)">
+          <span class="jade-scroll__glow" aria-hidden="true"></span>
+          <span class="jade-scroll__axis jade-scroll__axis--left" aria-hidden="true"></span>
+          <span class="jade-scroll__axis jade-scroll__axis--right" aria-hidden="true"></span>
+          <button type="button" class="jade-scroll__close" aria-label="关闭名帖卷轴" @click="closeScroll">收起</button>
+
+          <header class="jade-scroll__head">
+            <span>云中名帖 · {{ selectedCard.genderLabel }}</span>
+            <h2>{{ selectedCard.jianghuName }}</h2>
+            <p>{{ selectedCard.displayTitle }} · {{ selectedCard.identityLabel }}</p>
+          </header>
+
+          <blockquote>{{ selectedCard.motto }}</blockquote>
+
+          <div class="jade-scroll__grid">
+            <section class="jade-scroll__panel jade-scroll__panel--wide">
+              <span>公开故事</span>
+              <p>{{ selectedCard.storyText }}</p>
+            </section>
+            <section class="jade-scroll__panel">
+              <span>所在江湖</span>
+              <p>{{ selectedCard.regionText }}</p>
+            </section>
+            <section class="jade-scroll__panel">
+              <span>羁绊状态</span>
+              <p>{{ selectedCard.bondLabel }} · {{ selectedCard.bondText }}</p>
+            </section>
+            <section class="jade-scroll__panel">
+              <span>玉佩光效</span>
+              <p>{{ selectedCard.genderKey === 'male' ? '青蓝玉光' : selectedCard.genderKey === 'female' ? '粉红玉光' : '清白本色' }}</p>
+            </section>
+            <section class="jade-scroll__panel">
+              <span>入册时间</span>
+              <p>{{ formatRosterDate(selectedCard.approvedAt) }}</p>
+            </section>
+          </div>
+
+          <div class="jade-scroll__tags">
+            <i v-for="tag in selectedCard.skillTags" :key="tag">#{{ tag }}</i>
+            <i v-if="selectedCard.skillTags.length === 0">#云深待补</i>
+          </div>
+
+          <footer class="jade-scroll__actions">
+            <RouterLink :to="`/roster/entry/${selectedCard.publicSlug}`">打开独立详情</RouterLink>
+            <button type="button" @click="closeScroll">继续看玉佩</button>
+          </footer>
+        </article>
       </section>
 
       <nav class="cloud-roster-floating" aria-label="名册快捷操作">
@@ -640,6 +790,366 @@ function openCard(card: PublicRosterCard): void {
   min-height: 240px;
 }
 
+.jade-pendant-field {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
+  gap: clamp(18px, 4vw, 44px);
+  align-items: center;
+  min-height: 560px;
+  padding: clamp(28px, 5vw, 68px) clamp(10px, 3vw, 28px);
+}
+
+.jade-pendant {
+  --jade-x: 0px;
+  --jade-y: 0px;
+  --jade-rotate: 0deg;
+  --jade-scale: 1;
+  --jade-delay: 0s;
+  --jade-float: 14px;
+  --roster-gender-glow: rgba(255, 255, 255, 0);
+  --roster-gender-glow-strong: rgba(255, 255, 255, 0);
+  --roster-gender-ink: #6f8e8a;
+  position: relative;
+  display: grid;
+  min-height: 270px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #104650;
+  cursor: pointer;
+  transform: translate3d(var(--jade-x), var(--jade-y), 0) rotate(var(--jade-rotate)) scale(var(--jade-scale));
+  transform-origin: center;
+  transition: transform 260ms ease, filter 260ms ease;
+}
+
+.jade-pendant__glow {
+  position: absolute;
+  width: 190px;
+  height: 220px;
+  border-radius: 999px;
+  background: var(--roster-gender-glow);
+  filter: blur(28px);
+  opacity: 0.88;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.jade-pendant--unspecified .jade-pendant__glow {
+  opacity: 0;
+}
+
+.jade-pendant__body {
+  position: relative;
+  display: grid;
+  width: 156px;
+  min-height: 206px;
+  place-items: center;
+  padding: 46px 18px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 48% 52% 50% 50% / 44% 44% 56% 56%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.98), transparent 24%),
+    radial-gradient(circle at 70% 78%, rgba(124, 198, 181, 0.34), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(223, 246, 237, 0.95) 54%, rgba(142, 211, 193, 0.88));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.48),
+    inset 0 -22px 42px rgba(77, 151, 142, 0.16),
+    0 26px 58px rgba(55, 143, 158, 0.2),
+    0 0 34px var(--roster-gender-glow);
+  animation: jadePendantFloat 5.6s ease-in-out infinite;
+  animation-delay: var(--jade-delay);
+}
+
+.jade-pendant__body::before,
+.jade-pendant__body::after {
+  position: absolute;
+  content: '';
+  pointer-events: none;
+}
+
+.jade-pendant__body::before {
+  inset: 14px 22px auto;
+  height: 78px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0));
+  transform: rotate(-10deg);
+}
+
+.jade-pendant__body::after {
+  inset: auto 18px 18px;
+  height: 48px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6), transparent 68%);
+}
+
+.jade-pendant__hole {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(91, 145, 137, 0.38);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(232, 251, 245, 0.98) 0 42%, rgba(119, 172, 161, 0.28) 43% 54%, rgba(255, 255, 255, 0.72) 55%);
+  transform: translateX(-50%);
+}
+
+.jade-pendant small,
+.jade-pendant strong,
+.jade-pendant em,
+.jade-pendant b {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  text-align: center;
+}
+
+.jade-pendant small {
+  color: #0d7c8a;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.jade-pendant strong {
+  max-width: 4.6em;
+  color: #103f4a;
+  font-size: clamp(1.72rem, 4vw, 2.45rem);
+  line-height: 1.04;
+}
+
+.jade-pendant em {
+  color: rgba(16, 70, 80, 0.68);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.jade-pendant b {
+  color: var(--roster-gender-ink);
+  font-size: 0.82rem;
+}
+
+.jade-pendant__shadow {
+  position: absolute;
+  right: 18%;
+  bottom: 4px;
+  left: 18%;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(55, 143, 158, 0.16);
+  filter: blur(10px);
+  transform: rotate(calc(var(--jade-rotate) * -1));
+}
+
+.jade-pendant--active,
+.jade-pendant:hover {
+  filter: saturate(1.08);
+  transform: translate3d(var(--jade-x), calc(var(--jade-y) - 8px), 0) rotate(var(--jade-rotate)) scale(calc(var(--jade-scale) + 0.05));
+}
+
+.jade-pendant--active .jade-pendant__body,
+.jade-pendant:hover .jade-pendant__body {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62),
+    inset 0 -22px 42px rgba(77, 151, 142, 0.16),
+    0 32px 72px rgba(55, 143, 158, 0.26),
+    0 0 48px var(--roster-gender-glow-strong);
+}
+
+.jade-pendant-skeleton {
+  min-height: 236px;
+  border-radius: 48% 52% 50% 50% / 44% 44% 56% 56%;
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.44)),
+    rgba(210, 242, 242, 0.58);
+  animation: cloudSkeleton 1.35s ease-in-out infinite;
+}
+
+.jade-scroll-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: max(22px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  background: rgba(23, 78, 83, 0.26);
+  backdrop-filter: blur(12px);
+}
+
+.jade-scroll {
+  --roster-gender-glow: rgba(255, 255, 255, 0);
+  position: relative;
+  display: grid;
+  gap: 18px;
+  width: min(920px, 100%);
+  max-height: calc(100dvh - 44px);
+  overflow: auto;
+  padding: clamp(28px, 5vw, 56px);
+  border: 1px solid rgba(181, 133, 67, 0.32);
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 18% 4%, var(--roster-gender-glow), transparent 24%),
+    linear-gradient(90deg, rgba(177, 130, 62, 0.16), transparent 8% 92%, rgba(177, 130, 62, 0.16)),
+    linear-gradient(145deg, #fffaf0, #f6ead0 48%, #fffdf6);
+  color: #3b2d1d;
+  box-shadow: 0 34px 92px rgba(55, 82, 80, 0.3);
+  transform-origin: center;
+}
+
+.jade-scroll__glow {
+  position: absolute;
+  inset: -90px auto auto -70px;
+  width: 280px;
+  height: 280px;
+  border-radius: 999px;
+  background: var(--roster-gender-glow);
+  filter: blur(36px);
+  pointer-events: none;
+}
+
+.jade-scroll__axis {
+  position: absolute;
+  top: 22px;
+  bottom: 22px;
+  width: 28px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c7974f, #8d5c29 52%, #d5aa66);
+  box-shadow: inset 0 0 0 1px rgba(255, 244, 210, 0.32);
+}
+
+.jade-scroll__axis--left {
+  left: -14px;
+}
+
+.jade-scroll__axis--right {
+  right: -14px;
+}
+
+.jade-scroll__close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(120, 84, 39, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #6b4a24;
+  font-weight: 900;
+}
+
+.jade-scroll__head,
+.jade-scroll blockquote,
+.jade-scroll__grid,
+.jade-scroll__tags,
+.jade-scroll__actions {
+  position: relative;
+  z-index: 1;
+}
+
+.jade-scroll__head {
+  display: grid;
+  gap: 8px;
+  padding-right: 78px;
+}
+
+.jade-scroll__head span,
+.jade-scroll__panel span {
+  color: #9b6830;
+  font-weight: 900;
+}
+
+.jade-scroll__head h2,
+.jade-scroll__head p,
+.jade-scroll blockquote,
+.jade-scroll__panel p {
+  margin: 0;
+}
+
+.jade-scroll__head h2 {
+  color: #103f4a;
+  font-size: clamp(3rem, 9vw, 6.8rem);
+  line-height: 0.92;
+}
+
+.jade-scroll__head p {
+  color: #0d7c8a;
+  font-weight: 900;
+}
+
+.jade-scroll blockquote {
+  max-width: 760px;
+  color: rgba(59, 45, 29, 0.78);
+  font-size: clamp(1.16rem, 2.2vw, 1.48rem);
+  line-height: 1.78;
+}
+
+.jade-scroll__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.jade-scroll__panel {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid rgba(181, 133, 67, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.jade-scroll__panel--wide {
+  grid-column: 1 / -1;
+}
+
+.jade-scroll__panel p {
+  color: rgba(59, 45, 29, 0.74);
+  line-height: 1.8;
+}
+
+.jade-scroll__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.jade-scroll__tags i {
+  padding: 7px 11px;
+  border: 1px solid rgba(181, 133, 67, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  color: #805629;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.jade-scroll__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.jade-scroll__actions a,
+.jade-scroll__actions button {
+  display: grid;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid rgba(120, 84, 39, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #4f391e;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.jade-scroll__actions a {
+  background: linear-gradient(135deg, #79d6dc, #fff5bf);
+  color: #103f4a;
+}
+
 .cloud-card-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -832,6 +1342,11 @@ function openCard(card: PublicRosterCard): void {
   .cloud-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .jade-pendant-field {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 520px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -856,6 +1371,51 @@ function openCard(card: PublicRosterCard): void {
   .cloud-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+
+  .jade-pendant-field {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+    min-height: auto;
+    padding: 18px 0 28px;
+  }
+
+  .jade-pendant {
+    min-height: 232px;
+    transform: translate3d(var(--jade-x), var(--jade-y), 0) rotate(var(--jade-rotate)) scale(var(--jade-scale));
+  }
+
+  .jade-pendant__body {
+    width: 136px;
+    min-height: 184px;
+    padding: 42px 14px 18px;
+  }
+
+  .jade-pendant strong {
+    font-size: clamp(1.42rem, 7vw, 1.9rem);
+  }
+
+  .jade-scroll {
+    gap: 14px;
+    padding: 34px 22px 24px;
+    border-radius: 26px;
+  }
+
+  .jade-scroll__axis {
+    width: 18px;
+  }
+
+  .jade-scroll__axis--left {
+    left: -9px;
+  }
+
+  .jade-scroll__axis--right {
+    right: -9px;
+  }
+
+  .jade-scroll__grid,
+  .jade-scroll__actions {
+    grid-template-columns: 1fr;
   }
 
   .cloud-roster-islands {
@@ -923,7 +1483,9 @@ function openCard(card: PublicRosterCard): void {
   .cloud-roster-sky__halo,
   .cloud-roster-hero::before,
   .cloud-roster-island,
-  .cloud-person-card {
+  .cloud-person-card,
+  .jade-pendant__body,
+  .jade-pendant-skeleton {
     animation: none !important;
   }
 }
@@ -1001,6 +1563,17 @@ function openCard(card: PublicRosterCard): void {
 
   50% {
     opacity: 1;
+  }
+}
+
+@keyframes jadePendantFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, calc(var(--jade-float) * -1), 0);
   }
 }
 </style>

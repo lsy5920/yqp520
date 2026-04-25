@@ -1,5 +1,5 @@
 ﻿import type { Session } from '@supabase/supabase-js'
-import { getRosterBondOption, getRosterIdentityOption } from '@/data/rosterContent'
+import { getRosterBondOption, getRosterGenderOption, getRosterIdentityOption } from '@/data/rosterContent'
 import { getSupabaseClient } from '@/lib/supabase'
 import type {
   AdminRosterCardRecord,
@@ -12,7 +12,7 @@ import type {
   SubmitRosterCardPayload,
   SubmitRosterCardResult,
 } from '@/types/roster'
-import { createRosterPublicSlug, hydratePublicRosterCard, normalizeRosterCardForm } from '@/utils/roster'
+import { createRosterPublicSlug, hydratePublicRosterCard, normalizeRosterCardForm, normalizeRosterGenderKey } from '@/utils/roster'
 
 // 这里定义请求超时时间，避免网络异常时页面一直转圈。
 const ROSTER_REQUEST_TIMEOUT_MS = 20000
@@ -24,6 +24,7 @@ interface RosterCardRow {
   jianghu_name: string
   title_name: string
   identity_key: string
+  gender_key: string
   region_text: string
   motto: string
   story_text: string
@@ -160,6 +161,8 @@ function mapPublicRosterCard(row: RosterCardRow): PublicRosterCard {
     entryNo: row.entry_no,
     identityKey: identity.key,
     identityLabel: identity.label,
+    genderKey: normalizeRosterGenderKey(row.gender_key),
+    genderLabel: '',
     regionText: row.is_region_public ? row.region_text : '云深不知处',
     motto: row.motto,
     storyText: row.is_story_public ? row.story_text : '此位同门选择把故事藏进云雾里。',
@@ -364,6 +367,7 @@ export async function submitRosterEntry(payload: SubmitRosterCardPayload): Promi
     jianghu_name: form.jianghuName,
     title_name: form.titleName,
     identity_key: form.identityKey,
+    gender_key: form.genderKey,
     region_text: form.regionText,
     motto: form.motto,
     story_text: form.storyText,
@@ -424,7 +428,10 @@ export async function listPublicRosterEntries(options: ListPublicRosterEntriesOp
 
   const rows = (data || []) as RosterCardRow[]
   const filteredRows = keyword
-    ? rows.filter((row) => [row.jianghu_name, String(row.entry_no || ''), row.region_text, row.motto, ...(row.skill_tags || [])].some((item) => item.includes(keyword)))
+    ? rows.filter((row) => {
+      const genderLabel = getRosterGenderOption(normalizeRosterGenderKey(row.gender_key)).label
+      return [row.jianghu_name, String(row.entry_no || ''), row.region_text, row.motto, genderLabel, ...(row.skill_tags || [])].some((item) => item.includes(keyword))
+    })
     : rows
 
   return filteredRows.map(mapPublicRosterCard)
@@ -611,6 +618,7 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
     jianghu_name: payload.jianghuName.trim(),
     title_name: payload.titleName.trim(),
     identity_key: payload.identityKey,
+    gender_key: payload.genderKey,
     region_text: payload.regionText.trim(),
     motto: payload.motto.trim(),
     story_text: payload.storyText.trim(),

@@ -40,6 +40,9 @@ export type RosterCardStatus = 'pending' | 'approved' | 'deferred' | 'rejected'
 // 这里定义公开身份类型，方便卡册筛选和后台编辑保持一致。
 export type RosterIdentityKey = 'swordsman' | 'healer' | 'strategist' | 'artisan' | 'wanderer' | 'guardian'
 
+// 这里定义性别类型，用来控制玉佩光效和公开卷轴展示。
+export type RosterGenderKey = 'male' | 'female' | 'unspecified'
+
 // 这里定义羁绊状态类型，用大白话说明成员当前同行意愿。
 export type RosterBondKey = 'seeking' | 'companion' | 'mentor' | 'quiet'
 
@@ -59,6 +62,18 @@ export interface RosterIdentityOption {
   description: string
   /** 用途：身份图标文字；入参含义：无；返回值含义：无 */
   icon: string
+}
+
+// 这里定义性别选项结构，登记页、公开页和后台共用同一套文案。
+export interface RosterGenderOption {
+  /** 用途：性别键名；入参含义：无；返回值含义：无 */
+  key: RosterGenderKey
+  /** 用途：性别中文名；入参含义：无；返回值含义：无 */
+  label: string
+  /** 用途：玉佩光效说明；入参含义：无；返回值含义：无 */
+  description: string
+  /** 用途：光效主题名称；入参含义：无；返回值含义：无 */
+  glowLabel: string
 }
 
 // 这里定义羁绊选项结构，供登记和详情展示统一使用。
@@ -101,6 +116,8 @@ export interface RosterCardFormValue {
   titleName: string
   /** 用途：门派身份；入参含义：无；返回值含义：无 */
   identityKey: RosterIdentityKey | ''
+  /** 用途：性别；入参含义：无；返回值含义：无 */
+  genderKey: RosterGenderKey
   /** 用途：所在地域；入参含义：无；返回值含义：无 */
   regionText: string
   /** 用途：江湖宣言；入参含义：无；返回值含义：无 */
@@ -150,6 +167,8 @@ export interface PublicRosterCard {
   entryNo: number | null
   identityKey: RosterIdentityKey
   identityLabel: string
+  genderKey: RosterGenderKey
+  genderLabel: string
   regionText: string
   motto: string
   storyText: string
@@ -193,6 +212,7 @@ export interface AdminRosterCardSavePayload {
   jianghuName: string
   entryNo: number | null
   identityKey: RosterIdentityKey
+  genderKey: RosterGenderKey
   regionText: string
   motto: string
   storyText: string
