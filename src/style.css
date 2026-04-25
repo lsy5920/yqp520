@@ -1455,3 +1455,54 @@ img {
   position: relative !important;
   overflow: hidden !important;
 }
+
+/* 云栖名册列表页细节优化：压缩电脑端顶部空白、筛选下方空白，并让悬浮按钮居中。 */
+@media (min-width: 900px) {
+  .roster-list-page.roster-mobile-page {
+    padding-top: 24px !important;
+    padding-bottom: 92px !important;
+  }
+
+  .roster-list-page .roster-phone-shell {
+    gap: 16px 22px !important;
+    align-items: start !important;
+  }
+
+  .roster-list-page .roster-list-hero {
+    top: 24px !important;
+  }
+
+  .roster-list-page .roster-search-panel {
+    top: 24px !important;
+    margin: 0 !important;
+    padding: 12px 14px 10px !important;
+  }
+
+  .roster-list-page .roster-card-stack {
+    margin-top: 0 !important;
+    align-self: start !important;
+  }
+
+  .roster-list-page .roster-public-card {
+    min-height: 248px !important;
+  }
+
+  .roster-list-page .roster-float-actions {
+    right: 50% !important;
+    left: auto !important;
+    bottom: calc(22px + env(safe-area-inset-bottom)) !important;
+    width: min(360px, calc(100vw - 48px)) !important;
+    transform: translateX(50%) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .roster-list-page.roster-mobile-page {
+    padding-top: 18px !important;
+  }
+
+  .roster-list-page .roster-list-hero,
+  .roster-list-page .roster-search-panel {
+    top: 18px !important;
+  }
+}
