@@ -2787,6 +2787,14 @@ onBeforeUnmount(() => {
     padding: 10px 8px;
   }
 
+  .assessment-exam-dialog__panel,
+  .assessment-exam-dialog__panel * {
+    /* 这里统一按边框盒计算宽度，避免手机端内层卡片和按钮把弹窗撑出屏幕。 */
+    box-sizing: border-box;
+    /* 这里允许网格和按钮在窄屏内继续收缩，解决截图里右侧内容被截断的问题。 */
+    min-width: 0;
+  }
+
   .assessment-exam--dialog {
     display: grid;
     height: 100%;
@@ -2804,23 +2812,39 @@ onBeforeUnmount(() => {
     border-radius: 22px;
   }
 
-  .assessment-exam__overview-head { align-items: stretch; }
+  .assessment-exam__overview-head {
+    /* 这里把标题和倒计时区改成上下排列，避免窄屏横排互相挤压。 */
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 12px;
+  }
+
   .assessment-exam__overview-head h2 { font-size: 1.08rem; }
 
   .assessment-exam__overview-side {
     display: grid;
-    grid-template-columns: 1fr auto;
+    /* 这里让倒计时占主要宽度，临时退出按钮保留可点区域但不撑宽。 */
+    grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
     align-items: stretch;
     gap: 8px;
+    justify-items: stretch;
   }
 
   .assessment-exam__time-card {
+    width: 100%;
+    min-width: 0;
     min-height: 54px;
     padding: 8px 12px;
     border-radius: 18px;
+    justify-items: start;
+  }
+
+  .assessment-exam__time-card strong {
+    font-size: clamp(1.55rem, 9vw, 2.15rem);
   }
 
   .assessment-exam__temporary-exit {
+    width: 100%;
     min-width: 76px;
     min-height: 54px;
     padding: 0 10px;
@@ -2828,15 +2852,45 @@ onBeforeUnmount(() => {
 
   .assessment-exam__progress-meta {
     display: grid;
+    /* 这里把四条统计改成两列小卡片，手机端一眼可见且不横向溢出。 */
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .assessment-exam__progress-meta span,
+  .assessment-exam__chapter-meta span,
+  .assessment-exam__resume-meta span {
+    /* 这里允许统计文字自动换行，防止“记录方式”等长文案被裁掉。 */
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
   }
 
   .assessment-exam__progress-meta span:last-child { grid-column: 1 / -1; }
-  .assessment-exam__section-track { grid-auto-columns: minmax(126px, 46vw); }
+
+  .assessment-exam__section-track {
+    display: flex;
+    /* 这里把章节卡片改成横向滑动队列，避免七个章节一起挤在一屏里。 */
+    gap: 8px;
+    margin-inline: -4px;
+    padding: 0 4px 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+  }
+
+  .assessment-exam__section-pill {
+    /* 这里固定每张章节卡的可读宽度，让章节标题不会被压到只剩半截。 */
+    flex: 0 0 min(150px, 44vw);
+    scroll-snap-align: start;
+  }
 
   .assessment-exam__body {
     min-height: 0;
+    /* 这里只让答题正文上下滚动，避免横向拖动造成弹窗边缘露白。 */
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0 2px 8px;
   }
 
@@ -2867,7 +2921,8 @@ onBeforeUnmount(() => {
     position: relative;
     z-index: 25;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    /* 这里把底部按钮改为两列，交卷按钮单独占整行，避免按钮被挤到屏幕外。 */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
     padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
     border: 1px solid rgba(83, 145, 138, 0.2);
@@ -2875,7 +2930,40 @@ onBeforeUnmount(() => {
     backdrop-filter: blur(18px);
   }
 
-  .assessment-exam__actions--dialog .ink-button { min-height: 48px; }
+  .assessment-exam__actions--dialog .ink-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding-inline: 10px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .assessment-exam__actions--dialog .ink-button--primary {
+    /* 这里让主要交卷按钮整行显示，降低手机端误触上一题和下一题的概率。 */
+    grid-column: 1 / -1;
+  }
+
+  .assessment-exam__chapter-head,
+  .assessment-exam__order-head {
+    /* 这里让章节标题和展开按钮上下排布，避免按钮把标题顶出弹窗。 */
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .assessment-exam__order-side {
+    justify-items: stretch;
+  }
+
+  .assessment-exam__order-legend {
+    justify-content: flex-start;
+  }
+
+  .assessment-exam__catalog-entry,
+  .assessment-exam__compact-toggle {
+    min-width: 0;
+  }
+
   .assessment-result__summary { border-radius: 26px; }
 }
 
