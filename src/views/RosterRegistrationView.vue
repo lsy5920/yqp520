@@ -287,8 +287,8 @@ async function handleSubmit(): Promise<void> {
             <small>{{ nameCheckMessage || '最多 12 个字，审核通过后会公开展示。' }}</small>
           </label>
           <label class="roster-field">
-            <span>称号</span>
-            <input v-model="formValue.titleName" maxlength="14" placeholder="例如：月下执剑人" type="text" />
+            <span>真实姓名</span>
+            <input v-model="formValue.titleName" maxlength="14" placeholder="例如：李小云" type="text" />
           </label>
           <label class="roster-field">
             <span>所在地域</span>

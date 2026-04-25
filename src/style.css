@@ -1506,3 +1506,29 @@ img {
     top: 18px !important;
   }
 }
+
+/* 云栖名册列表页结构修复：右侧搜索和卡片同属一个内容列，避免左侧大卡片把卡片列表向下撑出空白。 */
+.roster-list-content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .roster-list-page .roster-list-content {
+    grid-column: 2 !important;
+    align-self: start !important;
+    gap: 16px !important;
+  }
+
+  .roster-list-page .roster-search-panel,
+  .roster-list-page .roster-card-stack,
+  .roster-list-page .roster-state-card {
+    grid-column: auto !important;
+  }
+
+  .roster-list-page .roster-card-stack {
+    display: grid !important;
+    margin-top: 0 !important;
+  }
+}

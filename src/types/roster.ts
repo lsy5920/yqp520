@@ -97,7 +97,7 @@ export interface RosterRegistrationStep {
 export interface RosterCardFormValue {
   /** 用途：江湖名；入参含义：无；返回值含义：无 */
   jianghuName: string
-  /** 用途：称号；入参含义：无；返回值含义：无 */
+  /** 用途：真实姓名；入参含义：无；返回值含义：无 */
   titleName: string
   /** 用途：门派身份；入参含义：无；返回值含义：无 */
   identityKey: RosterIdentityKey | ''

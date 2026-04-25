@@ -69,7 +69,7 @@ interface RosterReviewLogRow {
 
 // 这里定义公开列表筛选参数。
 export interface ListPublicRosterEntriesOptions {
-  /** 用途：搜索关键字；入参含义：按江湖名、称号、地域、宣言和标签检索；返回值含义：无 */
+  /** 用途：搜索关键字；入参含义：按江湖名、真实姓名、地域、宣言和标签检索；返回值含义：无 */
   keyword?: string
   /** 用途：身份筛选；入参含义：为空时查全部；返回值含义：无 */
   identityKey?: string

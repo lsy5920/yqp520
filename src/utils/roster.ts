@@ -54,7 +54,7 @@ export function normalizeRosterSkillTags(tags: string[]): string[] {
 export function normalizeRosterCardForm(form: RosterCardFormValue): RosterCardFormValue {
   return {
     jianghuName: normalizeRosterShortText(form.jianghuName),
-    titleName: normalizeRosterShortText(form.titleName, '云栖同门'),
+    titleName: normalizeRosterShortText(form.titleName),
     identityKey: form.identityKey,
     regionText: normalizeRosterShortText(form.regionText, '云深不知处'),
     motto: normalizeRosterShortText(form.motto),
@@ -87,9 +87,9 @@ export function validateRosterCardForm(form: RosterCardFormValue): string[] {
     errors.push('江湖名最多 12 个字')
   }
 
-  // 这里校验称号长度，保证手机卡片排版稳定。
+  // 这里校验真实姓名长度，保证手机卡片排版稳定。
   if (Array.from(normalizedForm.titleName).length > 14) {
-    errors.push('称号最多 14 个字')
+    errors.push('真实姓名最多 14 个字')
   }
 
   // 这里校验身份选择，方便后续筛选和展示。

@@ -40,7 +40,7 @@ export const rosterCoverOptions: RosterCoverOption[] = [
 
 // 这里定义登记步骤，手机端卷轴表单按这个顺序展示。
 export const rosterRegistrationSteps: RosterRegistrationStep[] = [
-  { key: 'basic', indexText: '一', title: '写下名帖', description: '先留下你的江湖名、称号、身份和所在地域。' },
+  { key: 'basic', indexText: '一', title: '写下名帖', description: '先留下你的江湖名、真实姓名、身份和所在地域。' },
   { key: 'spirit', indexText: '二', title: '点亮气质', description: '写一句江湖宣言，再补一段让同门记住你的故事。' },
   { key: 'bond', indexText: '三', title: '结下羁绊', description: '选择你的同行状态，写清希望遇见怎样的同门。' },
   { key: 'display', indexText: '四', title: '定制封面', description: '挑选名帖封面，并决定哪些内容公开展示。' },
@@ -56,7 +56,7 @@ export const rosterContent = {
     eyebrow: '云栖名册 · 江湖卡册',
     title: '翻开同门名帖，遇见各路云栖侠影',
     lead: '为手机端重新打造的沉浸式名册：每一张卡都是一位同门的江湖印记。',
-    searchPlaceholder: '搜索江湖名、称号、地域或专长',
+    searchPlaceholder: '搜索江湖名、真实姓名、地域或专长',
     emptyText: '此处暂未寻到同门踪迹，换个关键词或身份试试看。',
   },
   registration: {

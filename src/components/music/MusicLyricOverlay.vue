@@ -157,20 +157,20 @@ function formatCharacter(character: string): string {
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 0.08em;
+  gap: 0.16em;
   max-height: calc(min(68vh, 620px) - 68px);
   overflow: hidden;
   color: #173d42;
   font-size: clamp(1rem, 1.35vw, 1.22rem);
   font-weight: 600;
-  line-height: 1.08;
+  line-height: 1;
   text-align: center;
-  writing-mode: vertical-rl;
-  text-orientation: upright;
 }
 
 .music-lyric-overlay__character {
-  display: inline-block;
+  display: block;
+  width: 1.2em;
+  min-height: 1.04em;
   white-space: pre;
   text-shadow:
     0 4px 14px rgba(255, 255, 255, 0.46),
@@ -274,7 +274,7 @@ function formatCharacter(character: string): string {
   .music-lyric-overlay__current {
     max-height: calc(48vh - 56px);
     font-size: clamp(0.88rem, 3.8vw, 1rem);
-    line-height: 1.04;
+    line-height: 1;
   }
 
   .music-lyric-overlay__seal {

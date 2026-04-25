@@ -146,7 +146,8 @@ function openCard(card: PublicRosterCard): void {
         </div>
       </div>
 
-      <div class="roster-search-panel reveal-on-scroll">
+      <div class="roster-list-content">
+        <div class="roster-search-panel reveal-on-scroll">
         <input v-model="keyword" :placeholder="rosterContent.list.searchPlaceholder" type="search" />
         <div class="roster-filter-track">
           <button type="button" :class="{ active: selectedIdentityKey === '' }" @click="selectIdentity('')">全部</button>
@@ -158,23 +159,23 @@ function openCard(card: PublicRosterCard): void {
             @click="selectIdentity(item.key)"
           >{{ item.icon }} {{ item.label }}</button>
         </div>
-      </div>
+        </div>
 
-      <div v-if="errorMessage" class="roster-state-card roster-state-card--error reveal-on-scroll">
+        <div v-if="errorMessage" class="roster-state-card roster-state-card--error reveal-on-scroll">
         <p>{{ errorMessage }}</p>
         <button type="button" @click="loadCardList">重新寻访</button>
       </div>
 
-      <div v-else-if="isLoading" class="roster-card-stack">
+        <div v-else-if="isLoading" class="roster-card-stack">
         <article v-for="index in 3" :key="index" class="roster-public-card roster-public-card--skeleton"></article>
       </div>
 
-      <div v-else-if="cardList.length === 0" class="roster-state-card reveal-on-scroll">
+        <div v-else-if="cardList.length === 0" class="roster-state-card reveal-on-scroll">
         <p>{{ rosterContent.list.emptyText }}</p>
         <RouterLink to="/roster">我来递一张名帖</RouterLink>
       </div>
 
-      <div v-else class="roster-card-stack">
+        <div v-else class="roster-card-stack">
         <article
           v-for="(card, index) in cardList"
           :key="card.id"
@@ -202,6 +203,7 @@ function openCard(card: PublicRosterCard): void {
             <b>热度 {{ card.heatValue }}</b>
           </footer>
         </article>
+        </div>
       </div>
 
       <nav class="roster-float-actions" aria-label="名册快捷操作">

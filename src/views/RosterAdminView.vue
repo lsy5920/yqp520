@@ -243,7 +243,7 @@ async function handleLogout(): Promise<void> {
       </header>
 
       <section class="roster-admin-toolbar reveal-on-scroll">
-        <input v-model="keyword" placeholder="搜索江湖名、称号、地域或联系方式" type="search" @keyup.enter="loadEntryList" />
+        <input v-model="keyword" placeholder="搜索江湖名、真实姓名、地域或联系方式" type="search" @keyup.enter="loadEntryList" />
         <select v-model="selectedStatus" @change="loadEntryList">
           <option v-for="item in statusOptions" :key="item.key || 'all'" :value="item.key">{{ item.label }}</option>
         </select>
@@ -279,7 +279,7 @@ async function handleLogout(): Promise<void> {
 
           <div class="roster-admin-form">
             <label><span>江湖名</span><input v-model="editForm.jianghuName" type="text" /></label>
-            <label><span>称号</span><input v-model="editForm.titleName" type="text" /></label>
+            <label><span>真实姓名</span><input v-model="editForm.titleName" type="text" /></label>
             <label><span>身份</span><select v-model="editForm.identityKey"><option v-for="item in rosterIdentityOptions" :key="item.key" :value="item.key">{{ item.label }}</option></select></label>
             <label><span>地域</span><input v-model="editForm.regionText" type="text" /></label>
             <label><span>宣言</span><input v-model="editForm.motto" type="text" /></label>
