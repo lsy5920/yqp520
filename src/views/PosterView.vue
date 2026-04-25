@@ -23,24 +23,6 @@ useRevealMotion({
       :note="siteContent.poster.template.phrase"
     />
 
-    <section class="content-section" data-reveal>
-      <div class="section-heading">
-        <p class="eyebrow">使用说明</p>
-        <h2>实时预览、保存图片、支持原生分享</h2>
-      </div>
-
-      <div class="card-grid card-grid--three">
-        <article
-          v-for="line in siteContent.poster.introLines"
-          :key="line"
-          class="content-card content-card--soft"
-          data-reveal
-        >
-          <p>{{ line }}</p>
-        </article>
-      </div>
-    </section>
-
     <PosterStudio
       :default-message="siteContent.poster.template.defaultBlessing"
       :default-title="siteContent.poster.defaultTitle"

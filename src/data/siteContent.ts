@@ -404,13 +404,8 @@ export const siteContent = {
   poster: {
     template: posterTemplate,
     defaultTitle: '云中同道',
-    introLines: [
-      '新版海报采用水墨侠气风格，像一张可分享的云栖江湖令。',
-      '你可以填写称呼与题赠，生成宣纸、墨山、朱印与金线边框组成的专属海报。',
-      '海报会默认嵌入云栖首页二维码，方便扫码回到山门。',
-      '若当前环境支持原生分享，会优先唤起系统分享；否则会自动保存图片到本地。',
-    ],
   },
   musicTracks,
 }
+
 
