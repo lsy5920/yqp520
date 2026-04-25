@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import RosterPosterStudio from '@/components/roster/RosterPosterStudio.vue'
@@ -12,7 +12,7 @@ import { formatRosterDate, getRosterCoverGradient } from '@/utils/roster'
 // 这里保存页面根节点，供详情页显现动效使用。
 const pageRef = ref<HTMLElement | null>(null)
 
-// 这里启用显现动效，让详情抽屉出现更柔和。
+// 这里启用显现动效，让云中名帖出现更柔和。
 useRevealMotion({ rootRef: pageRef })
 
 // 这里读取路由参数里的公开标识。
@@ -31,6 +31,9 @@ const errorMessage = ref<string>('')
 const detailStyle = computed<Record<string, string>>(() => ({
   '--roster-card-gradient': getRosterCoverGradient(entry.value.coverKey),
 }))
+
+// 这里计算公开标签汇总，避免空标签撑出无意义区域。
+const visibleTags = computed<string[]>(() => entry.value.skillTags.filter(Boolean))
 
 // 这里进入页面时加载详情。
 onMounted(() => {
@@ -76,214 +79,366 @@ async function loadEntryDetail(): Promise<void> {
 </script>
 
 <template>
-  <main ref="pageRef" class="roster-mobile-page roster-detail-page">
-    <section class="roster-phone-shell">
-      <div v-if="isLoading" class="roster-detail-state reveal-on-scroll">{{ rosterContent.detail.loading }}</div>
+  <main ref="pageRef" class="cloud-roster-page cloud-roster-detail-page">
+    <div class="cloud-detail-sky" aria-hidden="true">
+      <span class="cloud-detail-sky__cloud cloud-detail-sky__cloud--one"></span>
+      <span class="cloud-detail-sky__cloud cloud-detail-sky__cloud--two"></span>
+      <span class="cloud-detail-sky__ribbon"></span>
+    </div>
 
-      <div v-else-if="errorMessage" class="roster-detail-state roster-detail-state--error reveal-on-scroll">
+    <section class="cloud-detail-shell">
+      <div v-if="isLoading" class="cloud-detail-state" data-reveal>
+        <span>云笺展开中</span>
+        <p>{{ rosterContent.detail.loading }}</p>
+      </div>
+
+      <div v-else-if="errorMessage" class="cloud-detail-state cloud-detail-state--error" data-reveal>
+        <span>云门未寻到名帖</span>
         <p>{{ errorMessage }}</p>
-        <RouterLink to="/roster/list">返回云栖名册</RouterLink>
+        <RouterLink to="/roster/list">返回云海名册</RouterLink>
       </div>
 
       <template v-else>
-        <article class="roster-detail-card reveal-on-scroll" :style="detailStyle">
-          <div class="roster-detail-card__halo"></div>
+        <article class="cloud-detail-hero" :style="detailStyle" data-reveal>
+          <span class="cloud-detail-hero__mist" aria-hidden="true"></span>
           <header>
             <span>{{ entry.identityLabel }}</span>
             <small>{{ formatRosterDate(entry.approvedAt) }} 入册</small>
           </header>
-          <h1>{{ entry.jianghuName }}</h1>
-          <em>{{ entry.displayTitle }}</em>
-          <p>{{ entry.motto }}</p>
-          <div class="roster-detail-card__tags">
-            <i v-for="tag in entry.skillTags" :key="tag">#{{ tag }}</i>
+          <div class="cloud-detail-hero__name">
+            <p>云中名帖</p>
+            <h1>{{ entry.jianghuName }}</h1>
+            <em>{{ entry.displayTitle }}</em>
           </div>
+          <blockquote>{{ entry.motto }}</blockquote>
         </article>
 
-        <section class="roster-detail-drawer reveal-on-scroll">
-          <div class="roster-drawer-section">
-            <span>所在江湖</span>
-            <p>{{ entry.regionText }}</p>
-          </div>
-          <div class="roster-drawer-section">
+        <section class="cloud-detail-grid" aria-label="名帖公开信息">
+          <article class="cloud-detail-panel cloud-detail-panel--story" data-reveal>
             <span>同门故事</span>
             <p>{{ entry.storyText }}</p>
-          </div>
-          <div class="roster-drawer-section">
+          </article>
+
+          <article class="cloud-detail-panel" data-reveal>
+            <span>所在江湖</span>
+            <p>{{ entry.regionText }}</p>
+          </article>
+
+          <article class="cloud-detail-panel" data-reveal>
             <span>羁绊状态</span>
             <p>{{ entry.bondLabel }} · {{ entry.bondText }}</p>
-          </div>
-          <div class="roster-detail-actions">
-            <RouterLink to="/roster/list">继续翻名册</RouterLink>
-            <RouterLink to="/roster">我也递名帖</RouterLink>
-          </div>
+          </article>
+
+          <article class="cloud-detail-panel" data-reveal>
+            <span>云签标签</span>
+            <div class="cloud-detail-tags">
+              <i v-for="tag in visibleTags" :key="tag">#{{ tag }}</i>
+              <i v-if="visibleTags.length === 0">#云深待补</i>
+            </div>
+          </article>
         </section>
 
-        <RosterPosterStudio class="reveal-on-scroll" :entry="entry" />
+        <nav class="cloud-detail-actions" data-reveal aria-label="名帖后续操作">
+          <RouterLink to="/roster/list">继续翻名册</RouterLink>
+          <RouterLink to="/roster">我也递名帖</RouterLink>
+        </nav>
+
+        <RosterPosterStudio class="cloud-detail-poster" :entry="entry" />
       </template>
     </section>
   </main>
 </template>
 
 <style scoped>
-.roster-mobile-page {
-  min-height: 100vh;
-  padding: 108px 14px 96px;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(231, 190, 107, 0.24), transparent 30%),
-    linear-gradient(180deg, #070b12 0%, #111827 48%, #07090d 100%);
-}
-
-.roster-phone-shell {
-  display: grid;
-  gap: 16px;
-  width: min(100%, 430px);
-  margin: 0 auto;
-  color: #f8efd8;
-}
-
-.roster-detail-card,
-.roster-detail-drawer,
-.roster-detail-state {
-  border: 1px solid rgba(231, 190, 107, 0.24);
-  border-radius: 32px;
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
-}
-
-.roster-detail-card {
-  --roster-card-gradient: linear-gradient(145deg, #111827, #28445f 52%, #d9b56d);
+.cloud-roster-page {
   position: relative;
-  display: grid;
-  gap: 14px;
-  min-height: 430px;
+  min-height: 100dvh;
+  padding: 18px 0 calc(108px + env(safe-area-inset-bottom));
   overflow: hidden;
-  padding: 26px 22px;
-  background: var(--roster-card-gradient);
+  color: #103f4a;
+  isolation: isolate;
 }
 
-.roster-detail-card__halo {
+.cloud-detail-sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 8%, rgba(255, 255, 255, 0.95), transparent 24%),
+    radial-gradient(circle at 76% 14%, rgba(162, 224, 235, 0.4), transparent 30%),
+    linear-gradient(180deg, #eefcff 0%, #def7f8 48%, #f8fbef 100%);
+}
+
+.cloud-detail-sky__cloud,
+.cloud-detail-sky__ribbon {
   position: absolute;
-  inset: -90px -80px auto auto;
-  width: 210px;
-  height: 210px;
-  border-radius: 999px;
-  background: rgba(255, 238, 183, 0.22);
-  filter: blur(14px);
+  pointer-events: none;
 }
 
-.roster-detail-card header {
+.cloud-detail-sky__cloud {
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 26% 38%, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 58% 42%, rgba(255, 255, 255, 0.82), transparent 38%),
+    radial-gradient(circle at 50% 72%, rgba(151, 220, 228, 0.36), transparent 44%);
+  filter: blur(4px);
+  opacity: 0.78;
+  animation: detailCloudDrift 17s ease-in-out infinite alternate;
+}
+
+.cloud-detail-sky__cloud--one {
+  left: -8%;
+  top: 12%;
+  width: 330px;
+  height: 260px;
+}
+
+.cloud-detail-sky__cloud--two {
+  right: -12%;
+  bottom: 12%;
+  width: 380px;
+  height: 280px;
+  animation-delay: 1.4s;
+}
+
+.cloud-detail-sky__ribbon {
+  inset: 18% -12% auto;
+  height: 240px;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+  transform: rotate(-6deg);
+}
+
+.cloud-detail-shell {
+  display: grid;
+  gap: 22px;
+  width: min(1060px, calc(100vw - 28px));
+  margin: 0 auto;
+}
+
+.cloud-detail-hero {
+  --roster-card-gradient: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(198, 239, 238, 0.72), rgba(255, 245, 191, 0.68));
   position: relative;
+  display: grid;
+  min-height: 520px;
+  padding: clamp(26px, 5vw, 58px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 46px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.34)),
+    var(--roster-card-gradient);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 36px 92px rgba(55, 143, 158, 0.22);
+  backdrop-filter: blur(24px);
+}
+
+.cloud-detail-hero__mist {
+  position: absolute;
+  inset: auto -8% -18% -8%;
+  height: 240px;
+  background:
+    radial-gradient(circle at 20% 42%, rgba(255, 255, 255, 0.98), transparent 28%),
+    radial-gradient(circle at 52% 34%, rgba(255, 255, 255, 0.86), transparent 34%),
+    radial-gradient(circle at 78% 52%, rgba(162, 224, 235, 0.4), transparent 38%);
+  filter: blur(3px);
+  animation: detailMistFloat 12s ease-in-out infinite alternate;
+}
+
+.cloud-detail-hero header,
+.cloud-detail-hero__name,
+.cloud-detail-hero blockquote {
+  position: relative;
+  z-index: 1;
+}
+
+.cloud-detail-hero header {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 
-.roster-detail-card header span,
-.roster-detail-card em,
-.roster-drawer-section span {
-  color: #ffe1a3;
-  font-weight: 800;
+.cloud-detail-hero header span,
+.cloud-detail-hero__name p,
+.cloud-detail-hero__name em,
+.cloud-detail-panel span {
+  color: #0d7c8a;
+  font-weight: 900;
 }
 
-.roster-detail-card header small {
-  color: rgba(255, 248, 231, 0.7);
+.cloud-detail-hero header small {
+  color: rgba(16, 63, 74, 0.64);
 }
 
-.roster-detail-card h1,
-.roster-detail-card em,
-.roster-detail-card p {
-  position: relative;
+.cloud-detail-hero__name {
+  align-self: end;
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.cloud-detail-hero__name p,
+.cloud-detail-hero__name h1,
+.cloud-detail-hero__name em,
+.cloud-detail-hero blockquote,
+.cloud-detail-panel p {
   margin: 0;
 }
 
-.roster-detail-card h1 {
-  align-self: end;
-  margin-top: auto;
-  font-size: clamp(3rem, 18vw, 5rem);
-  line-height: 0.98;
+.cloud-detail-hero__name h1 {
+  color: #103f4a;
+  font-size: clamp(3.6rem, 13vw, 8.4rem);
+  line-height: 0.9;
 }
 
-.roster-detail-card em {
+.cloud-detail-hero__name em {
   font-style: normal;
-  font-size: 1.15rem;
+  font-size: 1.16rem;
 }
 
-.roster-detail-card p {
-  color: rgba(255, 248, 231, 0.84);
-  font-size: 1.08rem;
-  line-height: 1.72;
+.cloud-detail-hero blockquote {
+  max-width: 820px;
+  color: rgba(16, 63, 74, 0.78);
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  line-height: 1.78;
 }
 
-.roster-detail-card__tags {
+.cloud-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.cloud-detail-panel,
+.cloud-detail-state,
+.cloud-detail-actions,
+.cloud-detail-poster {
+  border: 1px solid rgba(96, 170, 184, 0.22);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 24px 58px rgba(55, 143, 158, 0.16);
+  backdrop-filter: blur(22px);
+}
+
+.cloud-detail-panel {
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+}
+
+.cloud-detail-panel--story {
+  grid-column: 1 / -1;
+}
+
+.cloud-detail-panel p {
+  color: rgba(16, 63, 74, 0.74);
+  line-height: 1.86;
+}
+
+.cloud-detail-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.roster-detail-card__tags i {
+.cloud-detail-tags i {
   padding: 7px 11px;
+  border: 1px solid rgba(46, 143, 158, 0.18);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff8e7;
+  background: rgba(255, 255, 255, 0.62);
+  color: #185d68;
   font-style: normal;
 }
 
-.roster-detail-drawer {
+.cloud-detail-actions {
   display: grid;
-  gap: 16px;
-  padding: 22px;
-  background: rgba(10, 15, 26, 0.9);
-  backdrop-filter: blur(18px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
 }
 
-.roster-drawer-section {
+.cloud-detail-actions a,
+.cloud-detail-state a {
   display: grid;
-  gap: 8px;
-}
-
-.roster-drawer-section p {
-  margin: 0;
-  color: rgba(248, 239, 216, 0.78);
-  line-height: 1.82;
-}
-
-.roster-detail-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.roster-detail-actions a,
-.roster-detail-state a {
-  display: grid;
-  min-height: 46px;
+  min-height: 48px;
   place-items: center;
   border-radius: 999px;
-  background: linear-gradient(135deg, #dfad55, #fff0b8);
-  color: #160f07;
-  font-weight: 800;
+  background: linear-gradient(135deg, #79d6dc, #fff5bf);
+  color: #103f4a;
+  font-weight: 900;
   text-decoration: none;
 }
 
-.roster-detail-state {
+.cloud-detail-state {
   display: grid;
   gap: 14px;
-  padding: 24px;
-  background: rgba(10, 15, 26, 0.9);
+  justify-items: center;
+  padding: 28px;
+  text-align: center;
+}
+
+.cloud-detail-state span {
+  color: #0d7c8a;
+  font-weight: 900;
+}
+
+.cloud-detail-state p {
+  margin: 0;
+  color: rgba(16, 63, 74, 0.72);
   line-height: 1.8;
 }
 
-.roster-detail-state p {
-  margin: 0;
+.cloud-detail-state--error {
+  border-color: rgba(188, 92, 74, 0.26);
 }
 
-.roster-detail-state--error {
-  border-color: rgba(248, 113, 113, 0.3);
+@media (max-width: 720px) {
+  .cloud-detail-shell {
+    width: min(100vw - 20px, 430px);
+  }
+
+  .cloud-detail-hero {
+    min-height: 430px;
+    padding: 24px 18px;
+    border-radius: 36px;
+  }
+
+  .cloud-detail-hero__name h1 {
+    font-size: clamp(3.2rem, 18vw, 5.4rem);
+  }
+
+  .cloud-detail-grid,
+  .cloud-detail-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
-@media (min-width: 760px) {
-  .roster-mobile-page {
-    padding-top: 128px;
+@media (prefers-reduced-motion: reduce) {
+  .cloud-detail-sky__cloud,
+  .cloud-detail-hero__mist {
+    animation: none !important;
+  }
+}
+
+@keyframes detailCloudDrift {
+  from {
+    transform: translate3d(-14px, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(22px, -10px, 0) scale(1.06);
+  }
+}
+
+@keyframes detailMistFloat {
+  from {
+    transform: translate3d(-2%, 0, 0);
+  }
+
+  to {
+    transform: translate3d(3%, -8px, 0);
   }
 }
 </style>

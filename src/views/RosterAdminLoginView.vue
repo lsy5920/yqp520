@@ -87,12 +87,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div ref="pageRef" class="page roster-admin-login-page">
+  <div ref="pageRef" class="page cloud-admin-login-page">
+    <div class="cloud-admin-login-sky" aria-hidden="true">
+      <span class="cloud-admin-login-sky__cloud cloud-admin-login-sky__cloud--one"></span>
+      <span class="cloud-admin-login-sky__cloud cloud-admin-login-sky__cloud--two"></span>
+    </div>
+
     <PageBanner
       eyebrow="云栖名册"
       title="名册审核执事登录"
-      lead="进入新版江湖卡册审核台，处理登记、公开展示和审核记录。"
-      note="普通访客请返回公开名册或登记页，审核台仅限已授权执事使用。"
+      lead="进入云端审核台，处理登记、公开展示和审核记录。"
+      note="普通访客请返回云海名册或登记页，审核台仅限已授权执事使用。"
     />
 
     <section class="roster-admin-login-shell" data-reveal>
@@ -211,6 +216,99 @@ onMounted(async () => {
   .roster-admin-login-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+}
+
+/* 仙气云海重设计：登录页保持克制云端视觉，强调清晰登录。 */
+.cloud-admin-login-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.cloud-admin-login-sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 8%, rgba(255, 255, 255, 0.92), transparent 24%),
+    radial-gradient(circle at 82% 16%, rgba(158, 224, 235, 0.38), transparent 30%),
+    linear-gradient(180deg, #eefcff 0%, #e3f8f7 48%, #f8fbef 100%);
+}
+
+.cloud-admin-login-sky__cloud {
+  position: absolute;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 62% 44%, rgba(255, 255, 255, 0.82), transparent 38%),
+    radial-gradient(circle at 50% 70%, rgba(152, 222, 228, 0.34), transparent 44%);
+  filter: blur(4px);
+  opacity: 0.7;
+  animation: adminLoginCloudDrift 18s ease-in-out infinite alternate;
+}
+
+.cloud-admin-login-sky__cloud--one {
+  left: -8%;
+  top: 12%;
+  width: 330px;
+  height: 250px;
+}
+
+.cloud-admin-login-sky__cloud--two {
+  right: -10%;
+  bottom: 12%;
+  width: 360px;
+  height: 260px;
+  animation-delay: 1.4s;
+}
+
+.cloud-admin-login-page :deep(.page-banner) {
+  border-color: rgba(96, 170, 184, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(230, 250, 250, 0.58)),
+    rgba(255, 255, 255, 0.66);
+  box-shadow: 0 30px 76px rgba(55, 143, 158, 0.16);
+}
+
+.cloud-admin-login-page .roster-admin-login-card,
+.cloud-admin-login-page .content-card {
+  border-color: rgba(96, 170, 184, 0.22);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 24px 58px rgba(55, 143, 158, 0.16);
+  backdrop-filter: blur(22px);
+}
+
+.cloud-admin-login-page .roster-admin-login-card__head h2 {
+  color: #103f4a;
+}
+
+.cloud-admin-login-page .roster-admin-login-card__head p:not(.eyebrow),
+.cloud-admin-login-page .content-card p,
+.cloud-admin-login-page .list-column {
+  color: rgba(16, 63, 74, 0.74);
+}
+
+.cloud-admin-login-page .roster-admin-login-input {
+  border-color: rgba(46, 143, 158, 0.24);
+  background: rgba(255, 255, 255, 0.86);
+  color: #103f4a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-admin-login-sky__cloud {
+    animation: none !important;
+  }
+}
+
+@keyframes adminLoginCloudDrift {
+  from {
+    transform: translate3d(-14px, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(22px, -10px, 0) scale(1.06);
   }
 }
 </style>

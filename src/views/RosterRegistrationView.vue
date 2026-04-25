@@ -247,8 +247,14 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <main ref="pageRef" class="roster-mobile-page roster-registration-page">
-    <section class="roster-phone-shell reveal-on-scroll">
+  <main ref="pageRef" class="cloud-roster-page cloud-roster-registration">
+    <div class="cloud-registration-sky" aria-hidden="true">
+      <span class="cloud-registration-sky__cloud cloud-registration-sky__cloud--one"></span>
+      <span class="cloud-registration-sky__cloud cloud-registration-sky__cloud--two"></span>
+      <span class="cloud-registration-sky__stairs"></span>
+    </div>
+
+    <section class="cloud-registration-shell reveal-on-scroll">
       <div class="roster-hero-card">
         <p>{{ rosterContent.registration.eyebrow }}</p>
         <h1>{{ rosterContent.registration.title }}</h1>
@@ -826,6 +832,350 @@ async function handleSubmit(): Promise<void> {
 @media (min-width: 760px) {
   .roster-mobile-page {
     padding-top: 128px;
+  }
+}
+
+/* 仙气云海重设计：登记页外层改为五重云阶，不再沿用深色金墨底。 */
+.cloud-roster-registration {
+  position: relative;
+  min-height: 100dvh;
+  padding: 18px 0 calc(118px + env(safe-area-inset-bottom));
+  overflow: hidden;
+  color: #103f4a;
+  isolation: isolate;
+}
+
+.cloud-registration-sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.96), transparent 24%),
+    radial-gradient(circle at 82% 18%, rgba(160, 225, 235, 0.44), transparent 30%),
+    linear-gradient(180deg, #eefcff 0%, #dff8f8 48%, #f7fbef 100%);
+}
+
+.cloud-registration-sky__cloud,
+.cloud-registration-sky__stairs {
+  position: absolute;
+  pointer-events: none;
+}
+
+.cloud-registration-sky__cloud {
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 62% 44%, rgba(255, 255, 255, 0.82), transparent 38%),
+    radial-gradient(circle at 50% 70%, rgba(152, 222, 228, 0.34), transparent 44%);
+  filter: blur(4px);
+  opacity: 0.76;
+  animation: registrationCloudDrift 16s ease-in-out infinite alternate;
+}
+
+.cloud-registration-sky__cloud--one {
+  left: -10%;
+  top: 10%;
+  width: 340px;
+  height: 260px;
+}
+
+.cloud-registration-sky__cloud--two {
+  right: -12%;
+  bottom: 16%;
+  width: 390px;
+  height: 280px;
+  animation-delay: 1.6s;
+}
+
+.cloud-registration-sky__stairs {
+  inset: 20% -8% auto;
+  height: 260px;
+  background:
+    linear-gradient(115deg, transparent 0 18%, rgba(255, 255, 255, 0.46) 18% 26%, transparent 26% 38%, rgba(255, 255, 255, 0.34) 38% 45%, transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent);
+  transform: rotate(-6deg);
+}
+
+.cloud-registration-shell {
+  display: grid;
+  gap: 18px;
+  width: min(1080px, calc(100vw - 28px));
+  margin: 0 auto;
+}
+
+/* 仙气云海重设计：首屏说明卡变成明亮云门。 */
+.cloud-roster-registration .roster-hero-card {
+  display: grid !important;
+  gap: 14px !important;
+  padding: clamp(24px, 5vw, 48px) !important;
+  border: 1px solid rgba(96, 170, 184, 0.24) !important;
+  border-radius: 42px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(230, 250, 250, 0.58)),
+    rgba(255, 255, 255, 0.62) !important;
+  color: #103f4a !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 34px 88px rgba(55, 143, 158, 0.18) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+.cloud-roster-registration .roster-hero-card::after {
+  position: absolute;
+  right: -36px;
+  bottom: -54px;
+  width: 210px;
+  height: 150px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 28% 44%, rgba(255, 255, 255, 0.98), transparent 34%),
+    radial-gradient(circle at 62% 48%, rgba(175, 231, 236, 0.42), transparent 42%);
+  content: '';
+  pointer-events: none;
+}
+
+.cloud-roster-registration .roster-hero-card p,
+.cloud-roster-registration .roster-scroll-card__head span,
+.cloud-roster-registration .roster-field span,
+.cloud-roster-registration .roster-tag-panel > span {
+  color: #0d7c8a !important;
+  font-weight: 900 !important;
+}
+
+.cloud-roster-registration .roster-hero-card h1,
+.cloud-roster-registration .roster-scroll-card__head h2 {
+  color: #103f4a !important;
+  text-shadow: none !important;
+}
+
+.cloud-roster-registration .roster-hero-card h1 {
+  max-width: 11em;
+  font-size: clamp(2.3rem, 7vw, 5rem) !important;
+  line-height: 1 !important;
+}
+
+.cloud-roster-registration .roster-hero-card span,
+.cloud-roster-registration .roster-scroll-card__head p,
+.cloud-roster-registration .roster-field small,
+.cloud-roster-registration .roster-choice-card small {
+  color: rgba(16, 63, 74, 0.72) !important;
+}
+
+.cloud-roster-registration .roster-ghost-link {
+  justify-self: start;
+  min-height: 46px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(46, 143, 158, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #0d7c8a;
+  font-weight: 900;
+}
+
+/* 仙气云海重设计：步骤条改为云阶，当前步骤像升起的云签。 */
+.cloud-roster-registration .roster-step-track {
+  display: flex !important;
+  gap: 10px !important;
+  margin: 0 -14px !important;
+  padding: 6px 14px 8px !important;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+}
+
+.cloud-roster-registration .roster-step-pill {
+  flex: 0 0 auto;
+  min-width: 104px;
+  min-height: 62px;
+  padding: 12px 14px !important;
+  border: 1px solid rgba(96, 170, 184, 0.22) !important;
+  border-radius: 24px 24px 24px 10px !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  color: rgba(16, 63, 74, 0.72) !important;
+  box-shadow: 0 14px 30px rgba(55, 143, 158, 0.12);
+}
+
+.cloud-roster-registration .roster-step-pill--active {
+  background: linear-gradient(135deg, #79d6dc, #fff5bf) !important;
+  color: #103f4a !important;
+  transform: translateY(-3px);
+  box-shadow: 0 20px 44px rgba(55, 143, 158, 0.2);
+}
+
+.cloud-roster-registration .roster-progress {
+  height: 7px;
+  margin: 0 0 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.cloud-roster-registration .roster-progress i {
+  background: linear-gradient(90deg, #6dcbd7, #fff1ad) !important;
+}
+
+/* 仙气云海重设计：表单主体变成柔光玻璃云窗。 */
+.cloud-roster-registration .roster-scroll-card {
+  display: grid !important;
+  gap: 22px !important;
+  padding: clamp(20px, 4vw, 34px) !important;
+  border: 1px solid rgba(96, 170, 184, 0.22) !important;
+  border-radius: 36px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: #103f4a !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 28px 70px rgba(55, 143, 158, 0.18) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+.cloud-roster-registration .roster-field input,
+.cloud-roster-registration .roster-field textarea,
+.cloud-roster-registration .roster-tag-input input {
+  border-color: rgba(46, 143, 158, 0.24) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: #103f4a !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+.cloud-roster-registration .roster-field input::placeholder,
+.cloud-roster-registration .roster-field textarea::placeholder,
+.cloud-roster-registration .roster-tag-input input::placeholder {
+  color: rgba(16, 63, 74, 0.42) !important;
+}
+
+.cloud-roster-registration .roster-choice-card,
+.cloud-roster-registration .roster-cover-card,
+.cloud-roster-registration .roster-tag-list button,
+.cloud-roster-registration .roster-tag-input button,
+.cloud-roster-registration .roster-switch,
+.cloud-roster-registration .roster-pledge-box {
+  border-color: rgba(96, 170, 184, 0.2) !important;
+  background: rgba(255, 255, 255, 0.68) !important;
+  color: #103f4a !important;
+  box-shadow: 0 14px 30px rgba(55, 143, 158, 0.1);
+}
+
+.cloud-roster-registration .roster-choice-card--active,
+.cloud-roster-registration .roster-cover-card--active,
+.cloud-roster-registration .roster-tag-list .roster-tag--active {
+  border-color: rgba(16, 126, 146, 0.42) !important;
+  background: linear-gradient(135deg, rgba(121, 214, 220, 0.9), rgba(255, 245, 191, 0.86)) !important;
+  color: #103f4a !important;
+}
+
+.cloud-roster-registration .roster-choice-card b {
+  background: rgba(121, 214, 220, 0.2);
+  color: #0d7c8a;
+}
+
+.cloud-roster-registration .roster-cover-card {
+  color: #103f4a !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+.cloud-roster-registration .roster-preview-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.38)),
+    var(--roster-card-gradient) !important;
+  color: #103f4a !important;
+  box-shadow: 0 22px 54px rgba(55, 143, 158, 0.16) !important;
+}
+
+.cloud-roster-registration .roster-preview-card::before {
+  position: absolute;
+  inset: auto -24px -34px -24px;
+  height: 118px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 22% 42%, rgba(255, 255, 255, 0.92), transparent 34%),
+    radial-gradient(circle at 62% 48%, rgba(175, 231, 236, 0.42), transparent 42%);
+  content: '';
+  pointer-events: none;
+}
+
+.cloud-roster-registration .roster-preview-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cloud-roster-registration .roster-message--error {
+  border-color: rgba(188, 92, 74, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  color: #8f3d32;
+}
+
+.cloud-roster-registration .roster-button {
+  border: 1px solid rgba(46, 143, 158, 0.24) !important;
+  background: linear-gradient(135deg, #79d6dc, #fff5bf) !important;
+  color: #103f4a !important;
+  font-weight: 900 !important;
+  box-shadow: 0 18px 36px rgba(55, 143, 158, 0.16) !important;
+}
+
+.cloud-roster-registration .roster-button--ghost {
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.cloud-roster-registration .roster-success-dialog {
+  background: rgba(130, 209, 218, 0.26);
+}
+
+.cloud-roster-registration .roster-success-dialog__card {
+  border-color: rgba(96, 170, 184, 0.22);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.96), transparent 38%),
+    rgba(255, 255, 255, 0.92);
+  box-shadow: 0 30px 80px rgba(55, 143, 158, 0.24);
+}
+
+@media (min-width: 900px) {
+  .cloud-registration-shell {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .cloud-roster-registration .roster-hero-card {
+    position: sticky;
+    top: 24px;
+  }
+
+  .cloud-roster-registration .roster-step-track,
+  .cloud-roster-registration .roster-progress,
+  .cloud-roster-registration .roster-scroll-card {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .cloud-registration-shell {
+    width: min(100vw - 20px, 430px);
+  }
+
+  .cloud-roster-registration .roster-choice-grid,
+  .cloud-roster-registration .roster-cover-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-registration-sky__cloud {
+    animation: none !important;
+  }
+}
+
+@keyframes registrationCloudDrift {
+  from {
+    transform: translate3d(-14px, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(22px, -10px, 0) scale(1.06);
   }
 }
 </style>

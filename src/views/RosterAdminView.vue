@@ -230,7 +230,12 @@ async function handleLogout(): Promise<void> {
 </script>
 
 <template>
-  <main ref="pageRef" class="roster-admin-page">
+  <main ref="pageRef" class="cloud-roster-admin-page">
+    <div class="cloud-admin-sky" aria-hidden="true">
+      <span class="cloud-admin-sky__cloud cloud-admin-sky__cloud--one"></span>
+      <span class="cloud-admin-sky__cloud cloud-admin-sky__cloud--two"></span>
+    </div>
+
     <section class="roster-admin-shell">
       <header class="roster-admin-hero reveal-on-scroll">
         <p>{{ rosterContent.admin.eyebrow }}</p>
@@ -581,6 +586,191 @@ async function handleLogout(): Promise<void> {
 
   .roster-admin-list {
     max-height: none;
+  }
+}
+
+/* 仙气云海重设计：审核台使用克制云端视觉，优先保证信息密度和可读性。 */
+.cloud-roster-admin-page {
+  position: relative;
+  min-height: 100dvh;
+  padding: 18px 0 80px;
+  color: #103f4a;
+  isolation: isolate;
+}
+
+.cloud-admin-sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.94), transparent 24%),
+    radial-gradient(circle at 82% 14%, rgba(158, 224, 235, 0.38), transparent 30%),
+    linear-gradient(180deg, #eefcff 0%, #e3f8f7 48%, #f8fbef 100%);
+}
+
+.cloud-admin-sky__cloud {
+  position: absolute;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 62% 44%, rgba(255, 255, 255, 0.82), transparent 38%),
+    radial-gradient(circle at 50% 70%, rgba(152, 222, 228, 0.34), transparent 44%);
+  filter: blur(4px);
+  opacity: 0.62;
+  animation: adminCloudDrift 20s ease-in-out infinite alternate;
+}
+
+.cloud-admin-sky__cloud--one {
+  left: -10%;
+  top: 10%;
+  width: 340px;
+  height: 260px;
+}
+
+.cloud-admin-sky__cloud--two {
+  right: -12%;
+  bottom: 12%;
+  width: 380px;
+  height: 280px;
+  animation-delay: 1.4s;
+}
+
+.cloud-roster-admin-page .roster-admin-shell {
+  width: min(1240px, calc(100vw - 28px)) !important;
+}
+
+.cloud-roster-admin-page .roster-admin-hero,
+.cloud-roster-admin-page .roster-admin-toolbar,
+.cloud-roster-admin-page .roster-admin-list,
+.cloud-roster-admin-page .roster-admin-editor,
+.cloud-roster-admin-page .roster-admin-message {
+  border-color: rgba(96, 170, 184, 0.22) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: #103f4a !important;
+  box-shadow: 0 24px 58px rgba(55, 143, 158, 0.16) !important;
+  backdrop-filter: blur(22px) !important;
+}
+
+.cloud-roster-admin-page .roster-admin-hero p,
+.cloud-roster-admin-page .roster-admin-form span,
+.cloud-roster-admin-page .roster-admin-preview span {
+  color: #0d7c8a !important;
+  font-weight: 900;
+}
+
+.cloud-roster-admin-page .roster-admin-hero h1,
+.cloud-roster-admin-page .roster-admin-logs h2,
+.cloud-roster-admin-page .roster-admin-preview strong {
+  color: #103f4a !important;
+}
+
+.cloud-roster-admin-page .roster-admin-hero span,
+.cloud-roster-admin-page .roster-admin-list p,
+.cloud-roster-admin-page .roster-admin-list span,
+.cloud-roster-admin-page .roster-admin-list small,
+.cloud-roster-admin-page .roster-admin-logs p,
+.cloud-roster-admin-page .roster-admin-logs span {
+  color: rgba(16, 63, 74, 0.68) !important;
+}
+
+.cloud-roster-admin-page .roster-admin-hero__actions a,
+.cloud-roster-admin-page .roster-admin-hero__actions button,
+.cloud-roster-admin-page .roster-admin-toolbar button,
+.cloud-roster-admin-page .roster-admin-actions button {
+  border-color: rgba(46, 143, 158, 0.24) !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+  color: #103f4a !important;
+  font-weight: 800;
+}
+
+.cloud-roster-admin-page .roster-admin-toolbar input,
+.cloud-roster-admin-page .roster-admin-toolbar select,
+.cloud-roster-admin-page .roster-admin-form input,
+.cloud-roster-admin-page .roster-admin-form select,
+.cloud-roster-admin-page .roster-admin-form textarea {
+  border-color: rgba(46, 143, 158, 0.24) !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: #103f4a !important;
+}
+
+.cloud-roster-admin-page .roster-admin-list button,
+.cloud-roster-admin-page .roster-admin-form label.check,
+.cloud-roster-admin-page .roster-admin-logs article {
+  border-color: rgba(96, 170, 184, 0.18) !important;
+  background: rgba(255, 255, 255, 0.64) !important;
+  color: #103f4a !important;
+}
+
+.cloud-roster-admin-page .roster-admin-list button.active {
+  border-color: rgba(16, 126, 146, 0.42) !important;
+  background: linear-gradient(135deg, rgba(121, 214, 220, 0.34), rgba(255, 245, 191, 0.42)) !important;
+  box-shadow: 0 14px 30px rgba(55, 143, 158, 0.14);
+}
+
+.cloud-roster-admin-page .roster-admin-preview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.42)),
+    var(--roster-card-gradient) !important;
+  color: #103f4a !important;
+  box-shadow: 0 20px 46px rgba(55, 143, 158, 0.14);
+}
+
+.cloud-roster-admin-page .roster-admin-preview::before {
+  position: absolute;
+  inset: auto -28px -40px -28px;
+  height: 120px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 22% 42%, rgba(255, 255, 255, 0.92), transparent 34%),
+    radial-gradient(circle at 62% 48%, rgba(175, 231, 236, 0.42), transparent 42%);
+  content: '';
+  pointer-events: none;
+}
+
+.cloud-roster-admin-page .roster-admin-preview > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cloud-roster-admin-page .roster-admin-actions button:first-child {
+  background: linear-gradient(135deg, #79d6dc, #fff5bf) !important;
+  color: #103f4a !important;
+}
+
+.cloud-roster-admin-page .roster-admin-actions button.danger {
+  border-color: rgba(188, 92, 74, 0.28) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  color: #8f3d32 !important;
+}
+
+@media (max-width: 900px) {
+  .cloud-roster-admin-page {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  .cloud-roster-admin-page .roster-admin-shell {
+    width: min(100vw - 20px, 720px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-admin-sky__cloud {
+    animation: none !important;
+  }
+}
+
+@keyframes adminCloudDrift {
+  from {
+    transform: translate3d(-14px, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(22px, -10px, 0) scale(1.06);
   }
 }
 </style>
