@@ -353,8 +353,10 @@ export async function submitRosterEntry(payload: SubmitRosterCardPayload): Promi
   const form = normalizeRosterCardForm(payload.form)
   const supabase = getSupabaseClient()
 
+  const publicSlug = createRosterPublicSlug(form.jianghuName)
+
   const insertPayload = {
-    public_slug: createRosterPublicSlug(form.jianghuName),
+    public_slug: publicSlug,
     jianghu_name: form.jianghuName,
     title_name: form.titleName,
     identity_key: form.identityKey,
@@ -372,19 +374,19 @@ export async function submitRosterEntry(payload: SubmitRosterCardPayload): Promi
     is_public: false,
   }
 
-  const { data, error } = await withRosterTimeout(
-    supabase.from('yunqi_roster_cards').insert(insertPayload).select('id,public_slug,status').single(),
+  const { error } = await withRosterTimeout(
+    supabase.from('yunqi_roster_cards').insert(insertPayload),
     '提交名帖超时，请检查网络后重试。',
   )
 
-  if (error || !data) {
+  if (error) {
     throw new Error(resolveRosterErrorMessage(error))
   }
 
   return {
-    id: data.id,
-    publicSlug: data.public_slug,
-    status: data.status,
+    id: publicSlug,
+    publicSlug,
+    status: 'pending',
   }
 }
 
@@ -603,6 +605,7 @@ export async function deleteAdminRosterEntry(entryId: string): Promise<string> {
 
   return entryId
 }
+
 
 
 

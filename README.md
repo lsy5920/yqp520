@@ -676,6 +676,18 @@ set email = excluded.email,
     role = excluded.role,
     is_active = true;
 ```
+
+### 公开登记提示 RLS 权限错误怎么办
+如果登记页提交时出现 `new row violates row-level security policy for table "yunqi_roster_cards"`，说明 Supabase 里的公开插入策略不是最新版。请优先重新执行 `supabase/yunqi_roster.sql`。如果只想临时修复公开登记，可在 Supabase SQL Editor 单独执行：
+
+```sql
+drop policy if exists yunqi_roster_cards_public_insert on public.yunqi_roster_cards;
+create policy yunqi_roster_cards_public_insert
+on public.yunqi_roster_cards
+for insert
+to anon, authenticated
+with check (status = 'pending' and is_public = false);
+```
 ## 更新日志
 2026-04-21 23:14 【初次发布】完成云栖派官网首版开发，落地六个核心页面、统一青金云海视觉风格、滚动动效与移动端适配。  
 2026-04-21 23:15 【新增】新增海报分享生成器、背景音乐播放器与首页启播引导，并补齐完整中文 README、安装教程、使用说明与排错文档。  
@@ -783,3 +795,4 @@ set email = excluded.email,
 2026-04-25 11:04 【修复】修复云栖名册公开名录页电脑端布局横向溢出、搜索栏压到卡片区的问题，并取消名册页单独背景色，改为沿用全站统一水墨背景，同步更新 README 使用说明。
 2026-04-25 11:02 【修复】修复旧版 Supabase 执事资料表缺少 id 列导致审核台登录报错的问题，前端改为兼容无 id 旧表读取，并在 SQL 脚本中补充旧表自动添加 id 列的迁移语句。
 2026-04-25 11:08 【优化】将云栖名册登记与后台展示中的“称号”文案改为“真实姓名”，提交成功后改为居中弹窗提示“已登记，待审核”，让用户明确知道登记已完成且等待执事审核。
+2026-04-25 11:22 【修复】修复云栖名册公开登记提交后触发 Supabase RLS 权限错误的问题，前端提交后不再读取待审核记录，并补充中文错误提示、SQL 注释和 README 权限补丁说明。

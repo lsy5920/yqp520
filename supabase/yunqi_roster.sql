@@ -127,7 +127,7 @@ for select
 to authenticated
 using (user_id = auth.uid() or public.is_active_yunqi_roster_admin());
 
--- 这里允许任何人提交名帖，但默认 pending 且不公开。
+-- 这里允许任何人提交名帖，但默认 pending 且不公开；前端提交后不会读取待审行，避免触发公开读取限制。
 drop policy if exists yunqi_roster_cards_public_insert on public.yunqi_roster_cards;
 create policy yunqi_roster_cards_public_insert
 on public.yunqi_roster_cards
@@ -253,4 +253,5 @@ $$;
 -- insert into public.yunqi_roster_admin_profiles (user_id, email, display_name, role, is_active)
 -- values ('替换为 auth.users.id', 'admin@example.com', '云栖执事', '名册执事', true)
 -- on conflict (user_id) do update set email = excluded.email, display_name = excluded.display_name, role = excluded.role, is_active = excluded.is_active;
+
 
