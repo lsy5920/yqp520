@@ -1,1014 +1,515 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import PageBanner from '@/components/common/PageBanner.vue'
 import { useRevealMotion } from '@/composables/useRevealMotion'
-import { rosterContent, rosterHallOptions } from '@/data/rosterContent'
+import { rosterContent, rosterIdentityOptions } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { listPublicRosterEntries } from '@/services/roster'
-import type { PublicRosterEntry, RosterHallKey } from '@/types/roster'
+import type { PublicRosterCard, RosterIdentityKey } from '@/types/roster'
+import { formatRosterDate, getRosterCoverGradient } from '@/utils/roster'
 
-// 这里保存页面根节点，供列表页静态区块使用统一显现动效。
+// 这里保存页面根节点，供显现动效扫描。
 const pageRef = ref<HTMLElement | null>(null)
 
-// 这里启用页面显现动效，让名录卡片出现更顺滑。
-useRevealMotion({
-  rootRef: pageRef,
-})
+// 这里启用显现动效，让卡册加载更有层次。
+useRevealMotion({ rootRef: pageRef })
 
-// 这里拿到路由实例，供工具栏按钮做显式跳转，避免桌面端复杂层级下点击看起来没有反应。
+// 这里拿到路由实例，用于点击卡片进入详情。
 const router = useRouter()
 
-// 这里保存搜索关键字，供名录检索使用。
+// 这里保存搜索关键字。
 const keyword = ref<string>('')
 
-// 这里保存堂口筛选值，供名录过滤使用。
-const selectedHallKey = ref<RosterHallKey | ''>('')
+// 这里保存身份筛选值。
+const selectedIdentityKey = ref<RosterIdentityKey | ''>('')
 
-// 这里保存公开条目列表。
-const entryList = ref<PublicRosterEntry[]>([])
+// 这里保存公开名帖列表。
+const cardList = ref<PublicRosterCard[]>([])
 
-// 这里保存当前弹窗正在查看的公开条目，关闭弹窗时会清空，避免残留旧资料。
-const selectedEntry = ref<PublicRosterEntry | null>(null)
+// 这里保存长按或点击时被点亮的名帖编号。
+const glowingCardId = ref<string>('')
 
-// 这里记录加载状态，避免重复请求时用户没有反馈。
+// 这里记录加载状态。
 const isLoading = ref<boolean>(false)
 
-// 这里记录当前错误提示，名录请求失败时直接显示中文说明。
+// 这里记录错误提示。
 const errorMessage = ref<string>('')
 
-// 这里保存搜索防抖定时器，避免每敲一个字就立刻发请求。
-let searchTimer: number | null = null
+// 这里保存搜索防抖定时器。
+let searchTimer: number | undefined
 
-/**
- * 竹叶展示样式
- * 用途：给每一枚竹叶提供稳定的错落漂浮参数
- * 入参：无
- * 返回值：返回带公开条目和样式变量的列表
- */
-const bambooEntryList = computed(() => entryList.value.map((entry, index) => ({
-  entry,
-  style: buildBambooLeafStyle(entry, index),
-})))
+// 这里计算当前列表总热度。
+const totalHeat = computed<number>(() => cardList.value.reduce((total, card) => total + card.heatValue, 0))
 
-/**
- * 生成稳定数字
- * 用途：把公开标识转成稳定数字，让竹叶位置看起来随机但不会频繁跳动
- * 入参：source 为用于计算的文字
- * 返回值：返回稳定数字
- */
-function buildStableNumber(source: string): number {
-  // 这里准备默认数字，避免空字符串导致计算结果不可用。
-  let total = 0
-
-  // 这里逐字累加字符编号，保证同一条记录每次得到同样数字。
-  Array.from(source || '云栖').forEach((char, index) => {
-    total += char.charCodeAt(0) * (index + 3)
-  })
-
-  return total
-}
-
-/**
- * 生成竹叶样式
- * 用途：统一控制竹叶大小、旋转、浮动距离和动画速度
- * 入参：entry 为公开条目，index 为列表序号
- * 返回值：返回可绑定到 style 的样式变量
- */
-function buildBambooLeafStyle(entry: PublicRosterEntry, index: number): Record<string, string> {
-  // 这里用公开标识与序号生成稳定种子，避免筛选后所有竹叶都长得一样。
-  const seed = buildStableNumber(`${entry.publicSlug}-${entry.daohao}-${index}`)
-  // 这里让竹叶宽度在合理范围内变化，形成远近层次。
-  const width = 176 + (seed % 34)
-  // 这里让竹叶高度在合理范围内变化，模拟不同长短的江湖名签。
-  const height = 270 + (seed % 46)
-  // 这里让竹叶左右错开，营造漂浮在江湖云雾里的感觉。
-  const offset = ((seed % 9) - 4) * 12
-  // 这里让竹叶轻微旋转，不影响道名阅读。
-  const rotate = ((seed % 11) - 5) * 1.4
-  // 这里让竹叶左右游移幅度不同，动画更像悬在风里。
-  const driftDistance = 6 + (seed % 8)
-  // 这里让每枚竹叶上下浮动距离不同，避免动画整齐呆板。
-  const floatDistance = 12 + (seed % 12)
-  // 这里让动画时长错开，形成更自然的漂浮节奏。
-  const duration = 6.4 + (seed % 9) * 0.42
-  // 这里让动画延迟错开，避免同时起伏。
-  const delay = (seed % 12) * -0.28
-  // 这里通过层级让部分竹叶更靠前。
-  const depth = 1 + (seed % 5)
-
-  return {
-    '--bamboo-width': `${width}px`,
-    '--bamboo-height': `${height}px`,
-    '--bamboo-offset': `${offset}px`,
-    '--bamboo-rotate': `${rotate}deg`,
-    '--bamboo-drift-distance': `${driftDistance}px`,
-    '--bamboo-float-distance': `${floatDistance}px`,
-    '--bamboo-duration': `${duration}s`,
-    '--bamboo-delay': `${delay}s`,
-    '--bamboo-depth': String(depth),
+// 这里监听搜索和筛选变化，自动重新加载名册。
+watch([keyword, selectedIdentityKey], () => {
+  if (searchTimer) {
+    window.clearTimeout(searchTimer)
   }
-}
 
-/**
- * 获取名册编号文案
- * 用途：弹窗和竹叶统一显示文牒号或回执号
- * 入参：entry 为公开条目
- * 返回值：返回编号文案
- */
-function getEntryNumberText(entry: PublicRosterEntry): string {
-  return entry.status === 'approved'
-    ? `文牒号：${entry.entryNo || '待定'}`
-    : `回执号：${entry.receiptCode || '待定'}`
-}
+  searchTimer = window.setTimeout(() => {
+    void loadCardList()
+  }, 280)
+})
 
-/**
- * 获取名册日期文案
- * 用途：弹窗统一展示入册日期或提交日期
- * 入参：entry 为公开条目
- * 返回值：返回日期文案
- */
-function getEntryDateText(entry: PublicRosterEntry): string {
-  return entry.status === 'approved'
-    ? `入册日期：${entry.effectiveDate || entry.reviewedAt || '待定'}`
-    : `提交日期：${entry.createdAt || '待定'}`
-}
+// 这里页面进入时加载公开名册。
+onMounted(() => {
+  void loadCardList()
+})
 
-/**
- * 打开竹叶弹窗
- * 用途：点击道名后展示该同门公开信息
- * 入参：entry 为要查看的公开条目
- * 返回值：无返回值
- */
-function openEntryDialog(entry: PublicRosterEntry): void {
-  selectedEntry.value = entry
-}
-
-/**
- * 关闭竹叶弹窗
- * 用途：关闭后清空当前条目，避免下次打开时闪旧内容
- * 入参：无
- * 返回值：无返回值
- */
-function closeEntryDialog(): void {
-  selectedEntry.value = null
-}
-
-/**
- * 处理键盘关闭弹窗
- * 用途：按退出键时关闭弹窗，方便键盘用户使用
- * 入参：event 为键盘事件
- * 返回值：无返回值
- */
-function handleDialogKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && selectedEntry.value) {
-    closeEntryDialog()
+// 这里页面离开时清理防抖定时器。
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    window.clearTimeout(searchTimer)
   }
-}
+})
 
 /**
- * 拉取公开名录
- * 用途：首屏加载与搜索筛选变更时统一刷新数据
+ * 加载公开名帖列表
+ * 用途：按当前搜索和身份筛选请求公开卡册
  * 入参：无
  * 返回值：无返回值
  */
-/**
- * 前往名册登记页
- * 用途：工具栏主按钮点击后显式跳转到登记页
- * 入参：无
- * 返回值：无返回值
- */
-function handleGoToRegistration(): void {
-  void router.push('/roster')
-}
+async function loadCardList(): Promise<void> {
+  errorMessage.value = ''
 
-/**
- * 前往执事登录页
- * 用途：工具栏管理入口点击后显式跳转到登录页，减少按钮被布局覆盖时的无响应体感
- * 入参：无
- * 返回值：无返回值
- */
-function handleGoToAdminLogin(): void {
-  void router.push('/roster/admin/login')
-}
-
-async function loadEntryList(): Promise<void> {
   if (!isSupabaseConfigured()) {
     errorMessage.value = getSupabaseConfigErrorText()
-    entryList.value = []
     return
   }
 
   isLoading.value = true
-  errorMessage.value = ''
 
   try {
-    entryList.value = await listPublicRosterEntries({
+    cardList.value = await listPublicRosterEntries({
       keyword: keyword.value,
-      hallKey: selectedHallKey.value,
-      pageSize: 60,
-      pageOffset: 0,
+      identityKey: selectedIdentityKey.value,
     })
   } catch (error) {
-    entryList.value = []
-    errorMessage.value = error instanceof Error ? error.message : '公开名录加载失败，请稍后再试'
+    errorMessage.value = error instanceof Error ? error.message : '加载云栖名册失败，请稍后重试。'
   } finally {
     isLoading.value = false
   }
 }
 
-watch(
-  () => [keyword.value, selectedHallKey.value],
-  () => {
-    if (typeof window === 'undefined') {
-      return
-    }
+/**
+ * 选择身份筛选
+ * 用途：点击顶部横向筛选时刷新列表
+ * 入参：key 为身份键名或空值
+ * 返回值：无返回值
+ */
+function selectIdentity(key: RosterIdentityKey | ''): void {
+  selectedIdentityKey.value = key
+}
 
-    if (searchTimer) {
-      window.clearTimeout(searchTimer)
-    }
+/**
+ * 点亮名帖
+ * 用途：长按或按下卡片时触发光效，增强互动感
+ * 入参：cardId 为名帖编号
+ * 返回值：无返回值
+ */
+function glowCard(cardId: string): void {
+  glowingCardId.value = cardId
+}
 
-    // 这里做一个轻量防抖，避免用户输入时频繁请求公开列表。
-    searchTimer = window.setTimeout(() => {
-      void loadEntryList()
-    }, 220)
-  },
-)
+/**
+ * 熄灭名帖
+ * 用途：用户松手或离开卡片后关闭光效
+ * 入参：无
+ * 返回值：无返回值
+ */
+function clearGlow(): void {
+  glowingCardId.value = ''
+}
 
-onMounted(() => {
-  // 这里绑定退出键关闭弹窗，提升弹窗可用性。
-  window.addEventListener('keydown', handleDialogKeydown)
-  void loadEntryList()
-})
-
-onBeforeUnmount(() => {
-  // 这里清理搜索定时器和键盘监听，避免页面切换后残留无效任务。
-  if (searchTimer) {
-    window.clearTimeout(searchTimer)
-  }
-
-  window.removeEventListener('keydown', handleDialogKeydown)
-})
+/**
+ * 打开名帖详情
+ * 用途：点击卡片进入详情页
+ * 入参：card 为公开名帖
+ * 返回值：无返回值
+ */
+function openCard(card: PublicRosterCard): void {
+  void router.push(`/roster/entry/${card.publicSlug}`)
+}
 </script>
 
 <template>
-  <div ref="pageRef" class="page roster-list-page">
-    <PageBanner
-      eyebrow="云栖名册"
-      :title="rosterContent.list.title"
-      :lead="rosterContent.list.lead"
-      :note="rosterContent.page.note"
-    />
-
-    <section class="roster-list-toolbar content-card" data-reveal>
-      <div class="roster-list-toolbar__head">
-        <div>
-          <p class="content-card__eyebrow">公开名录</p>
-          <h2>只展示已经准予入册的公开条目</h2>
-          <p>{{ errorMessage || `当前共收录 ${entryList.length} 条公开记录，可按道号、文牒号或堂口筛选。` }}</p>
-        </div>
-
-        <div class="roster-list-toolbar__actions">
-          <button type="button" class="ink-button ink-button--primary" @click="handleGoToRegistration">
-            {{ rosterContent.list.registerButton }}
-          </button>
-          <button type="button" class="ink-button ink-button--ghost" @click="handleGoToAdminLogin">
-            {{ rosterContent.list.adminButton }}
-          </button>
+  <main ref="pageRef" class="roster-mobile-page roster-list-page">
+    <section class="roster-phone-shell">
+      <div class="roster-list-hero reveal-on-scroll">
+        <p>{{ rosterContent.list.eyebrow }}</p>
+        <h1>{{ rosterContent.list.title }}</h1>
+        <span>{{ rosterContent.list.lead }}</span>
+        <div class="roster-hero-stats">
+          <b>{{ cardList.length }}</b><small>公开名帖</small>
+          <b>{{ totalHeat }}</b><small>江湖热度</small>
         </div>
       </div>
 
-      <p class="roster-list-toolbar__admin-note">
-        {{ rosterContent.list.adminHint }}
-      </p>
-
-      <div class="roster-list-toolbar__controls">
-        <label class="roster-list-toolbar__search">
-          <span>搜索道号 / 文牒号</span>
-          <input
-            v-model="keyword"
-            class="roster-list-toolbar__input"
-            :placeholder="rosterContent.list.searchPlaceholder"
-            type="text"
-          />
-        </label>
-
-        <div class="roster-list-toolbar__hall-filter">
-          <span>堂口筛选</span>
-          <div class="roster-list-toolbar__chips">
-            <button
-              type="button"
-              class="roster-list-toolbar__chip"
-              :class="{ 'roster-list-toolbar__chip--active': selectedHallKey === '' }"
-              @click="selectedHallKey = ''"
-            >
-              {{ rosterContent.list.allHallLabel }}
-            </button>
-            <button
-              v-for="hall in rosterHallOptions"
-              :key="hall.key"
-              type="button"
-              class="roster-list-toolbar__chip"
-              :class="{ 'roster-list-toolbar__chip--active': selectedHallKey === hall.key }"
-              @click="selectedHallKey = hall.key"
-            >
-              {{ hall.label }}
-            </button>
-          </div>
+      <div class="roster-search-panel reveal-on-scroll">
+        <input v-model="keyword" :placeholder="rosterContent.list.searchPlaceholder" type="search" />
+        <div class="roster-filter-track">
+          <button type="button" :class="{ active: selectedIdentityKey === '' }" @click="selectIdentity('')">全部</button>
+          <button
+            v-for="item in rosterIdentityOptions"
+            :key="item.key"
+            type="button"
+            :class="{ active: selectedIdentityKey === item.key }"
+            @click="selectIdentity(item.key)"
+          >{{ item.icon }} {{ item.label }}</button>
         </div>
       </div>
-    </section>
 
-    <section v-if="isLoading" class="content-card roster-list-state" data-reveal>
-      <p class="content-card__eyebrow">加载中</p>
-      <h3>公开名录正在整理，请稍候</h3>
-      <p>云栖档案司正在翻页，请稍后片刻。</p>
-    </section>
-
-    <section v-else-if="errorMessage" class="content-card content-card--warning roster-list-state" data-reveal>
-      <p class="content-card__eyebrow">暂未连通</p>
-      <h3>公开名录暂时无法读取</h3>
-      <p>{{ errorMessage }}</p>
-    </section>
-
-    <section v-else-if="entryList.length === 0" class="content-card roster-list-state" data-reveal>
-      <p class="content-card__eyebrow">暂无结果</p>
-      <h3>{{ rosterContent.list.emptyTitle }}</h3>
-      <p>{{ rosterContent.list.emptyDescription }}</p>
-    </section>
-
-    <section v-else class="roster-bamboo-field" data-reveal>
-      <div class="roster-bamboo-field__sky" aria-hidden="true"></div>
-      <div class="roster-bamboo-field__head">
-        <p class="content-card__eyebrow">竹叶江湖墙</p>
-        <h2>竹叶题名，竹影浮录</h2>
-        <p>点击竹叶上的道名，可展开该同门的公开名帖小窗。</p>
+      <div v-if="errorMessage" class="roster-state-card roster-state-card--error reveal-on-scroll">
+        <p>{{ errorMessage }}</p>
+        <button type="button" @click="loadCardList">重新寻访</button>
       </div>
 
-      <div class="roster-bamboo-field__grid">
+      <div v-else-if="isLoading" class="roster-card-stack">
+        <article v-for="index in 3" :key="index" class="roster-public-card roster-public-card--skeleton"></article>
+      </div>
+
+      <div v-else-if="cardList.length === 0" class="roster-state-card reveal-on-scroll">
+        <p>{{ rosterContent.list.emptyText }}</p>
+        <RouterLink to="/roster">我来递一张名帖</RouterLink>
+      </div>
+
+      <div v-else class="roster-card-stack">
         <article
-          v-for="item in bambooEntryList"
-          :key="item.entry.publicSlug"
-          class="roster-bamboo-leaf"
-          :style="item.style"
+          v-for="(card, index) in cardList"
+          :key="card.id"
+          class="roster-public-card reveal-on-scroll"
+          :class="{ 'roster-public-card--glow': glowingCardId === card.id }"
+          :style="{ '--roster-card-gradient': getRosterCoverGradient(card.coverKey), '--roster-card-delay': `${index * 0.06}s` }"
+          @click="openCard(card)"
+          @pointerdown="glowCard(card.id)"
+          @pointerleave="clearGlow"
+          @pointerup="clearGlow"
         >
-          <div class="roster-bamboo-leaf__stem" aria-hidden="true"></div>
-          <div class="roster-bamboo-leaf__body">
-            <span class="roster-bamboo-leaf__vein" aria-hidden="true"></span>
-            <span class="roster-bamboo-leaf__dew roster-bamboo-leaf__dew--one" aria-hidden="true"></span>
-            <span class="roster-bamboo-leaf__dew roster-bamboo-leaf__dew--two" aria-hidden="true"></span>
-            <p class="roster-bamboo-leaf__seal">{{ item.entry.hallLabel }}</p>
-            <button
-              type="button"
-              class="roster-bamboo-leaf__name"
-              :aria-label="`查看${item.entry.daohao}的公开名帖`"
-              @click="openEntryDialog(item.entry)"
-            >
-              {{ item.entry.daohao }}
-            </button>
-            <p class="roster-bamboo-leaf__number">{{ item.entry.entryNo || '牒号待定' }}</p>
-            <p class="roster-bamboo-leaf__status">{{ item.entry.positionLabel }} · {{ item.entry.statusLabel }}</p>
+          <div class="roster-public-card__shine"></div>
+          <div class="roster-public-card__top">
+            <span>{{ card.identityLabel }}</span>
+            <small>{{ formatRosterDate(card.approvedAt) }}</small>
           </div>
+          <strong>{{ card.jianghuName }}</strong>
+          <em>{{ card.titleName }}</em>
+          <p>{{ card.motto }}</p>
+          <div class="roster-public-card__tags">
+            <i v-for="tag in card.skillTags.slice(0, 4)" :key="tag">#{{ tag }}</i>
+          </div>
+          <footer>
+            <span>{{ card.regionText }}</span>
+            <b>热度 {{ card.heatValue }}</b>
+          </footer>
         </article>
       </div>
+
+      <nav class="roster-float-actions" aria-label="名册快捷操作">
+        <RouterLink to="/roster">递名帖</RouterLink>
+        <RouterLink to="/roster/admin/login">执事台</RouterLink>
+      </nav>
     </section>
-
-    <Teleport to="body">
-      <div
-        v-if="selectedEntry"
-        class="roster-entry-dialog"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="`${selectedEntry.daohao}的公开名帖`"
-      >
-        <button class="roster-entry-dialog__mask" type="button" aria-label="关闭公开名帖弹窗" @click="closeEntryDialog"></button>
-        <article class="roster-entry-dialog__panel">
-          <button class="roster-entry-dialog__close" type="button" aria-label="关闭弹窗" @click="closeEntryDialog">
-            ×
-          </button>
-
-          <div class="roster-entry-dialog__title">
-            <p>云栖名帖</p>
-            <h2>{{ selectedEntry.daohao }}</h2>
-            <span>{{ selectedEntry.hallLabel }} · {{ selectedEntry.positionLabel }}</span>
-          </div>
-
-          <div class="roster-entry-dialog__meta">
-            <p><strong>当前状态</strong><span>{{ selectedEntry.statusLabel }}</span></p>
-            <p><strong>名册编号</strong><span>{{ getEntryNumberText(selectedEntry) }}</span></p>
-            <p><strong>登记日期</strong><span>{{ getEntryDateText(selectedEntry) }}</span></p>
-            <p><strong>公开性别</strong><span>{{ selectedEntry.genderLabel }}</span></p>
-          </div>
-
-          <div class="roster-entry-dialog__sections">
-            <section>
-              <p>入派本心</p>
-              <span>{{ selectedEntry.entryIntent }}</span>
-            </section>
-            <section>
-              <p>身怀所长</p>
-              <span>{{ selectedEntry.strengths || '暂未公开所长' }}</span>
-            </section>
-            <section>
-              <p>所好雅事</p>
-              <span>{{ selectedEntry.hobbies || '暂未公开雅事' }}</span>
-            </section>
-            <section v-if="selectedEntry.reviewComment">
-              <p>执事批语</p>
-              <span>{{ selectedEntry.reviewComment }}</span>
-            </section>
-          </div>
-
-          <div class="roster-entry-dialog__actions">
-            <RouterLink class="ink-button ink-button--primary" :to="`/roster/entry/${selectedEntry.publicSlug}`">
-              查看完整名帖
-            </RouterLink>
-            <button type="button" class="ink-button ink-button--ghost" @click="closeEntryDialog">
-              收起名帖
-            </button>
-          </div>
-        </article>
-      </div>
-    </Teleport>
-  </div>
+  </main>
 </template>
 
 <style scoped>
-.roster-list-page {
-  gap: 30px;
-}
-
-.roster-list-toolbar {
-  position: relative;
-  z-index: 2;
-  isolation: isolate;
-}
-
-.roster-list-toolbar {
-  display: grid;
-  gap: 18px;
-}
-
-.roster-bamboo-field {
-  position: relative;
-  display: grid;
-  gap: 32px;
-  overflow: hidden;
-  padding: clamp(26px, 5vw, 52px);
-  border-radius: 38px;
-  border: 1px solid rgba(84, 154, 151, 0.26);
+.roster-mobile-page {
+  min-height: 100vh;
+  padding: 108px 14px 112px;
   background:
-    radial-gradient(circle at 14% 10%, rgba(255, 255, 255, 0.62), transparent 28%),
-    radial-gradient(circle at 86% 18%, rgba(91, 188, 181, 0.2), transparent 32%),
-    linear-gradient(145deg, rgba(246, 251, 244, 0.72), rgba(208, 235, 226, 0.82));
-  box-shadow: var(--shadow-strong);
-  backdrop-filter: blur(16px);
-  isolation: isolate;
+    radial-gradient(circle at 50% 2%, rgba(221, 176, 87, 0.22), transparent 30%),
+    radial-gradient(circle at 80% 20%, rgba(75, 113, 156, 0.28), transparent 26%),
+    linear-gradient(180deg, #070b12 0%, #111827 48%, #07090d 100%);
 }
 
-.roster-bamboo-field::before,
-.roster-bamboo-field::after,
-.roster-bamboo-field__sky {
+.roster-phone-shell {
+  width: min(100%, 430px);
+  margin: 0 auto;
+  color: #f8efd8;
+}
+
+.roster-list-hero,
+.roster-search-panel,
+.roster-state-card,
+.roster-public-card {
+  border: 1px solid rgba(231, 190, 107, 0.24);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+}
+
+.roster-list-hero {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  overflow: hidden;
+  padding: 28px 22px;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 236, 183, 0.26), transparent 28%),
+    linear-gradient(145deg, rgba(24, 31, 45, 0.96), rgba(13, 17, 28, 0.92));
+}
+
+.roster-list-hero::after {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
+  right: -30px;
+  bottom: -46px;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgba(231, 190, 107, 0.28);
+  border-radius: 999px;
   content: '';
 }
 
-.roster-bamboo-field::before {
-  background:
-    linear-gradient(115deg, transparent 0 18%, rgba(88, 151, 104, 0.1) 19%, transparent 20% 54%, rgba(84, 154, 151, 0.08) 55%, transparent 56%),
-    radial-gradient(ellipse at 50% 100%, rgba(84, 154, 151, 0.12), transparent 60%);
-  opacity: 0.95;
-  z-index: -3;
-}
-
-.roster-bamboo-field::after {
-  background:
-    radial-gradient(ellipse at 22% 84%, rgba(114, 188, 182, 0.18), transparent 34%),
-    radial-gradient(ellipse at 82% 76%, rgba(255, 255, 255, 0.34), transparent 32%);
-  filter: blur(14px);
-  animation: bambooMistDrift 14s ease-in-out infinite alternate;
-  z-index: -2;
-}
-
-.roster-bamboo-field__sky {
-  background-image:
-    linear-gradient(rgba(65, 134, 111, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(65, 134, 111, 0.06) 1px, transparent 1px),
-    radial-gradient(circle, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
-  background-size: 76px 76px, 76px 76px, 34px 34px;
-  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.5), transparent 72%);
-  animation: bambooSkyFlow 24s linear infinite;
-  z-index: -1;
-}
-
-.roster-bamboo-field__head {
-  max-width: 760px;
-}
-
-.roster-bamboo-field__head h2,
-.roster-bamboo-field__head p {
+.roster-list-hero p,
+.roster-list-hero h1,
+.roster-list-hero span {
+  position: relative;
   margin: 0;
 }
 
-.roster-bamboo-field__head h2 {
-  margin-top: 8px;
-  color: #173d42;
-  font-size: clamp(1.9rem, 4vw, 3.2rem);
-  line-height: 1.16;
+.roster-list-hero p {
+  color: #e8bd68;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
 }
 
-.roster-bamboo-field__head p:last-child {
-  margin-top: 10px;
-  color: var(--color-text-soft);
-  line-height: 1.78;
+.roster-list-hero h1 {
+  font-size: clamp(2rem, 9vw, 3.25rem);
+  line-height: 1.1;
 }
 
-.roster-bamboo-field__grid {
+.roster-list-hero span,
+.roster-state-card p {
+  color: rgba(248, 239, 216, 0.72);
+  line-height: 1.75;
+}
+
+.roster-hero-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(24px, 4vw, 46px);
-  align-items: start;
-  padding: 14px 0 20px;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 8px;
+  align-items: end;
 }
 
-.roster-bamboo-leaf {
-  position: relative;
-  z-index: var(--bamboo-depth);
+.roster-hero-stats b {
+  color: #ffe1a3;
+  font-size: 1.8rem;
+}
+
+.roster-hero-stats small {
+  color: rgba(248, 239, 216, 0.62);
+}
+
+.roster-search-panel {
+  position: sticky;
+  top: 84px;
+  z-index: 5;
   display: grid;
-  justify-items: center;
-  width: min(100%, var(--bamboo-width));
-  min-height: calc(var(--bamboo-height) + 42px);
-  margin-inline: auto;
-  transform: translateX(var(--bamboo-offset)) rotate(var(--bamboo-rotate));
-  animation:
-    bambooLeafEnter 0.72s ease-out both,
-    bambooLeafFloat var(--bamboo-duration) ease-in-out var(--bamboo-delay) infinite alternate;
-  transition:
-    transform var(--transition-base),
-    filter var(--transition-base);
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px;
+  border-radius: 24px;
+  background: rgba(10, 15, 26, 0.9);
 }
 
-.roster-bamboo-leaf:hover,
-.roster-bamboo-leaf:focus-within {
-  filter: drop-shadow(0 22px 28px rgba(63, 140, 126, 0.24));
-  transform: translateX(var(--bamboo-offset)) translateY(-8px) rotate(calc(var(--bamboo-rotate) * 0.72));
-}
-
-.roster-bamboo-leaf__stem {
-  width: 8px;
-  height: 46px;
+.roster-search-panel input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid rgba(231, 190, 107, 0.18);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(77, 133, 82, 0.96), rgba(44, 116, 87, 0.9));
-  box-shadow: 0 0 18px rgba(78, 157, 133, 0.2);
-}
-
-.roster-bamboo-leaf__body {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  width: var(--bamboo-width);
-  min-height: var(--bamboo-height);
-  padding: 42px 18px 28px;
-  overflow: hidden;
-  border: 1px solid rgba(67, 132, 107, 0.32);
-  border-radius: 72% 18% 72% 22% / 48% 20% 52% 20%;
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.72), transparent 18%),
-    linear-gradient(118deg, rgba(229, 252, 231, 0.96), rgba(129, 205, 158, 0.92) 44%, rgba(46, 136, 101, 0.94) 100%);
-  box-shadow:
-    inset 0 0 28px rgba(255, 255, 255, 0.34),
-    inset 0 -24px 36px rgba(38, 108, 83, 0.22),
-    0 24px 46px rgba(63, 140, 126, 0.2),
-    0 0 32px rgba(255, 255, 255, 0.18);
-  transform-origin: 50% 0;
-}
-
-.roster-bamboo-leaf__body::before,
-.roster-bamboo-leaf__body::after {
-  position: absolute;
-  content: '';
-  pointer-events: none;
-}
-
-.roster-bamboo-leaf__body::before {
-  inset: 24px 50% 18px auto;
-  width: 2px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(24, 93, 73, 0.18), rgba(13, 76, 66, 0.58), rgba(255, 255, 255, 0.14));
-  transform: rotate(8deg);
-}
-
-.roster-bamboo-leaf__body::after {
-  inset: 0 auto 0 -70%;
-  width: 54%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
-  transform: skewX(-18deg);
-  transition: left 0.72s ease;
-}
-
-.roster-bamboo-leaf:hover .roster-bamboo-leaf__body::after,
-.roster-bamboo-leaf:focus-within .roster-bamboo-leaf__body::after {
-  left: 118%;
-}
-
-.roster-bamboo-leaf__vein {
-  position: absolute;
-  inset: 30px 18px;
-  border-radius: inherit;
-  background:
-    linear-gradient(26deg, transparent 48%, rgba(255, 255, 255, 0.22) 49%, transparent 51%),
-    linear-gradient(152deg, transparent 48%, rgba(20, 96, 78, 0.16) 49%, transparent 51%),
-    repeating-linear-gradient(112deg, transparent 0 18px, rgba(255, 255, 255, 0.16) 18px 19px, transparent 19px 34px);
-  opacity: 0.7;
-  animation: bambooLeafVeinGlow calc(var(--bamboo-duration) * 0.8) ease-in-out var(--bamboo-delay) infinite alternate;
-}
-
-.roster-bamboo-leaf__dew {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.92), rgba(172, 230, 219, 0.3) 62%, transparent 70%);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.36);
-}
-
-.roster-bamboo-leaf__dew--one {
-  top: 34px;
-  right: 34px;
-}
-
-.roster-bamboo-leaf__dew--two {
-  right: 56px;
-  bottom: 44px;
-  width: 9px;
-  height: 9px;
-}
-
-.roster-bamboo-leaf__seal,
-.roster-bamboo-leaf__number,
-.roster-bamboo-leaf__status {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  text-align: center;
-}
-
-.roster-bamboo-leaf__seal {
-  align-self: start;
-  padding: 4px 9px;
-  border: 1px solid rgba(24, 93, 73, 0.2);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.34);
-  color: rgba(21, 84, 72, 0.86);
-  font-size: 0.76rem;
-  letter-spacing: 0.14em;
-}
-
-.roster-bamboo-leaf__name {
-  position: relative;
-  z-index: 1;
-  margin: 22px 0 12px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: rgba(15, 65, 57, 0.96);
-  font-family: inherit;
-  font-size: clamp(1.52rem, 3vw, 2.06rem);
-  font-weight: 900;
-  line-height: 1.18;
-  text-align: center;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.78),
-    0 0 18px rgba(255, 255, 255, 0.36);
-  cursor: pointer;
-}
-
-.roster-bamboo-leaf__name::after {
-  position: absolute;
-  left: 50%;
-  bottom: -8px;
-  width: 0;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(23, 105, 88, 0.72), transparent);
-  content: '';
-  transform: translateX(-50%);
-  transition: width var(--transition-base);
-}
-
-.roster-bamboo-leaf__name:hover,
-.roster-bamboo-leaf__name:focus-visible {
-  color: rgba(10, 78, 69, 0.98);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff8e7;
   outline: none;
 }
 
-.roster-bamboo-leaf__name:hover::after,
-.roster-bamboo-leaf__name:focus-visible::after {
-  width: 110%;
+.roster-filter-track {
+  display: flex;
+  gap: 8px;
+  margin: 0 -14px;
+  padding: 0 14px 2px;
+  overflow-x: auto;
 }
 
-.roster-bamboo-leaf__number {
-  padding: 6px 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.34);
-  color: rgba(20, 74, 66, 0.88);
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-
-.roster-bamboo-leaf__status {
-  margin-top: 10px;
-  padding: 7px 10px;
-  border: 1px solid rgba(24, 93, 73, 0.16);
+.roster-filter-track button,
+.roster-state-card button,
+.roster-state-card a,
+.roster-float-actions a {
+  border: 1px solid rgba(231, 190, 107, 0.22);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.24);
-  color: rgba(21, 77, 69, 0.72);
-  font-size: 0.78rem;
-  line-height: 1.45;
+  color: #f8efd8;
+  text-decoration: none;
 }
 
-@keyframes bambooLeafEnter {
-  from {
-    opacity: 0;
-    translate: 0 18px;
-    scale: 0.96;
-  }
-
-  to {
-    opacity: 1;
-    translate: 0 0;
-    scale: 1;
-  }
+.roster-filter-track button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.07);
 }
 
-@keyframes bambooLeafFloat {
-  from {
-    translate: calc(var(--bamboo-drift-distance) * -0.5) calc(var(--bamboo-float-distance) * -0.35);
-    rotate: -1.5deg;
-  }
-
-  to {
-    translate: var(--bamboo-drift-distance) var(--bamboo-float-distance);
-    rotate: 1.8deg;
-  }
+.roster-filter-track button.active {
+  background: linear-gradient(135deg, #dfad55, #fff0b8);
+  color: #160f07;
 }
 
-@keyframes bambooLeafVeinGlow {
-  from {
-    opacity: 0.45;
-    transform: translateY(-2px);
-  }
-
-  to {
-    opacity: 0.9;
-    transform: translateY(3px);
-  }
-}
-
-@keyframes bambooMistDrift {
-  from {
-    transform: translate3d(-12px, 0, 0) scale(1);
-  }
-
-  to {
-    transform: translate3d(18px, -10px, 0) scale(1.04);
-  }
-}
-
-@keyframes bambooSkyFlow {
-  from {
-    background-position: 0 0, 0 0, 0 0;
-  }
-
-  to {
-    background-position: 76px 76px, -76px 76px, 34px 34px;
-  }
-}
-.roster-entry-dialog {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
+.roster-card-stack {
   display: grid;
-  place-items: center;
-  padding: 20px;
+  gap: 16px;
 }
 
-.roster-entry-dialog__mask {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  background:
-    radial-gradient(circle at 50% 36%, rgba(139, 208, 203, 0.22), transparent 34%),
-    rgba(229, 244, 239, 0.72);
-  backdrop-filter: blur(12px) saturate(1.08);
-  cursor: pointer;
-}
-
-.roster-entry-dialog__panel {
+.roster-public-card {
+  --roster-card-gradient: linear-gradient(145deg, #111827, #28445f 52%, #d9b56d);
   position: relative;
   display: grid;
-  gap: 18px;
-  width: min(760px, 100%);
-  max-height: min(86vh, 860px);
-  overflow: auto;
-  padding: clamp(22px, 4vw, 34px);
-  border-radius: 32px;
-  border: 1px solid rgba(84, 154, 151, 0.28);
-  background:
-    radial-gradient(circle at top left, rgba(139, 208, 203, 0.28), transparent 34%),
-    linear-gradient(160deg, rgba(249, 253, 250, 0.96), rgba(226, 245, 239, 0.98));
-  box-shadow: 0 30px 90px rgba(42, 101, 101, 0.2);
-}
-
-.roster-entry-dialog__close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: 1px solid rgba(84, 154, 151, 0.26);
-  background: rgba(255, 255, 255, 0.64);
-  color: #173d42;
-  font-size: 1.5rem;
+  gap: 12px;
+  min-height: 268px;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 30px;
+  background: var(--roster-card-gradient);
+  color: #fff8e7;
   cursor: pointer;
+  animation: rosterCardFloat 5.6s ease-in-out infinite;
+  animation-delay: var(--roster-card-delay, 0s);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.roster-entry-dialog__title p,
-.roster-entry-dialog__title h2,
-.roster-entry-dialog__title span {
-  margin: 0;
+.roster-public-card--glow {
+  box-shadow: 0 0 0 2px rgba(255, 230, 170, 0.24), 0 24px 70px rgba(231, 190, 107, 0.28);
+  transform: translateY(-5px) rotateX(4deg);
 }
 
-.roster-entry-dialog__title p {
-  color: #347d7d;
-  letter-spacing: 0.18em;
-  font-size: 0.82rem;
+.roster-public-card--skeleton {
+  min-height: 220px;
+  background: linear-gradient(110deg, rgba(255,255,255,0.06), rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+  animation: rosterSkeleton 1.2s ease-in-out infinite;
 }
 
-.roster-entry-dialog__title h2 {
-  margin-top: 8px;
-  color: #173d42;
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  line-height: 1.08;
+.roster-public-card__shine {
+  position: absolute;
+  inset: -80px auto auto -80px;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: rgba(255, 240, 190, 0.18);
+  filter: blur(12px);
 }
 
-.roster-entry-dialog__title span {
-  display: block;
-  margin-top: 10px;
-  color: #8c7130;
-}
-
-.roster-entry-dialog__meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.roster-public-card__top,
+.roster-public-card footer {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
   gap: 10px;
 }
 
-.roster-entry-dialog__meta p,
-.roster-entry-dialog__sections section {
+.roster-public-card__top span,
+.roster-public-card footer b {
+  color: #ffe1a3;
+  font-weight: 800;
+}
+
+.roster-public-card__top small,
+.roster-public-card footer span {
+  color: rgba(255, 248, 231, 0.72);
+}
+
+.roster-public-card strong,
+.roster-public-card em,
+.roster-public-card p {
+  position: relative;
   margin: 0;
-  padding: 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(84, 154, 151, 0.18);
-  background: rgba(255, 255, 255, 0.58);
 }
 
-.roster-entry-dialog__meta strong,
-.roster-entry-dialog__sections p {
-  display: block;
-  margin: 0 0 6px;
-  color: #347d7d;
-  font-size: 0.82rem;
-  letter-spacing: 0.12em;
+.roster-public-card strong {
+  font-size: 2.45rem;
+  line-height: 1.05;
 }
 
-.roster-entry-dialog__meta span,
-.roster-entry-dialog__sections span {
-  color: var(--color-text-soft);
-  line-height: 1.78;
+.roster-public-card em {
+  color: #ffe1a3;
+  font-style: normal;
 }
 
-.roster-entry-dialog__sections {
-  display: grid;
-  gap: 10px;
+.roster-public-card p {
+  color: rgba(255, 248, 231, 0.82);
+  line-height: 1.7;
 }
 
-.roster-entry-dialog__actions {
+.roster-public-card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
-.roster-list-state {
-  text-align: left;
+.roster-public-card__tags i {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff7dd;
+  font-style: normal;
+  font-size: 0.82rem;
 }
 
-@media (max-width: 1180px) {
-  .roster-bamboo-field__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.roster-state-card {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 26px;
+  background: rgba(10, 15, 26, 0.86);
 }
 
-@media (max-width: 920px) {
-  .roster-list-toolbar__head {
-    flex-direction: column;
-  }
-
-  .roster-list-toolbar__actions {
-    justify-content: flex-start;
-  }
+.roster-state-card p {
+  margin: 0;
 }
 
-@media (max-width: 720px) {
-  .roster-list-toolbar__actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
+.roster-state-card button,
+.roster-state-card a {
+  justify-self: start;
+  padding: 10px 16px;
+  background: rgba(231, 190, 107, 0.18);
+}
 
-  .roster-list-toolbar__actions > *:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
+.roster-state-card--error {
+  border-color: rgba(248, 113, 113, 0.32);
+}
 
-  .roster-bamboo-field {
-    padding: 20px 14px;
-    border-radius: 26px;
-  }
+.roster-float-actions {
+  position: fixed;
+  right: 14px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  left: 14px;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(calc(100% - 28px), 430px);
+  margin: 0 auto;
+}
 
-  .roster-bamboo-field__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px 10px;
-  }
+.roster-float-actions a {
+  display: grid;
+  min-height: 48px;
+  place-items: center;
+  background: rgba(10, 15, 26, 0.88);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(14px);
+}
 
-  .roster-bamboo-leaf {
-    width: min(100%, 156px);
-    min-height: 258px;
-    transform: rotate(calc(var(--bamboo-rotate) * 0.45));
-    animation-duration: calc(var(--bamboo-duration) * 1.12);
-  }
+@keyframes rosterCardFloat {
+  0%, 100% { transform: translateY(0) rotate(-0.5deg); }
+  50% { transform: translateY(-6px) rotate(0.5deg); }
+}
 
-  .roster-bamboo-leaf__stem {
-    height: 30px;
-  }
+@keyframes rosterSkeleton {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
 
-  .roster-bamboo-leaf__body {
-    width: 100%;
-    min-height: 192px;
-    padding: 42px 10px 20px;
-    border-radius: 70% 18% 72% 22% / 48% 20% 52% 20%;
-  }
-
-  .roster-bamboo-leaf__name {
-    margin-top: 18px;
-    font-size: 1.18rem;
-  }
-
-  .roster-bamboo-leaf__seal,
-  .roster-bamboo-leaf__number,
-  .roster-bamboo-leaf__status {
-    font-size: 0.68rem;
-  }
-
-  .roster-bamboo-leaf__dew--one {
-    top: 28px;
-    right: 24px;
-  }
-
-  .roster-bamboo-leaf__dew--two {
-    right: 38px;
-    bottom: 36px;
-  }
-
-  .roster-list-toolbar__chips {
-    gap: 8px;
-  }
-
-  .roster-list-toolbar__chip {
-    min-height: 36px;
-    padding: 0 12px;
-    font-size: 0.86rem;
-  }
-
-  .roster-entry-dialog {
-    padding: 12px;
-  }
-
-  .roster-entry-dialog__panel {
-    max-height: 88vh;
-    border-radius: 24px;
-  }
-
-  .roster-entry-dialog__meta {
-    grid-template-columns: 1fr;
-  }
-
-  .roster-entry-dialog__actions {
-    display: grid;
-    grid-template-columns: 1fr;
+@media (min-width: 760px) {
+  .roster-mobile-page {
+    padding-top: 128px;
   }
 }
 </style>
-

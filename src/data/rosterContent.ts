@@ -83,7 +83,7 @@ export const rosterContent = {
  * 返回值：返回身份选项，找不到时返回游侠兜底
  */
 export function getRosterIdentityOption(key: RosterIdentityKey | ''): RosterIdentityOption {
-  return rosterIdentityOptions.find((item) => item.key === key) || rosterIdentityOptions[0]
+  return rosterIdentityOptions.find((item) => item.key === key) || rosterIdentityOptions[0]!
 }
 
 /**
@@ -93,7 +93,7 @@ export function getRosterIdentityOption(key: RosterIdentityKey | ''): RosterIden
  * 返回值：返回羁绊选项，找不到时返回寻同路人兜底
  */
 export function getRosterBondOption(key: RosterBondKey | ''): RosterBondOption {
-  return rosterBondOptions.find((item) => item.key === key) || rosterBondOptions[0]
+  return rosterBondOptions.find((item) => item.key === key) || rosterBondOptions[0]!
 }
 
 /**
@@ -103,7 +103,7 @@ export function getRosterBondOption(key: RosterBondKey | ''): RosterBondOption {
  * 返回值：返回封面选项，找不到时返回云雾玄墨兜底
  */
 export function getRosterCoverOption(key: RosterCoverKey): RosterCoverOption {
-  return rosterCoverOptions.find((item) => item.key === key) || rosterCoverOptions[0]
+  return rosterCoverOptions.find((item) => item.key === key) || rosterCoverOptions[0]!
 }
 
 /**
@@ -163,5 +163,4 @@ export function createEmptyPublicRosterCard(): PublicRosterCard {
   }
 }
 
-// 这里兼容旧函数名，避免旧页面引用在重构期间断裂。
-export const createEmptyPublicRosterEntry = createEmptyPublicRosterCard
+

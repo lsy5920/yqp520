@@ -1,290 +1,226 @@
-import type { Session } from '@supabase/supabase-js'
+﻿import type { Session } from '@supabase/supabase-js'
+import { getRosterBondOption, getRosterIdentityOption } from '@/data/rosterContent'
 import { getSupabaseClient } from '@/lib/supabase'
 import type {
-  AdminRosterEntryRecord,
-  AdminRosterEntrySavePayload,
-  DaohaoAvailabilityResult,
-  PublicRosterEntry,
+  AdminRosterCardRecord,
+  AdminRosterCardSavePayload,
+  PublicRosterCard,
   RosterAdminProfile,
-  RosterHallKey,
+  RosterCardStatus,
+  RosterNameAvailabilityResult,
   RosterReviewLogRecord,
-  SubmitRosterEntryPayload,
-  SubmitRosterEntryResult,
+  SubmitRosterCardPayload,
+  SubmitRosterCardResult,
 } from '@/types/roster'
-import {
-  extractRosterEntryNo,
-  mapAdminRosterEntry,
-  mapPublicRosterEntry,
-  mapRosterReviewLogRecord,
-  normalizeRosterDaohao,
-  normalizeRosterSearchKeyword,
-  normalizeRosterShortText,
-} from '@/utils/roster'
+import { createRosterPublicSlug, hydratePublicRosterCard, normalizeRosterCardForm } from '@/utils/roster'
 
-// 这里定义后台鉴权请求超时时间，避免会话卡住时页面一直停在“保存中”。
-const ROSTER_ADMIN_REQUEST_TIMEOUT_MS = 20000
+// 这里定义请求超时时间，避免网络异常时页面一直转圈。
+const ROSTER_REQUEST_TIMEOUT_MS = 20000
 
-// 这里定义登录状态刷新缓冲时间，快过期时会先主动刷新会话再执行后台操作。
-const ROSTER_SESSION_REFRESH_BUFFER_MS = 90 * 1000
+// 这里定义数据库原始名帖行类型，只在服务层内部使用，页面不直接接触数据库字段。
+interface RosterCardRow {
+  id: string
+  public_slug: string
+  jianghu_name: string
+  title_name: string
+  identity_key: string
+  region_text: string
+  motto: string
+  story_text: string
+  skill_tags: string[] | null
+  bond_key: string
+  bond_text: string
+  cover_key: string
+  status: RosterCardStatus
+  is_public: boolean
+  is_region_public: boolean
+  is_story_public: boolean
+  contact_text: string
+  heat_value: number
+  featured_level: number
+  review_note: string
+  internal_note: string
+  approved_at: string | null
+  created_at: string
+  updated_at: string
+}
 
-// 这里定义公开名录查询条件，方便名录页传参更清楚。
+// 这里定义后台资料数据库行类型，服务层会转换成前端驼峰结构。
+interface RosterAdminProfileRow {
+  id: string
+  user_id: string
+  email: string
+  display_name: string
+  role: string
+  is_active: boolean
+}
+
+// 这里定义审核日志数据库行类型，服务层会转换成前端驼峰结构。
+interface RosterReviewLogRow {
+  id: string
+  card_id: string
+  action_type: string
+  previous_status: RosterCardStatus | null
+  next_status: RosterCardStatus
+  review_note: string
+  reviewed_by_name: string
+  created_at: string
+}
+
+// 这里定义公开列表筛选参数。
 export interface ListPublicRosterEntriesOptions {
-  /** 用途：搜索关键字 */
+  /** 用途：搜索关键字；入参含义：按江湖名、称号、地域、宣言和标签检索；返回值含义：无 */
   keyword?: string
-  /** 用途：堂口筛选 */
-  hallKey?: RosterHallKey | ''
-  /** 用途：分页大小 */
-  pageSize?: number
-  /** 用途：分页偏移 */
-  pageOffset?: number
+  /** 用途：身份筛选；入参含义：为空时查全部；返回值含义：无 */
+  identityKey?: string
 }
 
-// 这里定义后台查询条件，方便执事筛选与搜索复用。
+// 这里定义后台列表筛选参数。
 export interface ListAdminRosterEntriesOptions {
-  /** 用途：搜索关键字 */
+  /** 用途：状态筛选；入参含义：为空时查全部；返回值含义：无 */
+  status?: RosterCardStatus | ''
+  /** 用途：搜索关键字；入参含义：按核心字段检索；返回值含义：无 */
   keyword?: string
-  /** 用途：堂口筛选 */
-  hallKey?: RosterHallKey | ''
 }
 
 /**
- * 提取原始错误文案
- * 用途：先拿到 Supabase 返回的原始报错，后面才能做更精确的兼容判断
- * 入参：error 为未知错误对象
- * 返回值：返回原始错误文本
+ * 提取错误文字
+ * 用途：把各种异常统一变成中文错误提示
+ * 入参：error 为未知错误
+ * 返回值：返回中文错误文案
  */
-function extractRawRosterErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
+function resolveRosterErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
     return error.message
   }
 
-  if (typeof error === 'object' && error && 'message' in error && typeof error.message === 'string') {
-    return error.message
+  if (typeof error === 'object' && error && 'message' in error) {
+    return String((error as { message?: unknown }).message || '名册请求失败，请稍后再试')
   }
 
-  return ''
+  return '名册请求失败，请稍后再试'
 }
 
 /**
- * 判断是否命中登录状态失效类报错
- * 用途：把会话过期、令牌失效这类错误统一翻译成更容易理解的中文提示
- * 入参：message 为原始错误文本
- * 返回值：命中登录失效时返回 true
+ * 包裹超时请求
+ * 用途：给 Supabase 请求加上超时兜底
+ * 入参：task 为真实请求，timeoutMessage 为超时提示
+ * 返回值：返回真实请求结果
  */
-function isRosterAuthExpiredErrorMessage(message: string): boolean {
-  const normalizedMessage = message.toLowerCase()
-
-  return normalizedMessage.includes('jwt expired')
-    || normalizedMessage.includes('invalid jwt')
-    || normalizedMessage.includes('refresh token')
-    || normalizedMessage.includes('session expired')
-    || normalizedMessage.includes('session_not_found')
-    || normalizedMessage.includes('auth session missing')
-    || normalizedMessage.includes('invalid claim')
-    || normalizedMessage.includes('token is expired')
-    || normalizedMessage.includes('token has expired')
-}
-
-/**
- * 判断是否命中了旧版名册结构报错
- * 用途：当线上数据库还没执行最新版 SQL 时，给用户更清楚的中文提示
- * 入参：message 为原始错误文本
- * 返回值：命中旧结构问题时返回 true
- */
-function isLegacyRosterSchemaErrorMessage(message: string): boolean {
-  const normalizedMessage = message.toLowerCase()
-
-  return normalizedMessage.includes('column yunqi_roster_entries.daohao does not exist')
-    || normalizedMessage.includes('column "daohao" does not exist')
-    || normalizedMessage.includes('public.admin_save_roster_entry')
-    || normalizedMessage.includes('public.admin_delete_roster_entry')
-    || normalizedMessage.includes('public.check_roster_daohao_available')
-    || normalizedMessage.includes('public.get_next_roster_entry_no')
-    || normalizedMessage.includes('public.list_public_roster_entries')
-    || normalizedMessage.includes('public.get_public_roster_entry_by_slug')
-}
-
-/**
- * 判断是否缺少新版道号字段
- * 用途：后台搜索时如果仍连着旧表结构，就自动退回旧字段搜索，避免页面直接报错
- * 入参：message 为原始错误文本
- * 返回值：缺少道号列时返回 true
- */
-function isMissingRosterDaohaoColumnMessage(message: string): boolean {
-  const normalizedMessage = message.toLowerCase()
-
-  return normalizedMessage.includes('column yunqi_roster_entries.daohao does not exist')
-    || normalizedMessage.includes('column "daohao" does not exist')
-}
-
-/**
- * 给异步请求包一层超时兜底
- * 用途：避免后台会话刷新或 RPC 调用卡住时，页面按钮长时间无法恢复
- * 入参：task 为要执行的异步任务，timeoutMs 为超时毫秒数，timeoutMessage 为超时提示
- * 返回值：返回原任务结果，超时则抛出中文错误
- */
-async function withRosterTimeout<T>(
-  task: PromiseLike<T>,
-  timeoutMs: number,
-  timeoutMessage: string,
-): Promise<T> {
-  let timerId: ReturnType<typeof setTimeout> | null = null
+async function withRosterTimeout<T>(task: PromiseLike<T>, timeoutMessage: string): Promise<T> {
+  let timer: number | undefined
 
   try {
-    return await Promise.race<T>([
+    return await Promise.race([
       Promise.resolve(task),
       new Promise<T>((_resolve, reject) => {
-        timerId = globalThis.setTimeout(() => {
-          reject(new Error(timeoutMessage))
-        }, timeoutMs)
+        timer = window.setTimeout(() => reject(new Error(timeoutMessage)), ROSTER_REQUEST_TIMEOUT_MS)
       }),
     ])
   } finally {
-    if (timerId) {
-      globalThis.clearTimeout(timerId)
+    if (timer) {
+      window.clearTimeout(timer)
     }
   }
 }
 
 /**
- * 构建后台列表查询
- * 用途：让新版道号检索和旧版名称字段检索共用一套查询组装逻辑
- * 入参：supabase 为数据库客户端，options 为列表查询条件，useLegacyNameColumns 控制是否回退旧字段搜索
- * 返回值：返回可继续执行的查询对象
+ * 转换管理员资料
+ * 用途：把数据库下划线字段变成前端驼峰字段
+ * 入参：row 为数据库管理员行
+ * 返回值：返回前端管理员资料
  */
-function buildAdminRosterListQuery(
-  supabase: ReturnType<typeof getSupabaseClient>,
-  options: ListAdminRosterEntriesOptions,
-  useLegacyNameColumns = false,
-) {
-  let query = supabase
-    .from('yunqi_roster_entries')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(300)
-
-  const normalizedKeyword = normalizeRosterSearchKeyword(options.keyword || '')
-  const parsedEntryNo = extractRosterEntryNo(normalizedKeyword)
-
-  if (options.hallKey) {
-    query = query.eq('hall_key', options.hallKey)
+function mapAdminProfile(row: RosterAdminProfileRow): RosterAdminProfile {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    email: row.email,
+    displayName: row.display_name,
+    role: row.role,
+    isActive: row.is_active,
   }
-
-  if (normalizedKeyword) {
-    const safeKeyword = normalizedKeyword.replace(/,/g, ' ')
-    const orConditions = useLegacyNameColumns
-      ? [
-        `jianghu_name.ilike.%${safeKeyword}%`,
-        `requested_style_name.ilike.%${safeKeyword}%`,
-        `effective_style_name.ilike.%${safeKeyword}%`,
-        `receipt_code.ilike.%${safeKeyword}%`,
-        `wechat_id.ilike.%${safeKeyword}%`,
-      ]
-      : [
-        `daohao.ilike.%${safeKeyword}%`,
-        `receipt_code.ilike.%${safeKeyword}%`,
-        `wechat_id.ilike.%${safeKeyword}%`,
-      ]
-
-    if (parsedEntryNo !== null) {
-      orConditions.push(`entry_no.eq.${parsedEntryNo}`)
-    }
-
-    query = query.or(orConditions.join(','))
-  }
-
-  return query
 }
 
 /**
- * 提取 Supabase 错误文案
- * 用途：统一把后端错误转成更容易展示的中文文本
- * 入参：error 为未知错误对象
- * 返回值：返回可展示文本
+ * 转换公开名帖
+ * 用途：把数据库行转换成公开页面安全可用的数据
+ * 入参：row 为数据库名帖行
+ * 返回值：返回公开名帖
  */
-function resolveRosterErrorMessage(error: unknown): string {
-  const rawMessage = extractRawRosterErrorMessage(error)
+function mapPublicRosterCard(row: RosterCardRow): PublicRosterCard {
+  const identity = getRosterIdentityOption(row.identity_key as never)
+  const bond = getRosterBondOption(row.bond_key as never)
 
-  if (rawMessage) {
-    if (isRosterAuthExpiredErrorMessage(rawMessage)) {
-      return '当前执事登录状态已过期，请刷新页面后重新登录审核台，再继续保存或删档。'
-    }
-
-    if (isLegacyRosterSchemaErrorMessage(rawMessage)) {
-      return '当前 Supabase 仍在使用旧版云栖名册结构，请先到 Supabase SQL Editor 重新执行项目里的 supabase/yunqi_roster.sql，完成“道号字段”和“后台保存 RPC”升级后再重试。'
-    }
-
-    return rawMessage
-  }
-
-  return '当前请求失败，请稍后再试'
-}
-
-/**
- * 等待一小段时间
- * 用途：给移动端登录后的会话和白名单资料同步留一点缓冲时间
- * 入参：ms 为等待毫秒数
- * 返回值：等待结束后返回 Promise
- */
-function waitForRosterDelay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms)
+  return hydratePublicRosterCard({
+    id: row.id,
+    publicSlug: row.public_slug,
+    jianghuName: row.jianghu_name,
+    titleName: row.title_name,
+    identityKey: identity.key,
+    identityLabel: identity.label,
+    regionText: row.is_region_public ? row.region_text : '云深不知处',
+    motto: row.motto,
+    storyText: row.is_story_public ? row.story_text : '此位同门选择把故事藏进云雾里。',
+    skillTags: Array.isArray(row.skill_tags) ? row.skill_tags : [],
+    bondKey: bond.key,
+    bondLabel: bond.label,
+    bondText: row.bond_text || bond.description,
+    coverKey: row.cover_key as never,
+    heatValue: row.heat_value || 0,
+    featuredLevel: row.featured_level || 0,
+    approvedAt: row.approved_at || '',
+    createdAt: row.created_at,
   })
 }
 
 /**
- * 按用户 id 读取管理员资料
- * 用途：登录成功后按当前用户 id 查询白名单资料
- * 入参：userId 为 Supabase 用户 id
- * 返回值：返回管理员资料，没有时返回 null
+ * 转换后台名帖
+ * 用途：把数据库行转换成后台可编辑记录
+ * 入参：row 为数据库名帖行
+ * 返回值：返回后台名帖记录
  */
-async function getRosterAdminProfileByUserId(userId: string): Promise<RosterAdminProfile | null> {
-  const supabase = getSupabaseClient()
-
-  if (!userId.trim()) {
-    return null
-  }
-
-  const { data, error } = await withRosterTimeout(
-    supabase
-      .from('yunqi_roster_admin_profiles')
-      .select('user_id, email, display_name, role, is_active')
-      .eq('user_id', userId)
-      .maybeSingle(),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '读取执事资料超时，请刷新页面后重新登录审核台。',
-  )
-
-  if (error) {
-    throw new Error(resolveRosterErrorMessage(error))
-  }
-
-  if (!data) {
-    return null
-  }
-
+function mapAdminRosterCard(row: RosterCardRow): AdminRosterCardRecord {
   return {
-    userId: String(data.user_id || ''),
-    email: String(data.email || ''),
-    displayName: String(data.display_name || ''),
-    role: String(data.role || ''),
-    isActive: Boolean(data.is_active),
+    ...mapPublicRosterCard({ ...row, is_region_public: true, is_story_public: true }),
+    status: row.status,
+    isPublic: row.is_public,
+    isRegionPublic: row.is_region_public,
+    isStoryPublic: row.is_story_public,
+    contactText: row.contact_text,
+    reviewNote: row.review_note,
+    internalNote: row.internal_note,
+    updatedAt: row.updated_at,
   }
 }
 
 /**
- * 读取当前登录会话
- * 用途：审核台入口和页面初始化都需要先判断会话状态
+ * 转换审核日志
+ * 用途：把数据库日志转换成前端可读结构
+ * 入参：row 为数据库日志行
+ * 返回值：返回审核日志
+ */
+function mapReviewLog(row: RosterReviewLogRow): RosterReviewLogRecord {
+  return {
+    id: row.id,
+    cardId: row.card_id,
+    actionType: row.action_type,
+    previousStatus: row.previous_status,
+    nextStatus: row.next_status,
+    reviewNote: row.review_note,
+    reviewedByName: row.reviewed_by_name,
+    createdAt: row.created_at,
+  }
+}
+
+/**
+ * 获取当前登录会话
+ * 用途：路由守卫和审核台启动时恢复登录状态
  * 入参：无
- * 返回值：返回当前会话，没有登录时返回 null
+ * 返回值：返回会话，未登录返回 null
  */
 export async function getRosterSession(): Promise<Session | null> {
   const supabase = getSupabaseClient()
-  const { data, error } = await withRosterTimeout(
-    supabase.auth.getSession(),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '读取登录状态超时，请刷新页面后重新登录审核台。',
-  )
+  const { data, error } = await supabase.auth.getSession()
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
@@ -294,134 +230,70 @@ export async function getRosterSession(): Promise<Session | null> {
 }
 
 /**
- * 确保当前执事会话可用
- * 用途：后台操作前主动检查并刷新临近过期的登录状态，减少长时间停留后的保存卡死
+ * 获取当前管理员资料
+ * 用途：判断当前用户是否有审核台权限
  * 入参：无
- * 返回值：返回确认可用的会话
- */
-async function ensureRosterAdminSession(): Promise<Session> {
-  const supabase = getSupabaseClient()
-  const currentSession = await getRosterSession()
-
-  if (!currentSession?.user) {
-    throw new Error('当前执事登录状态已失效，请刷新页面后重新登录审核台。')
-  }
-
-  const expiresAtMs = typeof currentSession.expires_at === 'number'
-    ? currentSession.expires_at * 1000
-    : 0
-
-  if (expiresAtMs && expiresAtMs - Date.now() > ROSTER_SESSION_REFRESH_BUFFER_MS) {
-    return currentSession
-  }
-
-  const { data, error } = await withRosterTimeout(
-    supabase.auth.refreshSession(),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '刷新登录状态超时，请刷新页面后重新登录审核台。',
-  )
-
-  if (error) {
-    throw new Error(resolveRosterErrorMessage(error))
-  }
-
-  if (!data.session?.user) {
-    throw new Error('当前执事登录状态已过期，请刷新页面后重新登录审核台。')
-  }
-
-  return data.session
-}
-
-/**
- * 读取当前管理员资料
- * 用途：登录成功后确认当前账号是否在执事白名单里
- * 入参：无
- * 返回值：返回管理员资料，没有资料时返回 null
+ * 返回值：返回管理员资料，无权限时返回 null
  */
 export async function getCurrentRosterAdminProfile(): Promise<RosterAdminProfile | null> {
-  const session = await ensureRosterAdminSession()
+  const supabase = getSupabaseClient()
+  const { data: sessionData } = await supabase.auth.getSession()
+  const userId = sessionData.session?.user.id
 
-  if (!session?.user) {
+  if (!userId) {
     return null
   }
 
-  return getRosterAdminProfileByUserId(session.user.id)
+  const { data, error } = await supabase
+    .from('yunqi_roster_admin_profiles')
+    .select('id,user_id,email,display_name,role,is_active')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  return data ? mapAdminProfile(data as RosterAdminProfileRow) : null
 }
 
 /**
- * 确认当前账号具备执事权限
- * 用途：后台页面进入前统一做白名单检查
+ * 要求当前用户必须是管理员
+ * 用途：后台敏感操作前统一检查权限
  * 入参：无
- * 返回值：有权限时返回管理员资料
+ * 返回值：返回管理员资料
  */
 export async function requireRosterAdminProfile(): Promise<RosterAdminProfile> {
   const profile = await getCurrentRosterAdminProfile()
 
-  if (!profile || !profile.isActive) {
-    throw new Error('当前账号不在执事白名单中，暂不可进入审核台')
+  if (!profile) {
+    throw new Error('当前账号没有名册审核权限，请联系宗门管理员开通。')
   }
 
   return profile
 }
 
 /**
- * 执事邮箱密码登录
- * 用途：审核台登录页提交账号密码后调用
+ * 登录名册审核台
+ * 用途：登录页提交邮箱和密码后调用
  * 入参：email 为邮箱，password 为密码
- * 返回值：返回管理员资料与会话
+ * 返回值：返回会话和管理员资料
  */
-export async function signInRosterAdmin(
-  email: string,
-  password: string,
-): Promise<{ profile: RosterAdminProfile; session: Session }> {
+export async function signInRosterAdmin(email: string, password: string): Promise<{ session: Session; profile: RosterAdminProfile }> {
   const supabase = getSupabaseClient()
-  const normalizedEmail = normalizeRosterShortText(email)
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (!normalizedEmail || !password.trim()) {
-    throw new Error('请填写完整的邮箱与密码')
+  if (error || !data.session) {
+    throw new Error(resolveRosterErrorMessage(error) || '登录失败，请检查邮箱和密码。')
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: normalizedEmail,
-    password,
-  })
-
-  if (error) {
-    throw new Error(resolveRosterErrorMessage(error))
-  }
-
-  const currentSession = data.session
-
-  if (!currentSession?.user?.id) {
-    throw new Error('执事登录成功，但当前会话尚未就绪，请稍后再试')
-  }
-
-  let profile: RosterAdminProfile | null = null
-
-  // 这里给移动端浏览器一点同步时间，避免刚登录就误判成没进白名单。
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    profile = await getRosterAdminProfileByUserId(currentSession.user.id)
-
-    if (profile?.isActive) {
-      break
-    }
-
-    await waitForRosterDelay(180)
-  }
-
-  if (!profile || !profile.isActive) {
-    await supabase.auth.signOut()
-    throw new Error('当前账号未被加入执事白名单，请先在 Supabase 后台补充管理员资料')
-  }
-
-  return {
-    profile,
-    session: currentSession,
-  }
+  const profile = await requireRosterAdminProfile()
+  return { session: data.session, profile }
 }
 
 /**
- * 退出执事登录
+ * 退出名册审核台
  * 用途：审核台退出按钮统一调用
  * 入参：无
  * 返回值：无返回值
@@ -436,284 +308,293 @@ export async function signOutRosterAdmin(): Promise<void> {
 }
 
 /**
- * 检查道号可用性
- * 用途：登记页失焦校验和提交前校验共用
- * 入参：daohao 为道号
- * 返回值：返回可用性结果
+ * 检查江湖名是否可用
+ * 用途：登记页失焦和提交前提示重名
+ * 入参：jianghuName 为江湖名
+ * 返回值：返回是否可用和提示文案
  */
-export async function checkRosterDaohaoAvailable(daohao: string): Promise<DaohaoAvailabilityResult> {
-  const supabase = getSupabaseClient()
-  const normalizedDaohao = normalizeRosterDaohao(daohao)
+export async function checkRosterNameAvailable(jianghuName: string): Promise<RosterNameAvailabilityResult> {
+  const normalizedName = jianghuName.trim()
 
-  const { data, error } = await supabase.rpc('check_roster_daohao_available', {
-    input_daohao: normalizedDaohao,
-  })
+  if (!normalizedName) {
+    return { available: false, message: '请先填写江湖名。' }
+  }
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('yunqi_roster_cards')
+    .select('id')
+    .eq('jianghu_name', normalizedName)
+    .limit(1)
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  const firstRecord = Array.isArray(data) ? data[0] : data
-
-  return {
-    available: Boolean(firstRecord?.available),
-    daohao: String(firstRecord?.daohao || normalizedDaohao),
-    message: String(firstRecord?.message || ''),
-  }
+  return data && data.length > 0
+    ? { available: false, message: '这个江湖名已被登记，请换一个更独特的名号。' }
+    : { available: true, message: '这个江湖名可以登记。' }
 }
 
 /**
- * 提交入册登记
- * 用途：登记页点击递交文牒时调用
- * 入参：payload 为已整理好的载荷
- * 返回值：返回公开 slug、回执号与状态
+ * 提交名帖登记
+ * 用途：登记页把新结构写入新名帖表
+ * 入参：payload 为提交载荷
+ * 返回值：返回提交结果
  */
-export async function submitRosterEntry(payload: SubmitRosterEntryPayload): Promise<SubmitRosterEntryResult> {
+export async function submitRosterEntry(payload: SubmitRosterCardPayload): Promise<SubmitRosterCardResult> {
+  const form = normalizeRosterCardForm(payload.form)
   const supabase = getSupabaseClient()
 
-  const { data, error } = await supabase.rpc('submit_roster_entry', {
-    entry_payload: payload,
-  })
-
-  if (error) {
-    throw new Error(resolveRosterErrorMessage(error))
+  const insertPayload = {
+    public_slug: createRosterPublicSlug(form.jianghuName),
+    jianghu_name: form.jianghuName,
+    title_name: form.titleName,
+    identity_key: form.identityKey,
+    region_text: form.regionText,
+    motto: form.motto,
+    story_text: form.storyText,
+    skill_tags: form.skillTags,
+    bond_key: form.bondKey,
+    bond_text: form.bondText,
+    cover_key: form.coverKey,
+    is_region_public: form.isRegionPublic,
+    is_story_public: form.isStoryPublic,
+    contact_text: form.contactText,
+    status: 'pending' satisfies RosterCardStatus,
+    is_public: false,
   }
 
-  const firstRecord = Array.isArray(data) ? data[0] : data
-
-  return {
-    publicSlug: String(firstRecord?.public_slug || ''),
-    receiptCode: String(firstRecord?.receipt_code || ''),
-    status: String(firstRecord?.status || 'pending') as SubmitRosterEntryResult['status'],
-  }
-}
-
-/**
- * 读取公开名录
- * 用途：名录页按关键字和堂口筛选公开条目
- * 入参：options 为查询条件
- * 返回值：返回脱敏后的公开条目列表
- */
-export async function listPublicRosterEntries(options: ListPublicRosterEntriesOptions = {}): Promise<PublicRosterEntry[]> {
-  const supabase = getSupabaseClient()
-
-  const { data, error } = await supabase.rpc('list_public_roster_entries', {
-    search_keyword: normalizeRosterSearchKeyword(options.keyword || ''),
-    hall_filter: options.hallKey || '',
-    page_size: options.pageSize || 24,
-    page_offset: options.pageOffset || 0,
-  })
-
-  if (error) {
-    throw new Error(resolveRosterErrorMessage(error))
-  }
-
-  return (Array.isArray(data) ? data : []).map((item) => mapPublicRosterEntry(item as Record<string, unknown>))
-}
-
-/**
- * 读取单条公开详情
- * 用途：公开详情页根据 slug 获取当前名帖信息
- * 入参：publicSlug 为详情 slug
- * 返回值：返回脱敏后的公开记录，不存在时返回 null
- */
-export async function getPublicRosterEntryBySlug(publicSlug: string): Promise<PublicRosterEntry | null> {
-  const supabase = getSupabaseClient()
-
-  const { data, error } = await supabase.rpc('get_public_roster_entry_by_slug', {
-    target_slug: normalizeRosterShortText(publicSlug),
-  })
-
-  if (error) {
-    throw new Error(resolveRosterErrorMessage(error))
-  }
-
-  const firstRecord = Array.isArray(data) ? data[0] : data
-
-  if (!firstRecord) {
-    return null
-  }
-
-  return mapPublicRosterEntry(firstRecord as Record<string, unknown>)
-}
-
-/**
- * 读取后台全部记录
- * 用途：审核台按关键字和堂口筛选所有状态的条目
- * 入参：options 为查询条件
- * 返回值：返回管理员可见的原始记录
- */
-export async function listAdminRosterEntries(options: ListAdminRosterEntriesOptions = {}): Promise<AdminRosterEntryRecord[]> {
-  await requireRosterAdminProfile()
-
-  const supabase = getSupabaseClient()
-  let { data, error } = await withRosterTimeout(
-    buildAdminRosterListQuery(supabase, options),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '读取审核台档案超时，请刷新页面后重新登录审核台。',
+  const { data, error } = await withRosterTimeout(
+    supabase.from('yunqi_roster_cards').insert(insertPayload).select('id,public_slug,status').single(),
+    '提交名帖超时，请检查网络后重试。',
   )
 
-  // 这里兼容旧版表结构：如果线上还没有 daohao 列，就回退到旧字段检索。
-  if (error && isMissingRosterDaohaoColumnMessage(extractRawRosterErrorMessage(error))) {
-    const fallbackResult = await withRosterTimeout(
-      buildAdminRosterListQuery(supabase, options, true),
-      ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-      '读取审核台档案超时，请刷新页面后重新登录审核台。',
-    )
-    data = fallbackResult.data
-    error = fallbackResult.error
+  if (error || !data) {
+    throw new Error(resolveRosterErrorMessage(error))
   }
+
+  return {
+    id: data.id,
+    publicSlug: data.public_slug,
+    status: data.status,
+  }
+}
+
+/**
+ * 获取公开名帖列表
+ * 用途：公开卡册页加载已入册且公开的名帖
+ * 入参：options 为搜索和筛选参数
+ * 返回值：返回公开名帖列表
+ */
+export async function listPublicRosterEntries(options: ListPublicRosterEntriesOptions = {}): Promise<PublicRosterCard[]> {
+  const supabase = getSupabaseClient()
+  let query = supabase
+    .from('yunqi_roster_cards')
+    .select('*')
+    .eq('status', 'approved')
+    .eq('is_public', true)
+    .order('featured_level', { ascending: false })
+    .order('approved_at', { ascending: false })
+
+  if (options.identityKey) {
+    query = query.eq('identity_key', options.identityKey)
+  }
+
+  const keyword = options.keyword?.trim()
+  if (keyword) {
+    query = query.or(`jianghu_name.ilike.%${keyword}%,title_name.ilike.%${keyword}%,region_text.ilike.%${keyword}%,motto.ilike.%${keyword}%`)
+  }
+
+  const { data, error } = await withRosterTimeout(query, '加载云栖名册超时，请稍后重试。')
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  return (data || []).map((item) => mapAdminRosterEntry(item as Record<string, unknown>))
+  const rows = (data || []) as RosterCardRow[]
+  const filteredRows = keyword
+    ? rows.filter((row) => [row.jianghu_name, row.title_name, row.region_text, row.motto, ...(row.skill_tags || [])].some((item) => item.includes(keyword)))
+    : rows
+
+  return filteredRows.map(mapPublicRosterCard)
 }
 
 /**
- * 读取审核日志
- * 用途：后台详情抽屉里展示档案历史
- * 入参：entryId 为记录 id
- * 返回值：返回日志列表
+ * 根据公开标识获取名帖详情
+ * 用途：详情页打开分享链接时加载单张名帖
+ * 入参：publicSlug 为公开链接标识
+ * 返回值：返回公开名帖，不存在时返回 null
  */
-export async function listRosterReviewLogs(entryId: string): Promise<RosterReviewLogRecord[]> {
-  await requireRosterAdminProfile()
-
+export async function getPublicRosterEntryBySlug(publicSlug: string): Promise<PublicRosterCard | null> {
   const supabase = getSupabaseClient()
   const { data, error } = await withRosterTimeout(
     supabase
-      .from('yunqi_roster_review_logs')
+      .from('yunqi_roster_cards')
       .select('*')
-      .eq('entry_id', entryId)
-      .order('created_at', { ascending: false }),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '读取审核日志超时，请刷新页面后重新登录审核台。',
+      .eq('public_slug', publicSlug)
+      .eq('status', 'approved')
+      .eq('is_public', true)
+      .maybeSingle(),
+    '加载名帖详情超时，请稍后重试。',
   )
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  return (data || []).map((item) => mapRosterReviewLogRecord(item as Record<string, unknown>))
+  return data ? mapPublicRosterCard(data as RosterCardRow) : null
 }
 
 /**
- * 获取下一个建议文牒号
- * 用途：后台切到准予入册时，给执事一个默认建议号
- * 入参：无
- * 返回值：返回建议文牒号
+ * 获取后台名帖列表
+ * 用途：审核台加载全部状态名帖
+ * 入参：options 为状态和关键词筛选
+ * 返回值：返回后台名帖记录列表
  */
-export async function getNextRosterEntryNo(): Promise<number> {
+export async function listAdminRosterEntries(options: ListAdminRosterEntriesOptions = {}): Promise<AdminRosterCardRecord[]> {
   await requireRosterAdminProfile()
-
   const supabase = getSupabaseClient()
-  const { data, error } = await withRosterTimeout(
-    supabase.rpc('get_next_roster_entry_no'),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '获取默认文牒号超时，请刷新页面后重新登录审核台。',
-  )
+  let query = supabase.from('yunqi_roster_cards').select('*').order('created_at', { ascending: false })
+
+  if (options.status) {
+    query = query.eq('status', options.status)
+  }
+
+  const keyword = options.keyword?.trim()
+  if (keyword) {
+    query = query.or(`jianghu_name.ilike.%${keyword}%,title_name.ilike.%${keyword}%,region_text.ilike.%${keyword}%,contact_text.ilike.%${keyword}%`)
+  }
+
+  const { data, error } = await withRosterTimeout(query, '加载审核台名帖超时，请稍后重试。')
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  const firstRecord = Array.isArray(data) ? data[0] : data
-  const nextEntryNo = Number(firstRecord?.next_entry_no || 0)
-
-  if (!Number.isFinite(nextEntryNo) || nextEntryNo <= 0) {
-    throw new Error('默认文牒号获取失败，请稍后再试')
-  }
-
-  return nextEntryNo
+  return ((data || []) as RosterCardRow[]).map(mapAdminRosterCard)
 }
 
 /**
- * 保存后台档案
- * 用途：后台统一处理全字段编辑、状态修改与文牒号调整
+ * 获取审核日志
+ * 用途：后台选择名帖后查看最近处理记录
+ * 入参：cardId 为名帖编号
+ * 返回值：返回审核日志列表
+ */
+export async function listRosterReviewLogs(cardId: string): Promise<RosterReviewLogRecord[]> {
+  await requireRosterAdminProfile()
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('yunqi_roster_card_review_logs')
+    .select('id,card_id,action_type,previous_status,next_status,review_note,reviewed_by_name,created_at')
+    .eq('card_id', cardId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  return ((data || []) as RosterReviewLogRow[]).map(mapReviewLog)
+}
+
+/**
+ * 保存后台名帖
+ * 用途：审核台编辑展示字段、状态和备注
  * 入参：payload 为后台保存载荷
- * 返回值：返回保存后的关键结果
+ * 返回值：返回保存后的名帖和日志编号
  */
-export async function saveAdminRosterEntry(payload: AdminRosterEntrySavePayload): Promise<{
-  entryId: string
-  status: string
-  entryNoText: string
-  reviewedAt: string
-}> {
-  await requireRosterAdminProfile()
-
+export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload): Promise<{ entry: AdminRosterCardRecord; logId: string }> {
+  const adminProfile = await requireRosterAdminProfile()
   const supabase = getSupabaseClient()
-  const { data, error } = await withRosterTimeout(
-    supabase.rpc('admin_save_roster_entry', {
-      entry_payload: {
-        entry_id: payload.entryId,
-        status: payload.status,
-        entry_no: payload.entryNo,
-        daohao: payload.daohao,
-        secular_name: payload.secularName,
-        gender: payload.gender,
-        position_key: payload.positionKey,
-        current_city: payload.currentCity,
-        birth_year: payload.birthYear,
-        profession: payload.profession,
-        referrer_name: payload.referrerName,
-        hall_key: payload.hallKey,
-        hall_other_text: payload.hallOtherText,
-        entry_intent: payload.entryIntent,
-        wechat_id: payload.wechatId,
-        social_xiaohongshu_douyin: payload.socialXiaohongshuDouyin,
-        social_qq: payload.socialQq,
-        social_other: payload.socialOther,
-        allow_contact_public: payload.allowContactPublic,
-        strengths: payload.strengths,
-        hobbies: payload.hobbies,
-        free_time_slots: payload.freeTimeSlots,
-        contribution_level: payload.contributionLevel,
-        oath_signed_name: payload.oathSignedName,
-        oath_signed_date: payload.oathSignedDate,
-        review_comment: payload.reviewComment,
-      },
-    }),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '保存档案超时，请先确认网络与登录状态，再刷新页面重新登录审核台后重试。',
-  )
 
-  if (error) {
+  const { data: oldRow, error: oldError } = await supabase
+    .from('yunqi_roster_cards')
+    .select('*')
+    .eq('id', payload.id)
+    .single()
+
+  if (oldError || !oldRow) {
+    throw new Error(resolveRosterErrorMessage(oldError) || '没有找到要保存的名帖。')
+  }
+
+  const updatePayload = {
+    jianghu_name: payload.jianghuName.trim(),
+    title_name: payload.titleName.trim(),
+    identity_key: payload.identityKey,
+    region_text: payload.regionText.trim(),
+    motto: payload.motto.trim(),
+    story_text: payload.storyText.trim(),
+    skill_tags: payload.skillTags,
+    bond_key: payload.bondKey,
+    bond_text: payload.bondText.trim(),
+    cover_key: payload.coverKey,
+    status: payload.status,
+    is_public: payload.isPublic,
+    is_region_public: payload.isRegionPublic,
+    is_story_public: payload.isStoryPublic,
+    contact_text: payload.contactText.trim(),
+    heat_value: payload.heatValue,
+    featured_level: payload.featuredLevel,
+    review_note: payload.reviewNote.trim(),
+    internal_note: payload.internalNote.trim(),
+    approved_at: payload.status === 'approved' ? ((oldRow as RosterCardRow).approved_at || new Date().toISOString()) : null,
+    reviewed_by_user_id: adminProfile.userId,
+    reviewed_by_name: adminProfile.displayName,
+  }
+
+  const { data, error } = await supabase
+    .from('yunqi_roster_cards')
+    .update(updatePayload)
+    .eq('id', payload.id)
+    .select('*')
+    .single()
+
+  if (error || !data) {
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  const firstRecord = Array.isArray(data) ? data[0] : data
+  const oldStatus = (oldRow as RosterCardRow).status
+  const { data: logData, error: logError } = await supabase
+    .from('yunqi_roster_card_review_logs')
+    .insert({
+      card_id: payload.id,
+      action_type: oldStatus === payload.status ? 'save' : 'status_change',
+      previous_status: oldStatus,
+      next_status: payload.status,
+      review_note: payload.reviewNote.trim(),
+      reviewed_by_user_id: adminProfile.userId,
+      reviewed_by_name: adminProfile.displayName,
+    })
+    .select('id')
+    .single()
+
+  if (logError || !logData) {
+    throw new Error(resolveRosterErrorMessage(logError))
+  }
 
   return {
-    entryId: String(firstRecord?.entry_id || payload.entryId),
-    status: String(firstRecord?.status || payload.status),
-    entryNoText: String(firstRecord?.entry_no_text || ''),
-    reviewedAt: String(firstRecord?.reviewed_at || ''),
+    entry: mapAdminRosterCard(data as RosterCardRow),
+    logId: logData.id,
   }
 }
 
 /**
- * 删除后台档案
- * 用途：后台删除任意一条记录
- * 入参：entryId 为记录 id
- * 返回值：返回删除后的记录 id
+ * 删除后台名帖
+ * 用途：审核台移除明显无效或测试登记
+ * 入参：entryId 为名帖编号
+ * 返回值：返回被删除的名帖编号
  */
 export async function deleteAdminRosterEntry(entryId: string): Promise<string> {
   await requireRosterAdminProfile()
-
   const supabase = getSupabaseClient()
-  const { data, error } = await withRosterTimeout(
-    supabase.rpc('admin_delete_roster_entry', {
-      target_entry_id: entryId,
-    }),
-    ROSTER_ADMIN_REQUEST_TIMEOUT_MS,
-    '删除档案超时，请先确认网络与登录状态，再刷新页面重新登录审核台后重试。',
-  )
+  const { error } = await supabase.from('yunqi_roster_cards').delete().eq('id', entryId)
 
   if (error) {
     throw new Error(resolveRosterErrorMessage(error))
   }
 
-  const firstRecord = Array.isArray(data) ? data[0] : data
-  return String(firstRecord?.entry_id || entryId)
+  return entryId
 }
+
+

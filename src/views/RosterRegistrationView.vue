@@ -1,959 +1,779 @@
-<script setup lang="ts">
-import { computed, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import PageBanner from '@/components/common/PageBanner.vue'
+﻿<script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useRevealMotion } from '@/composables/useRevealMotion'
 import {
-  ASSESSMENT_RESULT_STORAGE_KEY,
-  useAssessmentStorage,
-} from '@/composables/useAssessmentStorage'
-import {
-  createDefaultRosterRegistrationForm,
+  createEmptyRosterCardForm,
+  rosterBondOptions,
   rosterContent,
-  rosterFreeTimeOptions,
-  rosterGenderOptions,
-  rosterHallOptions,
+  rosterCoverOptions,
+  rosterIdentityOptions,
+  rosterRegistrationSteps,
+  rosterSkillPresets,
 } from '@/data/rosterContent'
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
-import { checkRosterDaohaoAvailable, submitRosterEntry } from '@/services/roster'
-import type { AssessmentResult } from '@/types/assessment'
-import type { RosterFreeTimeSlot, RosterGender, RosterHallKey, RosterRegistrationFormValue } from '@/types/roster'
+import { checkRosterNameAvailable, submitRosterEntry } from '@/services/roster'
+import type { RosterBondKey, RosterCardFormValue, RosterCoverKey, RosterIdentityKey, RosterRegistrationStepKey } from '@/types/roster'
 import {
-  getRosterDaohaoError,
-  mapRosterFormToSubmitPayload,
-  normalizeRosterFormValue,
-  validateRosterRegistrationForm,
+  clearRosterCardDraft,
+  getRosterCoverGradient,
+  loadRosterCardDraft,
+  normalizeRosterCardForm,
+  saveRosterCardDraft,
+  validateRosterCardForm,
 } from '@/utils/roster'
 
-// 这里保存页面根节点，供整页做统一显现动效。
+// 这里保存页面根节点，用于统一显现动效。
 const pageRef = ref<HTMLElement | null>(null)
 
-// 这里拿到路由实例，提交成功后要跳到公开详情页。
-const router = useRouter()
+// 这里启用页面显现动效，让手机卷轴进入时更顺滑。
+useRevealMotion({ rootRef: pageRef })
 
-// 这里接入考核存储工具，专门读取最近一次问心考核结果做登记门禁。
-const { safeReadJson } = useAssessmentStorage()
+// 这里保存当前步骤，手机端一次只聚焦一段内容。
+const activeStepKey = ref<RosterRegistrationStepKey>('basic')
 
-// 这里保存登记表单的当前内容。
-const formValue = ref<RosterRegistrationFormValue>(createDefaultRosterRegistrationForm())
+// 这里保存登记表单，初始化时先使用空表单，挂载后恢复草稿。
+const formValue = ref<RosterCardFormValue>(createEmptyRosterCardForm())
 
-// 这里保存最近一次问心考核结果，用来判断当前是否具备登记资格。
-const latestAssessmentResult = ref<AssessmentResult | null>(readLatestAssessmentResult())
+// 这里保存自定义标签输入框内容。
+const customSkillText = ref<string>('')
 
-// 这里记录是否正在检查道号，避免用户不清楚当前状态。
-const isCheckingDaohao = ref<boolean>(false)
+// 这里记录江湖名可用性提示。
+const nameCheckMessage = ref<string>('')
 
-// 这里记录是否正在提交文牒，防止重复提交。
+// 这里记录提交过程状态，避免重复点击。
 const isSubmitting = ref<boolean>(false)
 
-// 这里保存当前动作提示，给用户更明确的反馈。
-const actionMessage = ref<string>(rosterContent.registration.formLead)
+// 这里记录校验和提交错误，方便用户按提示修改。
+const errorList = ref<string[]>([])
 
-// 这里保存道号校验提示，失焦校验和提交前校验都写到这里。
-const daohaoMessage = ref<string>(rosterContent.registration.guardTip)
+// 这里记录成功提示，提交完成后显示回执。
+const successMessage = ref<string>('')
 
-/**
- * 读取最近一次问心考核结果
- * 用途：统一从本地记录中读取最近一次正式交卷结果，供登记门禁和提交兜底共用
- * 入参：无
- * 返回值：返回最近一次正式考核结果，没有则返回 null
- */
-function readLatestAssessmentResult(): AssessmentResult | null {
-  return safeReadJson<AssessmentResult>(ASSESSMENT_RESULT_STORAGE_KEY)
-}
+// 这里计算当前步骤序号，供下一步和上一步使用。
+const activeStepIndex = computed<number>(() => rosterRegistrationSteps.findIndex((step) => step.key === activeStepKey.value))
 
-/**
- * 刷新登记资格
- * 用途：进入页面和点击提交前都重新读取一次最近考核结果，避免残留旧状态绕过门禁
- * 入参：无
- * 返回值：无返回值
- */
-function refreshAssessmentAccess(): void {
-  latestAssessmentResult.value = readLatestAssessmentResult()
-}
+// 这里计算当前步骤文案，模板里直接展示。
+const activeStep = computed(() => rosterRegistrationSteps[activeStepIndex.value] || rosterRegistrationSteps[0]!)
 
-/**
- * 当前是否已通过问心考核
- * 用途：统一控制登记页显示表单还是显示拦截引导
- */
-const hasPassedAssessment = computed<boolean>(() => latestAssessmentResult.value?.passed === true)
+// 这里计算清洗后的表单，预览卡片使用它避免展示脏空格。
+const normalizedForm = computed<RosterCardFormValue>(() => normalizeRosterCardForm(formValue.value))
 
-/**
- * 当前是否已有考核记录
- * 用途：给拦截卡片区分“未参加”与“未合格”两种提示
- */
-const hasAssessmentResult = computed<boolean>(() => Boolean(latestAssessmentResult.value))
+// 这里计算手机预览卡片背景，和用户选择的封面保持一致。
+const previewCardStyle = computed<Record<string, string>>(() => ({
+  '--roster-card-gradient': getRosterCoverGradient(normalizedForm.value.coverKey),
+}))
 
-/**
- * 登记拦截说明
- * 用途：未通过或没有考核结果时，给出更准确的中文引导
- */
-const assessmentGateDescription = computed<string>(() => (
-  hasAssessmentResult.value
-    ? rosterContent.registration.gateFailedDescription
-    : rosterContent.registration.gateNoResultDescription
-))
+// 这里计算已完成步骤数量，用于顶部进度条。
+const finishedStepPercent = computed<string>(() => `${((activeStepIndex.value + 1) / rosterRegistrationSteps.length) * 100}%`)
 
-/**
- * 最近一次考核成绩提示
- * 用途：未合格时把最近一次成绩直接写在拦截卡片里，减少用户来回确认
- */
-const assessmentGateScoreText = computed<string>(() => {
-  const result = latestAssessmentResult.value
-
-  if (!result || result.passed) {
-    return ''
-  }
-
-  return `最近一次问心考核成绩：${result.score} / ${result.totalScore} 分，合格线 ${result.passScore} 分。`
+// 这里在页面打开时恢复本地草稿。
+onMounted(() => {
+  formValue.value = loadRosterCardDraft(createEmptyRosterCardForm())
 })
 
-/**
- * 当前是否缺少 Supabase 配置
- * 用途：部署前没配环境变量时，在页面里直接给出中文提示
- */
-const hasSupabaseError = computed<boolean>(() => !isSupabaseConfigured())
+// 这里监听表单变化自动保存草稿，避免误刷新丢失。
+watch(formValue, (nextValue) => {
+  saveRosterCardDraft(nextValue)
+}, { deep: true })
 
 /**
- * Supabase 配置提示
- * 用途：缺少环境变量时直接给用户和维护者明确说明
- */
-const supabaseErrorText = computed<string>(() => getSupabaseConfigErrorText())
-
-/**
- * 当前是否选中了“其他堂口”
- * 用途：选中后才显示补充说明输入框
- */
-const isOtherHallSelected = computed<boolean>(() => formValue.value.hallKey === 'other')
-
-/**
- * 已清洗表单
- * 用途：校验和提交前统一复用同一份干净数据
- */
-const normalizedForm = computed<RosterRegistrationFormValue>(() => normalizeRosterFormValue(formValue.value))
-
-/**
- * 切换空闲时段多选
- * 用途：登记页多选勾选时统一走这里，避免重复逻辑
- * 入参：slot 为时段键名
+ * 切换步骤
+ * 用途：顶部步骤条和底部按钮统一调用
+ * 入参：stepKey 为目标步骤键名
  * 返回值：无返回值
  */
-function toggleFreeTimeSlot(slot: RosterFreeTimeSlot): void {
-  const currentList = new Set(formValue.value.freeTimeSlots)
-
-  if (currentList.has(slot)) {
-    currentList.delete(slot)
-  } else {
-    currentList.add(slot)
-  }
-
-  formValue.value.freeTimeSlots = Array.from(currentList)
+function setActiveStep(stepKey: RosterRegistrationStepKey): void {
+  activeStepKey.value = stepKey
 }
 
 /**
- * 校验道号
- * 用途：失焦时先做格式校验，再调用后端做重名检查
- * 入参：showSuccessMessage 表示可用时是否显示成功提示
- * 返回值：可用返回 true，否则返回 false
+ * 前往下一步
+ * 用途：手机端底部操作按钮推进表单
+ * 入参：无
+ * 返回值：无返回值
  */
-async function validateDaohao(showSuccessMessage = false): Promise<boolean> {
-  const localError = getRosterDaohaoError(formValue.value.daohao)
+function goNextStep(): void {
+  const nextStep = rosterRegistrationSteps[activeStepIndex.value + 1]
+  if (nextStep) {
+    activeStepKey.value = nextStep.key
+  }
+}
 
-  if (localError) {
-    daohaoMessage.value = localError
-    return false
+/**
+ * 返回上一步
+ * 用途：手机端底部操作按钮回看表单
+ * 入参：无
+ * 返回值：无返回值
+ */
+function goPreviousStep(): void {
+  const previousStep = rosterRegistrationSteps[activeStepIndex.value - 1]
+  if (previousStep) {
+    activeStepKey.value = previousStep.key
+  }
+}
+
+/**
+ * 选择身份
+ * 用途：登记页身份卡片点击后写入表单
+ * 入参：key 为身份键名
+ * 返回值：无返回值
+ */
+function selectIdentity(key: RosterIdentityKey): void {
+  formValue.value.identityKey = key
+}
+
+/**
+ * 选择羁绊
+ * 用途：登记页羁绊卡片点击后写入表单
+ * 入参：key 为羁绊键名
+ * 返回值：无返回值
+ */
+function selectBond(key: RosterBondKey): void {
+  formValue.value.bondKey = key
+}
+
+/**
+ * 选择封面
+ * 用途：登记页封面卡片点击后写入表单
+ * 入参：key 为封面键名
+ * 返回值：无返回值
+ */
+function selectCover(key: RosterCoverKey): void {
+  formValue.value.coverKey = key
+}
+
+/**
+ * 切换专长标签
+ * 用途：预设标签点选时添加或移除
+ * 入参：tag 为标签文字
+ * 返回值：无返回值
+ */
+function toggleSkillTag(tag: string): void {
+  const normalizedTag = tag.trim()
+  if (!normalizedTag) {
+    return
   }
 
-  if (hasSupabaseError.value) {
-    daohaoMessage.value = supabaseErrorText.value
-    return false
+  if (formValue.value.skillTags.includes(normalizedTag)) {
+    formValue.value.skillTags = formValue.value.skillTags.filter((item) => item !== normalizedTag)
+    return
   }
 
-  isCheckingDaohao.value = true
+  if (formValue.value.skillTags.length >= 6) {
+    errorList.value = ['专长标签最多选择 6 个']
+    return
+  }
+
+  formValue.value.skillTags = [...formValue.value.skillTags, normalizedTag]
+}
+
+/**
+ * 添加自定义标签
+ * 用途：把用户输入的专长加入标签列表
+ * 入参：无
+ * 返回值：无返回值
+ */
+function addCustomSkillTag(): void {
+  const nextTag = customSkillText.value.trim().replace(/^#/, '')
+  if (!nextTag) {
+    return
+  }
+
+  toggleSkillTag(nextTag)
+  customSkillText.value = ''
+}
+
+/**
+ * 检查江湖名
+ * 用途：失焦时提示是否重名
+ * 入参：无
+ * 返回值：无返回值
+ */
+async function checkName(): Promise<void> {
+  nameCheckMessage.value = ''
+
+  if (!isSupabaseConfigured() || !normalizedForm.value.jianghuName) {
+    return
+  }
 
   try {
-    const result = await checkRosterDaohaoAvailable(formValue.value.daohao)
-    daohaoMessage.value = result.message || rosterContent.registration.guardTip
-
-    if (result.available && showSuccessMessage) {
-      daohaoMessage.value = '此道号当前可用，可继续递交文牒'
-    }
-
-    return result.available
+    const result = await checkRosterNameAvailable(normalizedForm.value.jianghuName)
+    nameCheckMessage.value = result.message
   } catch (error) {
-    daohaoMessage.value = error instanceof Error ? error.message : '道号校验失败，请稍后再试'
-    return false
-  } finally {
-    isCheckingDaohao.value = false
+    nameCheckMessage.value = error instanceof Error ? error.message : '江湖名检查失败，可稍后提交时再试。'
   }
 }
 
 /**
- * 提交登记表单
- * 用途：递交文牒前统一做格式校验、重名校验和跳转
+ * 提交名帖
+ * 用途：完成本地校验后写入 Supabase 新名帖表
  * 入参：无
  * 返回值：无返回值
  */
 async function handleSubmit(): Promise<void> {
-  refreshAssessmentAccess()
+  errorList.value = []
+  successMessage.value = ''
 
-  if (!hasPassedAssessment.value) {
-    actionMessage.value = '需先通过入派考核后方可登记入册，请先前往入派考核。'
+  if (!isSupabaseConfigured()) {
+    errorList.value = [getSupabaseConfigErrorText()]
     return
   }
 
-  const safeForm = normalizedForm.value
-  const validationMessage = validateRosterRegistrationForm(safeForm)
-
-  if (validationMessage) {
-    actionMessage.value = validationMessage
-    return
-  }
-
-  if (hasSupabaseError.value) {
-    actionMessage.value = supabaseErrorText.value
+  const errors = validateRosterCardForm(formValue.value)
+  if (errors.length > 0) {
+    errorList.value = errors
+    activeStepKey.value = 'basic'
     return
   }
 
   isSubmitting.value = true
-  actionMessage.value = '正在递交文牒并生成待审核名帖，请稍候...'
 
   try {
-    const isDaohaoAvailable = await validateDaohao()
-
-    if (!isDaohaoAvailable) {
-      actionMessage.value = '当前道号无法递交，请先改用可用道号'
-      return
-    }
-
-    const result = await submitRosterEntry(mapRosterFormToSubmitPayload(safeForm))
-
-    actionMessage.value = rosterContent.registration.successDescription
-    await router.push(`/roster/entry/${result.publicSlug}`)
+    const result = await submitRosterEntry({ form: normalizedForm.value })
+    clearRosterCardDraft()
+    formValue.value = createEmptyRosterCardForm()
+    activeStepKey.value = 'basic'
+    successMessage.value = `名帖已递入云栖案头，回执号：${result.publicSlug}。执事审核后即可公开入册。`
   } catch (error) {
-    actionMessage.value = error instanceof Error ? error.message : '递交文牒失败，请稍后再试'
+    errorList.value = [error instanceof Error ? error.message : '提交名帖失败，请稍后重试。']
   } finally {
     isSubmitting.value = false
   }
 }
-
-/**
- * 设置堂口
- * 用途：切换堂口时顺手处理“其他堂口”的说明字段
- * 入参：hallKey 为目标堂口
- * 返回值：无返回值
- */
-function handleSelectHall(hallKey: RosterHallKey): void {
-  formValue.value.hallKey = hallKey
-
-  if (hallKey !== 'other') {
-    formValue.value.otherHallText = ''
-  }
-}
-
-/**
- * 设置性别
- * 用途：性别单选统一走这里，保证前后端字段始终只收一项
- * 入参：value 为性别键名
- * 返回值：无返回值
- */
-function handleSelectGender(value: RosterGender): void {
-  formValue.value.gender = value
-}
 </script>
 
 <template>
-  <div ref="pageRef" class="page roster-registration-page">
-    <PageBanner
-      eyebrow="云栖名册"
-      title="云栖派入门弟子录 · 入册文牒"
-      :lead="rosterContent.page.lead"
-      :note="rosterContent.page.note"
-    />
-
-    <section v-if="!hasPassedAssessment" class="roster-registration-gate content-card content-card--soft">
-      <div class="roster-registration-gate__head">
-        <p class="content-card__eyebrow">登记门槛</p>
-        <h2>{{ rosterContent.registration.gateTitle }}</h2>
-        <p>{{ assessmentGateDescription }}</p>
+  <main ref="pageRef" class="roster-mobile-page roster-registration-page">
+    <section class="roster-phone-shell reveal-on-scroll">
+      <div class="roster-hero-card">
+        <p>{{ rosterContent.registration.eyebrow }}</p>
+        <h1>{{ rosterContent.registration.title }}</h1>
+        <span>{{ rosterContent.registration.lead }}</span>
+        <RouterLink class="roster-ghost-link" to="/roster/list">先去翻看名册</RouterLink>
       </div>
 
-      <p v-if="assessmentGateScoreText" class="roster-registration-gate__score">
-        {{ assessmentGateScoreText }}
-      </p>
-
-      <div class="roster-registration-gate__actions">
-        <RouterLink
-          class="ink-button ink-button--primary"
-          :to="{ path: '/join', hash: '#exam' }"
+      <div class="roster-step-track" aria-label="登记步骤">
+        <button
+          v-for="step in rosterRegistrationSteps"
+          :key="step.key"
+          type="button"
+          class="roster-step-pill"
+          :class="{ 'roster-step-pill--active': activeStepKey === step.key }"
+          @click="setActiveStep(step.key)"
         >
-          {{ rosterContent.registration.gatePrimaryButton }}
-        </RouterLink>
-        <RouterLink class="ink-button ink-button--ghost" to="/canon">
-          {{ rosterContent.registration.gateSecondaryButton }}
-        </RouterLink>
+          <span>{{ step.indexText }}</span>
+          <small>{{ step.title }}</small>
+        </button>
       </div>
-    </section>
 
-    <section v-else class="roster-registration-alert content-card content-card--soft">
-      <div class="roster-registration-alert__head">
-        <div>
-          <p class="content-card__eyebrow">{{ rosterContent.registration.truthfulnessTitle }}</p>
-          <h2>{{ rosterContent.registration.truthfulnessHeading }}</h2>
-          <p>{{ rosterContent.registration.truthfulnessLead }}</p>
+      <div class="roster-progress"><i :style="{ width: finishedStepPercent }"></i></div>
+
+      <section class="roster-scroll-card reveal-on-scroll">
+        <div class="roster-scroll-card__head">
+          <span>第{{ activeStep.indexText }}步</span>
+          <h2>{{ activeStep.title }}</h2>
+          <p>{{ activeStep.description }}</p>
         </div>
-      </div>
 
-      <div class="roster-registration-alert__grid">
-        <article
-          v-for="line in rosterContent.registration.truthfulnessNotes"
-          :key="line"
-          class="roster-registration-alert__item"
-        >
-          <p>{{ line }}</p>
-        </article>
-      </div>
+        <div v-if="activeStepKey === 'basic'" class="roster-form-grid">
+          <label class="roster-field">
+            <span>江湖名</span>
+            <input v-model="formValue.jianghuName" maxlength="12" placeholder="例如：听雪客" type="text" @blur="checkName" />
+            <small>{{ nameCheckMessage || '最多 12 个字，审核通过后会公开展示。' }}</small>
+          </label>
+          <label class="roster-field">
+            <span>称号</span>
+            <input v-model="formValue.titleName" maxlength="14" placeholder="例如：月下执剑人" type="text" />
+          </label>
+          <label class="roster-field">
+            <span>所在地域</span>
+            <input v-model="formValue.regionText" maxlength="18" placeholder="例如：江南一带 / 云深不知处" type="text" />
+          </label>
+          <div class="roster-choice-grid">
+            <button
+              v-for="item in rosterIdentityOptions"
+              :key="item.key"
+              type="button"
+              class="roster-choice-card"
+              :class="{ 'roster-choice-card--active': formValue.identityKey === item.key }"
+              @click="selectIdentity(item.key)"
+            >
+              <b>{{ item.icon }}</b>
+              <span>{{ item.label }}</span>
+              <small>{{ item.description }}</small>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="activeStepKey === 'spirit'" class="roster-form-grid">
+          <label class="roster-field">
+            <span>江湖宣言</span>
+            <input v-model="formValue.motto" maxlength="36" placeholder="一句话让同门记住你" type="text" />
+          </label>
+          <label class="roster-field">
+            <span>个人故事</span>
+            <textarea v-model="formValue.storyText" maxlength="240" placeholder="写写你的性格、来意、想在云栖留下什么故事。"></textarea>
+          </label>
+          <div class="roster-tag-panel">
+            <span>专长标签</span>
+            <div class="roster-tag-list">
+              <button
+                v-for="tag in rosterSkillPresets"
+                :key="tag"
+                type="button"
+                :class="{ 'roster-tag--active': formValue.skillTags.includes(tag) }"
+                @click="toggleSkillTag(tag)"
+              >#{{ tag }}</button>
+            </div>
+            <div class="roster-tag-input">
+              <input v-model="customSkillText" maxlength="8" placeholder="自定义标签" type="text" @keyup.enter="addCustomSkillTag" />
+              <button type="button" @click="addCustomSkillTag">加入</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="activeStepKey === 'bond'" class="roster-form-grid">
+          <div class="roster-choice-grid roster-choice-grid--single">
+            <button
+              v-for="item in rosterBondOptions"
+              :key="item.key"
+              type="button"
+              class="roster-choice-card"
+              :class="{ 'roster-choice-card--active': formValue.bondKey === item.key }"
+              @click="selectBond(item.key)"
+            >
+              <span>{{ item.label }}</span>
+              <small>{{ item.description }}</small>
+            </button>
+          </div>
+          <label class="roster-field">
+            <span>同行期待</span>
+            <textarea v-model="formValue.bondText" maxlength="180" placeholder="说说你希望遇见怎样的同门，或愿意提供怎样的陪伴。"></textarea>
+          </label>
+        </div>
+
+        <div v-if="activeStepKey === 'display'" class="roster-form-grid">
+          <div class="roster-cover-grid">
+            <button
+              v-for="item in rosterCoverOptions"
+              :key="item.key"
+              type="button"
+              class="roster-cover-card"
+              :class="{ 'roster-cover-card--active': formValue.coverKey === item.key }"
+              :style="{ background: item.gradient }"
+              @click="selectCover(item.key)"
+            >{{ item.label }}</button>
+          </div>
+          <label class="roster-switch"><input v-model="formValue.isRegionPublic" type="checkbox" />公开展示所在地域</label>
+          <label class="roster-switch"><input v-model="formValue.isStoryPublic" type="checkbox" />公开展示个人故事</label>
+          <div class="roster-preview-card" :style="previewCardStyle">
+            <span>{{ normalizedForm.titleName }}</span>
+            <strong>{{ normalizedForm.jianghuName || '你的江湖名' }}</strong>
+            <p>{{ normalizedForm.motto || '你的江湖宣言会出现在这里。' }}</p>
+          </div>
+        </div>
+
+        <div v-if="activeStepKey === 'pledge'" class="roster-form-grid">
+          <label class="roster-field">
+            <span>执事可见联系方式</span>
+            <input v-model="formValue.contactText" maxlength="80" placeholder="微信 / QQ / 其他稳定联系方式" type="text" />
+            <small>只给审核执事查看，不会出现在公开卡册里。</small>
+          </label>
+          <label class="roster-pledge-box">
+            <input v-model="formValue.agreedToPledge" type="checkbox" />
+            <span>{{ rosterContent.registration.pledge }}</span>
+          </label>
+          <div v-if="errorList.length" class="roster-message roster-message--error">
+            <p v-for="error in errorList" :key="error">{{ error }}</p>
+          </div>
+          <div v-if="successMessage" class="roster-message roster-message--success">
+            <p>{{ successMessage }}</p>
+          </div>
+        </div>
+
+        <div class="roster-form-actions">
+          <button type="button" class="roster-button roster-button--ghost" :disabled="activeStepIndex === 0" @click="goPreviousStep">上一步</button>
+          <button v-if="activeStepKey !== 'pledge'" type="button" class="roster-button" @click="goNextStep">下一步</button>
+          <button v-else type="button" class="roster-button" :disabled="isSubmitting" @click="handleSubmit">
+            {{ isSubmitting ? '递交中……' : '按印递交名帖' }}
+          </button>
+        </div>
+      </section>
     </section>
-
-    <section v-if="hasPassedAssessment" class="roster-registration-shell">
-      <article class="roster-registration-form">
-        <section class="roster-registration-card">
-          <div class="roster-registration-card__head">
-            <p class="eyebrow">弟子名籍</p>
-            <h2>先把道号与来处写清</h2>
-            <p>俗家姓名与生年用于核验名籍，道号会成为公开云名帖上的主要称呼。</p>
-          </div>
-
-          <div class="roster-registration-grid">
-            <label class="roster-registration-field">
-              <span>道号 *</span>
-              <input
-                v-model="formValue.daohao"
-                class="roster-registration-input"
-                maxlength="12"
-                placeholder="例如：闻溪、松照、栖月行者"
-                type="text"
-                @blur="validateDaohao(true)"
-              />
-              <small>{{ isCheckingDaohao ? '正在校验道号...' : daohaoMessage }}</small>
-            </label>
-
-            <label class="roster-registration-field">
-              <span>俗家姓名 *</span>
-              <input v-model="formValue.secularName" class="roster-registration-input" maxlength="24" placeholder="请输入俗家姓名" type="text" />
-              <small>{{ rosterContent.registration.secularNameHint }}</small>
-            </label>
-
-            <div class="roster-registration-field">
-              <span>性别 *</span>
-              <div class="roster-registration-choice-row">
-                <button
-                  v-for="option in rosterGenderOptions"
-                  :key="option.key"
-                  type="button"
-                  class="roster-registration-choice"
-                  :class="{ 'roster-registration-choice--active': formValue.gender === option.key }"
-                  @click="handleSelectGender(option.key)"
-                >
-                  {{ option.label }}
-                </button>
-              </div>
-            </div>
-
-            <label class="roster-registration-field">
-              <span>现居洞府 *</span>
-              <input v-model="formValue.currentCity" class="roster-registration-input" maxlength="32" placeholder="精确到市，例如：杭州、苏州、成都" type="text" />
-            </label>
-
-            <label class="roster-registration-field">
-              <span>生年（用于核对年龄） *</span>
-              <input v-model="formValue.birthYear" class="roster-registration-input" maxlength="8" placeholder="例如：1998" type="text" />
-              <small>{{ rosterContent.registration.birthYearHint }}</small>
-            </label>
-
-            <label class="roster-registration-field roster-registration-field--full">
-              <span>俗务 *</span>
-              <input v-model="formValue.profession" class="roster-registration-input" maxlength="40" placeholder="例如：学生、设计师、工程师" type="text" />
-            </label>
-          </div>
-        </section>
-
-        <section class="roster-registration-card">
-          <div class="roster-registration-card__head">
-            <p class="eyebrow">门派司职</p>
-            <h2>再把堂口与来意定下来</h2>
-            <p>引荐人、堂口与入派本心都会随档案归档，请按实际情况填写。</p>
-          </div>
-
-          <div class="roster-registration-grid">
-            <label class="roster-registration-field">
-              <span>引荐人 *</span>
-              <input v-model="formValue.referrerName" class="roster-registration-input" maxlength="32" placeholder="无引荐人请填写：自行登门" type="text" />
-            </label>
-          </div>
-
-          <div class="roster-registration-field roster-registration-field--full">
-            <span>归属堂口 *</span>
-            <div class="roster-registration-option-grid">
-              <button
-                v-for="hall in rosterHallOptions"
-                :key="hall.key"
-                type="button"
-                class="roster-registration-option"
-                :class="{ 'roster-registration-option--active': formValue.hallKey === hall.key }"
-                @click="handleSelectHall(hall.key)"
-              >
-                <strong>{{ hall.label }}</strong>
-                <span>{{ hall.description }}</span>
-              </button>
-            </div>
-          </div>
-
-          <label v-if="isOtherHallSelected" class="roster-registration-field roster-registration-field--full">
-            <span>其他堂口说明 *</span>
-            <input v-model="formValue.otherHallText" class="roster-registration-input" maxlength="32" placeholder="请补充你希望归属的堂口方向" type="text" />
-          </label>
-
-          <label class="roster-registration-field roster-registration-field--full">
-            <span>入派本心 *</span>
-            <textarea
-              v-model="formValue.entryIntent"
-              class="roster-registration-input roster-registration-input--textarea"
-              maxlength="220"
-              rows="4"
-              placeholder="三两言即可，说清你为何想入云栖、愿与怎样的同门共处"
-            ></textarea>
-          </label>
-        </section>
-
-        <section class="roster-registration-card">
-          <div class="roster-registration-card__head">
-            <p class="eyebrow">传讯方式</p>
-            <h2>留下正式联络方式</h2>
-            <p>核心传讯用于审核与后续联络，请填写本人长期使用、能稳定联系到你的真实账号。</p>
-          </div>
-
-          <div class="roster-registration-grid">
-            <label class="roster-registration-field">
-              <span>核心传讯 *</span>
-              <input v-model="formValue.wechatId" class="roster-registration-input" maxlength="48" placeholder="请填写微信号" type="text" />
-              <small>{{ rosterContent.registration.wechatHint }}</small>
-            </label>
-
-            <label class="roster-registration-field">
-              <span>小红书 / 抖音 *</span>
-              <input v-model="formValue.socialXiaohongshuDouyin" class="roster-registration-input" maxlength="48" placeholder="请输入小红书或抖音账号" type="text" />
-            </label>
-
-            <label class="roster-registration-field">
-              <span>QQ *</span>
-              <input v-model="formValue.socialQq" class="roster-registration-input" maxlength="48" placeholder="请输入 QQ" type="text" />
-            </label>
-
-            <label class="roster-registration-field">
-              <span>其他传讯 *</span>
-              <input v-model="formValue.socialOther" class="roster-registration-input" maxlength="48" placeholder="请输入其他传讯方式" type="text" />
-            </label>
-          </div>
-
-          <label class="roster-registration-check">
-            <input v-model="formValue.allowContactPublic" type="checkbox" />
-            <span>同意核心传讯号在同门间公开，用于活动联络</span>
-          </label>
-        </section>
-
-        <section class="roster-registration-card">
-          <div class="roster-registration-card__head">
-            <p class="eyebrow">所长与愿</p>
-            <h2>让同门知道你擅长什么、喜欢什么</h2>
-            <p>这里只写你愿意公开分享给同门看的所长与雅事。门中分工由后台统一设置，不在此处选择。</p>
-          </div>
-
-          <div class="roster-registration-grid">
-            <label class="roster-registration-field roster-registration-field--full">
-              <span>身怀所长 *</span>
-              <textarea
-                v-model="formValue.strengths"
-                class="roster-registration-input roster-registration-input--textarea"
-                maxlength="160"
-                rows="3"
-                placeholder="例如：妆造、摄影、书法、古琴、文案、驾车、场地协调"
-              ></textarea>
-            </label>
-
-            <label class="roster-registration-field roster-registration-field--full">
-              <span>所好雅事 *</span>
-              <textarea
-                v-model="formValue.hobbies"
-                class="roster-registration-input roster-registration-input--textarea"
-                maxlength="160"
-                rows="3"
-                placeholder="例如：汉服出行、诗词唱和、茶会雅集、非遗体验"
-              ></textarea>
-            </label>
-          </div>
-
-          <div class="roster-registration-field roster-registration-field--full">
-            <span>闲暇时辰</span>
-            <div class="roster-registration-choice-row">
-              <button
-                v-for="option in rosterFreeTimeOptions"
-                :key="option.key"
-                type="button"
-                class="roster-registration-choice"
-                :class="{ 'roster-registration-choice--active': formValue.freeTimeSlots.includes(option.key) }"
-                @click="toggleFreeTimeSlot(option.key)"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section class="roster-registration-card">
-          <div class="roster-registration-card__head">
-            <p class="eyebrow">入派誓约</p>
-            <h2>立誓之后，再请执事批阅</h2>
-            <p>线上入册仍保留正式文牒气质。请通读誓约后签押递交。</p>
-          </div>
-
-          <article class="roster-oath-panel">
-            <p>今自愿投身云栖派门下，已通读《云栖派门规》，立誓：</p>
-            <p>恪守国法，谨遵门规；敬重先贤，友爱同门；传承雅韵，不负初心；共护门派清誉，不做有损门楣之事。若违此誓，愿自请出派。</p>
-          </article>
-
-          <div class="roster-registration-grid">
-            <label class="roster-registration-field">
-              <span>弟子签押 *</span>
-              <input v-model="formValue.oathSignedName" class="roster-registration-input" maxlength="32" placeholder="可签道号或名号" type="text" />
-            </label>
-
-            <label class="roster-registration-field">
-              <span>立誓之日 *</span>
-              <input v-model="formValue.oathSignedDate" class="roster-registration-input" type="date" />
-            </label>
-          </div>
-
-          <label class="roster-registration-check">
-            <input v-model="formValue.agreedToOath" type="checkbox" />
-            <span>我已通读门规，并同意以上入派誓约 *</span>
-          </label>
-        </section>
-
-        <section class="roster-registration-card roster-registration-card--submit">
-          <div class="roster-registration-card__head">
-            <p class="eyebrow">提交确认</p>
-            <h2>递上文牒，系统会立刻生成待审核名帖</h2>
-            <p>提交成功后会跳转到公开详情页；审核通过后会自动切换为正式入册名帖。</p>
-          </div>
-
-          <div class="roster-registration-submit">
-            <label class="roster-registration-check roster-registration-check--alert">
-              <input v-model="formValue.confirmedTruthfulInfo" type="checkbox" />
-              <span>{{ rosterContent.registration.truthfulnessConfirmLabel }}</span>
-            </label>
-
-            <div class="roster-registration-submit__message">
-              <p>{{ hasSupabaseError ? supabaseErrorText : actionMessage }}</p>
-              <small>{{ rosterContent.registration.successDescription }}</small>
-            </div>
-
-            <div class="roster-registration-submit__actions">
-              <button
-                type="button"
-                class="ink-button ink-button--primary"
-                :disabled="isSubmitting || hasSupabaseError"
-                @click="handleSubmit"
-              >
-                {{ isSubmitting ? rosterContent.registration.submittingButton : rosterContent.registration.submitButton }}
-              </button>
-              <RouterLink class="ink-button ink-button--ghost" to="/roster/list">
-                先看公开名录
-              </RouterLink>
-            </div>
-          </div>
-        </section>
-      </article>
-    </section>
-  </div>
+  </main>
 </template>
 
 <style scoped>
-.roster-registration-page {
-  gap: 30px;
-}
-
-.roster-registration-gate,
-.roster-registration-alert,
-.roster-registration-shell {
-  display: grid;
-  gap: 20px;
-}
-
-.roster-registration-gate {
-  padding: 24px;
-  border: 1px solid rgba(216, 185, 114, 0.24);
+.roster-mobile-page {
+  min-height: 100vh;
+  padding: 108px 14px 96px;
   background:
-    radial-gradient(circle at top right, rgba(216, 185, 114, 0.12), transparent 34%),
-    linear-gradient(180deg, rgba(29, 18, 12, 0.92), rgba(8, 24, 35, 0.96)),
-    rgba(8, 24, 35, 0.94);
+    radial-gradient(circle at 50% 0%, rgba(218, 176, 88, 0.28), transparent 30%),
+    radial-gradient(circle at 10% 22%, rgba(84, 143, 161, 0.24), transparent 28%),
+    linear-gradient(180deg, #070b12 0%, #101724 48%, #090b10 100%);
 }
 
-.roster-registration-gate__head {
+.roster-phone-shell {
+  position: relative;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  color: #f8efd8;
+}
+
+.roster-hero-card,
+.roster-scroll-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(231, 190, 107, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(11, 16, 28, 0.92);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px);
+}
+
+.roster-hero-card {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  padding: 28px 22px;
+  border-radius: 32px;
+  animation: rosterMistIn 0.8s ease both;
 }
 
-.roster-registration-gate__head h2,
-.roster-registration-gate__head p,
-.roster-registration-gate__score {
+.roster-hero-card::before,
+.roster-scroll-card::before {
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255, 232, 170, 0.24), transparent 62%);
+  content: '';
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.roster-hero-card p,
+.roster-hero-card h1,
+.roster-hero-card span {
+  position: relative;
   margin: 0;
 }
 
-.roster-registration-gate__head h2 {
-  font-size: clamp(1.4rem, 2.8vw, 2rem);
-  line-height: 1.32;
+.roster-hero-card p,
+.roster-scroll-card__head span {
+  color: #e8bd68;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
 }
 
-.roster-registration-gate__head p:last-child,
-.roster-registration-gate__score {
-  color: rgba(244, 239, 226, 0.78);
-  line-height: 1.84;
+.roster-hero-card h1 {
+  font-size: clamp(2rem, 9vw, 3.2rem);
+  line-height: 1.1;
 }
 
-.roster-registration-gate__score {
-  padding: 16px 18px;
-  border-radius: 20px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  background: rgba(255, 255, 255, 0.04);
+.roster-hero-card span,
+.roster-scroll-card__head p,
+.roster-field small,
+.roster-choice-card small {
+  color: rgba(248, 239, 216, 0.72);
+  line-height: 1.75;
 }
 
-.roster-registration-gate__actions {
+.roster-ghost-link {
+  position: relative;
+  justify-self: start;
+  color: #ffe1a3;
+  text-decoration: none;
+}
+
+.roster-step-track {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.roster-registration-alert {
-  padding: 22px;
-  border: 1px solid rgba(212, 154, 114, 0.26);
-  background:
-    radial-gradient(circle at top right, rgba(216, 185, 114, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(42, 18, 14, 0.86), rgba(11, 25, 35, 0.96)),
-    rgba(11, 25, 35, 0.94);
-}
-
-.roster-registration-alert__head {
-  display: grid;
-  gap: 8px;
-}
-
-.roster-registration-alert__head h2,
-.roster-registration-alert__head p:last-child,
-.roster-registration-alert__item p {
-  margin: 0;
-}
-
-.roster-registration-alert__head h2 {
-  font-size: clamp(1.4rem, 2.8vw, 2rem);
-  line-height: 1.28;
-}
-
-.roster-registration-alert__head p:last-child {
-  color: rgba(244, 239, 226, 0.78);
-  line-height: 1.8;
-}
-
-.roster-registration-alert__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.roster-registration-alert__item {
-  padding: 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  background: rgba(56, 20, 18, 0.24);
-}
-
-.roster-registration-alert__item p {
-  color: rgba(244, 239, 226, 0.84);
-  line-height: 1.78;
-}
-
-.roster-registration-shell {
-  width: 100%;
-}
-
-.roster-registration-form {
-  display: grid;
-  gap: 18px;
-  min-width: 0;
-}
-
-.roster-registration-card {
-  display: grid;
-  gap: 18px;
-  padding: 22px;
-  border-radius: 28px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  background:
-    linear-gradient(180deg, rgba(8, 30, 42, 0.9), rgba(5, 18, 28, 0.96)),
-    rgba(5, 18, 28, 0.94);
-  box-shadow: var(--shadow-soft);
-}
-
-.roster-registration-card__head {
-  display: grid;
-  gap: 8px;
-}
-
-.roster-registration-card__head h2 {
-  margin: 0;
-  font-size: clamp(1.34rem, 2.8vw, 1.9rem);
-  line-height: 1.28;
-}
-
-.roster-registration-card__head p:last-child,
-.roster-registration-submit__message small {
-  color: var(--color-text-soft);
-  line-height: 1.76;
-}
-
-.roster-registration-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.roster-registration-field {
-  display: grid;
   gap: 10px;
+  margin: 16px -14px 10px;
+  padding: 0 14px 4px;
+  overflow-x: auto;
 }
 
-.roster-registration-field--full {
-  grid-column: 1 / -1;
-}
-
-.roster-registration-field span {
-  color: var(--color-cyan);
-  font-size: 0.84rem;
-  letter-spacing: 0.16em;
-}
-
-.roster-registration-field small {
-  color: var(--color-text-faint);
-  line-height: 1.7;
-}
-
-.roster-registration-input {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
-  border: 1px solid rgba(216, 185, 114, 0.18);
-  border-radius: 16px;
-  background: rgba(5, 19, 28, 0.62);
-  color: var(--color-text);
-  outline: none;
-}
-
-.roster-registration-input::placeholder {
-  color: rgba(244, 239, 226, 0.42);
-}
-
-.roster-registration-input:focus {
-  border-color: rgba(216, 185, 114, 0.34);
-  box-shadow: 0 0 0 3px rgba(216, 185, 114, 0.1);
-}
-
-.roster-registration-input--textarea {
-  min-height: 112px;
-  resize: vertical;
-  line-height: 1.82;
-}
-
-.roster-registration-option-grid {
+.roster-step-pill {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  flex: 0 0 auto;
+  gap: 4px;
+  min-width: 82px;
+  padding: 11px 12px;
+  border: 1px solid rgba(231, 190, 107, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(248, 239, 216, 0.68);
 }
 
-.roster-registration-option-grid--single {
-  grid-template-columns: 1fr;
-}
-
-.roster-registration-option,
-.roster-registration-choice {
-  border: 1px solid rgba(216, 185, 114, 0.14);
-  cursor: pointer;
-}
-
-.roster-registration-option {
-  display: grid;
-  gap: 8px;
-  padding: 16px 18px;
-  border-radius: 20px;
-  background: rgba(7, 27, 37, 0.44);
-  text-align: left;
-  transition:
-    transform var(--transition-base),
-    border-color var(--transition-base),
-    background-color var(--transition-base);
-}
-
-.roster-registration-option strong,
-.roster-registration-option span {
-  margin: 0;
-}
-
-.roster-registration-option strong {
-  font-size: 1rem;
-  color: var(--color-text);
-}
-
-.roster-registration-option span {
-  color: var(--color-text-soft);
-  font-size: 0.9rem;
-  line-height: 1.7;
-}
-
-.roster-registration-option:hover,
-.roster-registration-choice:hover {
+.roster-step-pill--active {
+  background: linear-gradient(135deg, rgba(231, 190, 107, 0.95), rgba(255, 239, 190, 0.9));
+  color: #1b1307;
   transform: translateY(-2px);
 }
 
-.roster-registration-option--active,
-.roster-registration-choice--active {
-  border-color: rgba(216, 185, 114, 0.34);
-  background:
-    linear-gradient(135deg, rgba(216, 185, 114, 0.14), rgba(9, 34, 46, 0.88)),
-    rgba(8, 25, 35, 0.86);
+.roster-step-pill span {
+  font-size: 1rem;
+  font-weight: 800;
 }
 
-.roster-registration-choice-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.roster-step-pill small {
+  font-size: 0.76rem;
 }
 
-.roster-registration-choice {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
+.roster-progress {
+  height: 5px;
+  margin-bottom: 16px;
+  overflow: hidden;
   border-radius: 999px;
-  background: rgba(5, 19, 28, 0.52);
-  color: var(--color-text-soft);
-  transition:
-    transform var(--transition-base),
-    border-color var(--transition-base),
-    background-color var(--transition-base),
-    color var(--transition-base);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.roster-registration-check {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  color: var(--color-text-soft);
-  line-height: 1.72;
+.roster-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #dfad55, #fff2ba);
+  transition: width 0.35s ease;
 }
 
-.roster-registration-check input {
-  margin-top: 4px;
-}
-
-.roster-registration-check--alert {
-  padding: 16px 18px;
-  border-radius: 20px;
-  border: 1px solid rgba(212, 154, 114, 0.22);
-  background: rgba(56, 20, 18, 0.18);
-}
-
-.roster-oath-panel {
+.roster-scroll-card {
   display: grid;
-  gap: 12px;
-  padding: 18px 20px;
-  border-radius: 22px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  background:
-    linear-gradient(180deg, rgba(39, 26, 15, 0.22), rgba(7, 20, 30, 0.94)),
-    rgba(8, 25, 35, 0.88);
+  gap: 22px;
+  padding: 22px 18px;
+  border-radius: 28px;
 }
 
-.roster-oath-panel p {
-  margin: 0;
-  color: var(--color-text-soft);
-  line-height: 1.86;
-}
-
-.roster-registration-card--submit {
-  gap: 20px;
-}
-
-.roster-registration-submit {
-  display: grid;
-  gap: 18px;
-  align-items: stretch;
-}
-
-.roster-registration-submit__message {
+.roster-scroll-card__head {
+  position: relative;
   display: grid;
   gap: 8px;
 }
 
-.roster-registration-submit__message p {
+.roster-scroll-card__head h2,
+.roster-scroll-card__head p {
   margin: 0;
-  color: var(--color-text);
-  line-height: 1.76;
 }
 
-.roster-registration-submit__actions {
+.roster-scroll-card__head h2 {
+  font-size: 1.55rem;
+}
+
+.roster-form-grid,
+.roster-field {
+  display: grid;
+  gap: 14px;
+}
+
+.roster-field span,
+.roster-tag-panel > span {
+  color: #ffe1a3;
+  font-weight: 700;
+}
+
+.roster-field input,
+.roster-field textarea,
+.roster-tag-input input {
+  width: 100%;
+  border: 1px solid rgba(231, 190, 107, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff8e7;
+  font: inherit;
+  outline: none;
+}
+
+.roster-field input,
+.roster-tag-input input {
+  min-height: 50px;
+  padding: 0 16px;
+}
+
+.roster-field textarea {
+  min-height: 128px;
+  padding: 14px 16px;
+  resize: vertical;
+}
+
+.roster-choice-grid,
+.roster-cover-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.roster-choice-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.roster-choice-card,
+.roster-cover-card {
+  min-height: 108px;
+  padding: 14px;
+  border: 1px solid rgba(231, 190, 107, 0.18);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8efd8;
+  text-align: left;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.roster-choice-card {
+  display: grid;
+  gap: 8px;
+}
+
+.roster-choice-card b {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(231, 190, 107, 0.18);
+}
+
+.roster-choice-card--active,
+.roster-cover-card--active {
+  border-color: rgba(255, 225, 163, 0.95);
+  box-shadow: 0 0 0 2px rgba(231, 190, 107, 0.16), 0 16px 36px rgba(0, 0, 0, 0.28);
+  transform: translateY(-2px);
+}
+
+.roster-tag-panel,
+.roster-tag-list,
+.roster-tag-input {
+  display: grid;
+  gap: 10px;
+}
+
+.roster-tag-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.roster-tag-list button,
+.roster-tag-input button {
+  min-height: 40px;
+  border: 1px solid rgba(231, 190, 107, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8efd8;
+}
+
+.roster-tag-list .roster-tag--active,
+.roster-tag-input button {
+  background: rgba(231, 190, 107, 0.92);
+  color: #170f06;
+}
+
+.roster-tag-input {
+  grid-template-columns: 1fr auto;
+}
+
+.roster-cover-card {
+  display: grid;
+  align-items: end;
+  color: #fff8e7;
+  font-weight: 800;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.roster-switch,
+.roster-pledge-box {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid rgba(231, 190, 107, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  line-height: 1.7;
 }
 
-@media (max-width: 1180px) {
-  .roster-registration-alert__grid,
-  .roster-registration-shell {
-    grid-template-columns: 1fr;
+.roster-preview-card {
+  display: grid;
+  gap: 10px;
+  min-height: 220px;
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--roster-card-gradient);
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 190, 0.24);
+}
+
+.roster-preview-card span,
+.roster-preview-card strong,
+.roster-preview-card p {
+  margin: 0;
+}
+
+.roster-preview-card strong {
+  font-size: 2.2rem;
+}
+
+.roster-message {
+  padding: 14px;
+  border-radius: 18px;
+  line-height: 1.7;
+}
+
+.roster-message p {
+  margin: 0;
+}
+
+.roster-message--error {
+  border: 1px solid rgba(248, 113, 113, 0.36);
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.roster-message--success {
+  border: 1px solid rgba(74, 222, 128, 0.32);
+  background: rgba(20, 83, 45, 0.24);
+}
+
+.roster-form-actions {
+  position: sticky;
+  bottom: 12px;
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 10px;
+  z-index: 2;
+}
+
+.roster-button {
+  min-height: 50px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #dfad55, #fff0b8);
+  color: #160f07;
+  font-weight: 800;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+}
+
+.roster-button--ghost {
+  border: 1px solid rgba(231, 190, 107, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8efd8;
+}
+
+.roster-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+@keyframes rosterMistIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-@media (max-width: 920px) {
-  .roster-registration-grid,
-  .roster-registration-option-grid,
-  .roster-registration-submit {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .roster-registration-gate,
-  .roster-registration-alert,
-  .roster-registration-card,
-  .roster-oath-panel {
-    padding: 16px 14px;
-    border-radius: 22px;
-  }
-
-  .roster-registration-gate__actions,
-  .roster-registration-submit__actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .roster-registration-gate__actions .ink-button,
-  .roster-registration-submit__actions .ink-button,
-  .roster-registration-choice {
-    width: 100%;
-  }
-
-  .roster-registration-gate__actions .ink-button:last-child:nth-child(odd),
-  .roster-registration-submit__actions .ink-button:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
+@media (min-width: 760px) {
+  .roster-mobile-page {
+    padding-top: 128px;
   }
 }
 </style>
+
