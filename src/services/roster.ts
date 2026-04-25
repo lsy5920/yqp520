@@ -32,6 +32,7 @@ interface RosterCardRow {
   bond_text: string
   cover_key: string
   status: RosterCardStatus
+  entry_no: number | null
   is_public: boolean
   is_region_public: boolean
   is_story_public: boolean
@@ -183,6 +184,7 @@ function mapAdminRosterCard(row: RosterCardRow): AdminRosterCardRecord {
   return {
     ...mapPublicRosterCard({ ...row, is_region_public: true, is_story_public: true }),
     status: row.status,
+    entryNo: row.entry_no,
     isPublic: row.is_public,
     isRegionPublic: row.is_region_public,
     isStoryPublic: row.is_story_public,
@@ -527,6 +529,54 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
     throw new Error(resolveRosterErrorMessage(oldError) || '没有找到要保存的名帖。')
   }
 
+  const oldCard = oldRow as RosterCardRow
+  const nextEntryNo = payload.status === 'approved'
+    ? (payload.entryNo && isValidRosterEntryNo(payload.entryNo) ? payload.entryNo : await getNextAvailableRosterEntryNo())
+    : null
+
+/**
+ * ????????
+ * ????????????? 4?????????????
+ * ???entryNo ??????
+ * ?????? 4 ??? 0 ??? true
+ */
+function isValidRosterEntryNo(entryNo: number): boolean {
+  return Number.isInteger(entryNo) && entryNo > 0 && !String(entryNo).includes('4')
+}
+
+/**
+ * ?????????
+ * ?????????????????????????????
+ * ????
+ * ??????????? 4 ???
+ */
+async function getNextAvailableRosterEntryNo(): Promise<number> {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('yunqi_roster_cards')
+    .select('entry_no')
+    .not('entry_no', 'is', null)
+    .order('entry_no', { ascending: false })
+    .limit(1)
+
+  if (error) {
+    throw new Error(resolveRosterErrorMessage(error))
+  }
+
+  const maxEntryNo = Number((data?.[0] as { entry_no?: number } | undefined)?.entry_no || 0)
+  let nextEntryNo = maxEntryNo + 1
+
+  while (!isValidRosterEntryNo(nextEntryNo)) {
+    nextEntryNo += 1
+  }
+
+  return nextEntryNo
+}
+
+  if (payload.status === 'approved' && payload.entryNo && !isValidRosterEntryNo(payload.entryNo)) {
+    throw new Error('????????? 0 ??????????? 4?')
+  }
+
   const updatePayload = {
     jianghu_name: payload.jianghuName.trim(),
     title_name: payload.titleName.trim(),
@@ -539,6 +589,7 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
     bond_text: payload.bondText.trim(),
     cover_key: payload.coverKey,
     status: payload.status,
+    entry_no: nextEntryNo,
     is_public: payload.isPublic,
     is_region_public: payload.isRegionPublic,
     is_story_public: payload.isStoryPublic,
@@ -547,7 +598,7 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
     featured_level: payload.featuredLevel,
     review_note: payload.reviewNote.trim(),
     internal_note: payload.internalNote.trim(),
-    approved_at: payload.status === 'approved' ? ((oldRow as RosterCardRow).approved_at || new Date().toISOString()) : null,
+    approved_at: payload.status === 'approved' ? (oldCard.approved_at || new Date().toISOString()) : null,
     reviewed_by_user_id: adminProfile.userId,
     reviewed_by_name: adminProfile.displayName,
   }

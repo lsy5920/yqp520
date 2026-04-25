@@ -56,6 +56,7 @@ create table if not exists public.yunqi_roster_cards (
   bond_text text not null default '',
   cover_key text not null default 'mist',
   status text not null default 'pending',
+  entry_no integer,
   is_public boolean not null default false,
   is_region_public boolean not null default true,
   is_story_public boolean not null default true,
@@ -73,9 +74,17 @@ create table if not exists public.yunqi_roster_cards (
   constraint yunqi_roster_cards_bond_check check (bond_key in ('seeking','companion','mentor','quiet')),
   constraint yunqi_roster_cards_cover_check check (cover_key in ('mist','sword','bamboo','moon','gold','jade')),
   constraint yunqi_roster_cards_status_check check (status in ('pending','approved','deferred','rejected')),
+  constraint yunqi_roster_cards_entry_no_check check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0)),
   constraint yunqi_roster_cards_heat_check check (heat_value >= 0),
   constraint yunqi_roster_cards_featured_check check (featured_level >= 0 and featured_level <= 9)
 );
+
+-- 这里兼容已经存在的新版名帖表；旧版新表如果缺少入册编号字段，就补上。
+alter table public.yunqi_roster_cards add column if not exists entry_no integer;
+alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_cards_entry_no_check;
+alter table public.yunqi_roster_cards
+add constraint yunqi_roster_cards_entry_no_check
+check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0));
 
 -- 这里创建审核日志表，记录每次后台保存和状态变化。
 create table if not exists public.yunqi_roster_card_review_logs (
@@ -93,6 +102,7 @@ create table if not exists public.yunqi_roster_card_review_logs (
 -- 这里补齐索引，保证手机端搜索、筛选和后台审核更稳。
 create index if not exists idx_yunqi_roster_cards_public on public.yunqi_roster_cards(status, is_public, featured_level, approved_at desc);
 create index if not exists idx_yunqi_roster_cards_identity on public.yunqi_roster_cards(identity_key);
+create unique index if not exists idx_yunqi_roster_cards_entry_no_unique on public.yunqi_roster_cards(entry_no) where entry_no is not null;
 create index if not exists idx_yunqi_roster_cards_created on public.yunqi_roster_cards(created_at desc);
 create index if not exists idx_yunqi_roster_card_logs_card on public.yunqi_roster_card_review_logs(card_id, created_at desc);
 
@@ -207,6 +217,7 @@ begin
       bond_text,
       cover_key,
       status,
+      entry_no,
       is_public,
       is_region_public,
       is_story_public,
@@ -241,6 +252,7 @@ begin
       coalesce(nullif(hobbies, ''), '由旧名册迁移，羁绊状态待补充。'),
       'mist',
       case when status in ('pending','approved','deferred','rejected') then status else 'pending' end,
+      case when entry_no is not null and position('4' in entry_no::text) = 0 then entry_no else null end,
       case when status = 'approved' then true else false end,
       true,
       true,

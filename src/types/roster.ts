@@ -176,6 +176,7 @@ export interface RosterAdminProfile {
 // 这里定义后台名帖记录，比公开记录多联系方式和审核备注。
 export interface AdminRosterCardRecord extends PublicRosterCard {
   status: RosterCardStatus
+  entryNo: number | null
   isPublic: boolean
   isRegionPublic: boolean
   isStoryPublic: boolean
@@ -199,6 +200,7 @@ export interface AdminRosterCardSavePayload {
   bondText: string
   coverKey: RosterCoverKey
   status: RosterCardStatus
+  entryNo: number | null
   isPublic: boolean
   isRegionPublic: boolean
   isStoryPublic: boolean

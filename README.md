@@ -709,6 +709,22 @@ where card.public_slug = coalesce(nullif(old_entry.public_slug, ''), 'legacy-' |
   and public.clean_yunqi_roster_legacy_text(old_entry.secular_name) <> ''
   and card.title_name in ('云栖旧友', '云栖同门', '待补真实姓名');
 ```
+
+### 入册编号规则
+新版名册的 `entry_no` 是后台审核专用编号，前台登记表单不显示。执事在审核台把状态保存为 `已入册` 时，如果编号留空，系统会读取当前最大编号并自动顺延；凡是包含数字 `4` 的编号会自动跳过。编号字段也可以由执事手动修改，但必须是大于 `0` 且不包含 `4` 的数字。
+
+如果你的 Supabase 已经建过新版 `yunqi_roster_cards` 表，请执行下面补丁补上编号字段与约束：
+
+```sql
+alter table public.yunqi_roster_cards add column if not exists entry_no integer;
+alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_cards_entry_no_check;
+alter table public.yunqi_roster_cards
+add constraint yunqi_roster_cards_entry_no_check
+check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0));
+create unique index if not exists idx_yunqi_roster_cards_entry_no_unique
+on public.yunqi_roster_cards(entry_no)
+where entry_no is not null;
+```
 ## 更新日志
 2026-04-21 23:14 【初次发布】完成云栖派官网首版开发，落地六个核心页面、统一青金云海视觉风格、滚动动效与移动端适配。  
 2026-04-21 23:15 【新增】新增海报分享生成器、背景音乐播放器与首页启播引导，并补齐完整中文 README、安装教程、使用说明与排错文档。  
@@ -822,3 +838,4 @@ where card.public_slug = coalesce(nullif(old_entry.public_slug, ''), 'legacy-' |
 2026-04-25 11:45 【修复】修复云栖名册登记页基础信息仍显示“称号”的遗漏问题，登记页、搜索框、后台编辑、校验提示和中文注释已统一为“真实姓名”，并顺手修复公开名录页模板少闭合标签导致构建失败的问题。
 2026-04-25 12:00 【修复】修复云栖名册审核台、登记页、公开列表和详情页顶部重复留白问题，减少导航下方大片空白；同时修复递交名帖校验失败会跳回第一步的问题，改为保留当前填写步骤，并修复成功弹窗中文乱码。
 2026-04-25 11:50 【修复】修复旧名册迁移时俗家姓名未进入新版真实姓名字段的问题，迁移脚本改为把 secular_name 写入 title_name，并新增已迁移数据的安全回填 SQL，不覆盖人工修改过的真实姓名。
+2026-04-25 12:03 【新增】为云栖名册新增后台专用入册编号 entry_no，前台登记不显示；审核台保存已入册时可自动按最大编号顺延并跳过含 4 编号，同时支持执事手动修改编号并同步数据库约束与 README 说明。

@@ -134,6 +134,7 @@ function buildEditForm(entry: AdminRosterCardRecord): AdminRosterCardSavePayload
     bondText: entry.bondText,
     coverKey: entry.coverKey,
     status: entry.status,
+    entryNo: entry.entryNo,
     isPublic: entry.isPublic,
     isRegionPublic: entry.isRegionPublic,
     isStoryPublic: entry.isStoryPublic,
