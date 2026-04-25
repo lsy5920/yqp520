@@ -989,61 +989,60 @@ onBeforeUnmount(() => {
 
           <div ref="examDialogPanelRef" class="assessment-exam-dialog__panel">
             <section class="assessment-exam assessment-exam--dialog">
-              <div class="assessment-exam__sticky">
-                <article class="assessment-exam__overview content-card content-card--soft">
-                  <div class="assessment-exam__overview-head">
-                    <div>
-                      <p class="eyebrow">答题进行中</p>
-                      <h2 :id="'assessment-exam-dialog-title'">{{ participantTitle }} · 正在问心</h2>
-                    </div>
+              <div class="assessment-exam__mist" aria-hidden="true"></div>
 
-                      <div class="assessment-exam__overview-side">
-                        <div
-                          v-if="shouldShowExamOverviewDetails"
-                          class="assessment-exam__time-card"
-                          :class="{ 'assessment-exam__time-card--warning': isAssessmentTimeRunningLow }"
-                        >
-                        <span>剩余时间</span>
-                        <strong>{{ remainingTimeText }}</strong>
-                      </div>
+              <header class="assessment-exam__topbar">
+                <div class="assessment-exam__title-block">
+                  <p class="eyebrow">答题进行中</p>
+                  <h2 :id="'assessment-exam-dialog-title'">{{ participantTitle }} · 正在问心</h2>
+                  <p v-if="activeExamQuestion" class="assessment-exam__now-text">
+                    第 {{ activeExamQuestion.order }} 题 · {{ currentSectionTitleText }}
+                  </p>
+                </div>
 
-                      <button
-                        type="button"
-                        class="ink-button ink-button--ghost assessment-exam__temporary-exit"
-                        @click="temporarilyExitExamDialog"
-                      >
-                        临时退出
-                      </button>
-                    </div>
+                <div class="assessment-exam__time-orb" :class="{ 'assessment-exam__time-orb--warning': isAssessmentTimeRunningLow }">
+                  <span>剩余</span>
+                  <strong>{{ remainingTimeText }}</strong>
+                </div>
+
+                <button
+                  type="button"
+                  class="assessment-exam__temporary-exit"
+                  @click="temporarilyExitExamDialog"
+                >
+                  临时退出
+                </button>
+              </header>
+
+              <section class="assessment-exam__status-stage" aria-label="答题状态">
+                <div class="assessment-exam__progress-ribbon" aria-hidden="true">
+                  <span :style="{ width: `${Math.max(4, Math.round((answeredCount / Math.max(totalQuestions, 1)) * 100))}%` }"></span>
+                </div>
+
+                <div class="assessment-exam__mobile-summary">
+                  <span class="assessment-exam__mobile-summary-item assessment-exam__mobile-summary-item--wide">{{ currentSectionTitleText }}</span>
+                  <span>已答 {{ answeredCount }}</span>
+                  <span>未答 {{ unansweredCount }}</span>
+                </div>
+
+                <button
+                  v-if="isExamMobileLayout"
+                  type="button"
+                  class="assessment-exam__overview-toggle"
+                  :aria-expanded="shouldShowExamOverviewDetails ? 'true' : 'false'"
+                  @click="toggleExamOverviewCollapsed"
+                >
+                  {{ shouldShowExamOverviewDetails ? '收起更多' : '展开更多' }}
+                </button>
+
+                <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__overview-drawer">
+                  <div class="assessment-exam__progress-meta">
+                    <span>第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
+                    <span>共 {{ totalQuestions }} 题</span>
+                    <span class="assessment-exam__meta-item--wide">{{ storageModeText }}</span>
                   </div>
 
-                    <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__progress-ribbon" aria-hidden="true">
-                      <span :style="{ width: `${Math.max(4, Math.round((answeredCount / Math.max(totalQuestions, 1)) * 100))}%` }"></span>
-                    </div>
-
-                  <div class="assessment-exam__mobile-summary">
-                    <span class="assessment-exam__mobile-summary-item assessment-exam__mobile-summary-item--wide">{{ currentSectionTitleText }}</span>
-                    <span>已答：{{ answeredCount }}</span>
-                    <span>未答：{{ unansweredCount }}</span>
-                  </div>
-
-                  <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__progress-meta">
-                    <span>章节序号：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
-                    <span>总题数量：{{ totalQuestions }}</span>
-                    <span class="assessment-exam__meta-item--wide">记录方式：{{ storageModeText }}</span>
-                  </div>
-
-                  <button
-                    v-if="isExamMobileLayout"
-                    type="button"
-                    class="assessment-exam__overview-toggle"
-                    :aria-expanded="shouldShowExamOverviewDetails ? 'true' : 'false'"
-                    @click="toggleExamOverviewCollapsed"
-                  >
-                    {{ shouldShowExamOverviewDetails ? '收起' : '更多' }}
-                  </button>
-
-                  <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__section-track">
+                  <div class="assessment-exam__section-track">
                     <button
                       v-for="section in sectionProgressList"
                       :key="section.id"
@@ -1059,48 +1058,48 @@ onBeforeUnmount(() => {
                     >
                       <p>{{ section.eyebrow }}</p>
                       <strong>{{ section.title }}</strong>
-                      <span>{{ section.answeredCount }} / {{ section.questionCount }} 题</span>
+                      <span>{{ section.answeredCount }} / {{ section.questionCount }}</span>
                     </button>
                   </div>
-                </article>
-              </div>
+                </div>
+              </section>
 
-              <div ref="examBodyRef" class="assessment-exam__body">
-                <article v-if="currentSection" class="content-card assessment-exam__chapter-card">
-                  <div class="assessment-exam__chapter-head">
-                    <div class="assessment-exam__chapter-title">
-                      <p class="eyebrow">{{ currentSection.eyebrow }}</p>
-                      <h2>{{ currentSection.title }}</h2>
+              <main ref="examBodyRef" class="assessment-exam__body">
+                <aside v-if="currentSection" class="assessment-exam__side-panel">
+                  <article class="assessment-exam__chapter-card">
+                    <div class="assessment-exam__chapter-head">
+                      <div class="assessment-exam__chapter-title">
+                        <p class="eyebrow">{{ currentSection.eyebrow }}</p>
+                        <h2>{{ currentSection.title }}</h2>
+                      </div>
+
+                      <button
+                        v-if="isExamMobileLayout"
+                        type="button"
+                        class="assessment-exam__compact-toggle"
+                        :aria-expanded="shouldShowExamChapterDetails ? 'true' : 'false'"
+                        @click="toggleExamChapterCollapsed"
+                      >
+                        {{ shouldShowExamChapterDetails ? '收起' : '展开' }}
+                      </button>
                     </div>
 
-                    <button
-                      v-if="isExamMobileLayout"
-                      type="button"
-                      class="assessment-exam__compact-toggle"
-                      :aria-expanded="shouldShowExamChapterDetails ? 'true' : 'false'"
-                      @click="toggleExamChapterCollapsed"
-                    >
-                      {{ shouldShowExamChapterDetails ? '收起本章' : '展开本章' }}
-                    </button>
-                  </div>
+                    <p v-if="isExamMobileLayout && !shouldShowExamChapterDetails" class="assessment-exam__compact-summary">
+                      {{ examChapterCollapsedSummaryText }}
+                    </p>
 
-                  <p v-if="isExamMobileLayout && !shouldShowExamChapterDetails" class="assessment-exam__compact-summary">
-                    {{ examChapterCollapsedSummaryText }}
-                  </p>
+                    <template v-if="shouldShowExamChapterDetails">
+                      <p class="assessment-exam__chapter-desc">{{ currentSection.description }}</p>
+                      <div class="assessment-exam__chapter-meta">
+                        <span>本章 {{ currentSection.questions.length }} 题</span>
+                        <span>已答 {{ currentSectionAnsweredCount }}</span>
+                        <span v-if="activeExamQuestion">第 {{ activeExamQuestion.order }} 题</span>
+                        <span v-if="activeExamQuestionSectionProgressText" class="assessment-exam__meta-item--wide">{{ activeExamQuestionSectionProgressText }}</span>
+                      </div>
+                    </template>
+                  </article>
 
-                  <template v-if="shouldShowExamChapterDetails">
-                    <p class="assessment-exam__chapter-desc">{{ currentSection.description }}</p>
-                    <div class="assessment-exam__chapter-meta">
-                      <span>本章题数：{{ currentSection.questions.length }}</span>
-                      <span>本章已答：{{ currentSectionAnsweredCount }}</span>
-                      <span v-if="activeExamQuestion">当前题号：第 {{ activeExamQuestion.order }} 题</span>
-                      <span v-if="activeExamQuestionSectionProgressText" class="assessment-exam__meta-item--wide">{{ activeExamQuestionSectionProgressText }}</span>
-                    </div>
-                  </template>
-                </article>
-
-                <div ref="examQuestionListRef" class="assessment-exam__question-workspace">
-                  <article class="content-card content-card--soft assessment-exam__order-card">
+                  <article class="assessment-exam__order-card">
                     <div class="assessment-exam__order-head">
                       <div>
                         <p class="eyebrow">题号</p>
@@ -1109,9 +1108,9 @@ onBeforeUnmount(() => {
 
                       <div class="assessment-exam__order-side">
                         <div v-if="shouldShowExamOrderDetails" class="assessment-exam__order-legend">
-                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--active">当前题</span>
-                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--answered">已作答</span>
-                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--pending">未作答</span>
+                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--active">当前</span>
+                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--answered">已答</span>
+                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--pending">未答</span>
                         </div>
 
                         <button
@@ -1153,22 +1152,26 @@ onBeforeUnmount(() => {
                         }"
                         :aria-pressed="question.isActive ? 'true' : 'false'"
                         @click="handleSelectExamQuestion(question.id)"
-                        >
-                          {{ question.order }}
-                        </button>
-                      </div>
+                      >
+                        {{ question.order }}
+                      </button>
+                    </div>
                   </article>
+                </aside>
 
-                  <AssessmentQuestionCard
-                    v-if="activeExamQuestion"
-                    :key="activeExamQuestion.id"
-                    :question="activeExamQuestion"
-                    :selected-option-ids="getSelectedOptionIds(activeExamQuestion.id)"
-                    @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
-                    @update-single="setSingleAnswer($event.questionId, $event.optionId)"
-                  />
+                <section ref="examQuestionListRef" class="assessment-exam__question-workspace">
+                  <Transition name="assessment-question-switch" mode="out-in">
+                    <AssessmentQuestionCard
+                      v-if="activeExamQuestion"
+                      :key="activeExamQuestion.id"
+                      :question="activeExamQuestion"
+                      :selected-option-ids="getSelectedOptionIds(activeExamQuestion.id)"
+                      @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
+                      @update-single="setSingleAnswer($event.questionId, $event.optionId)"
+                    />
+                  </Transition>
 
-                  <div class="assessment-exam__actions assessment-exam__actions--dialog">
+                  <nav class="assessment-exam__actions assessment-exam__actions--dialog" aria-label="题目切换">
                     <button
                       type="button"
                       class="ink-button ink-button--ghost"
@@ -1196,9 +1199,9 @@ onBeforeUnmount(() => {
                     >
                       {{ isSubmitting ? '正在交卷...' : '完成本卷并交卷' }}
                     </button>
-                  </div>
-                </div>
-              </div>
+                  </nav>
+                </section>
+              </main>
             </section>
           </div>
         </div>
@@ -3067,6 +3070,654 @@ onBeforeUnmount(() => {
 @keyframes assessment-catalog-rise {
   from { opacity: 0; transform: translateY(18px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 这里是问心弹窗重构后的主视觉样式，专门负责“状态栏、主舞台、操作区”的新结构。 */
+.assessment-exam-dialog__panel {
+  overflow: hidden;
+}
+
+/* 这里让弹窗内部成为完整答题舞台，方便手机端和电脑端共用一套云栖水墨布局。 */
+.assessment-exam--dialog {
+  position: relative;
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 14px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* 这里做弹窗里的浮动云雾，不参与点击，只增强氛围。 */
+.assessment-exam__mist {
+  position: absolute;
+  inset: -18% -12% auto;
+  z-index: -1;
+  height: 42%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255, 255, 255, 0.88), transparent 24%),
+    radial-gradient(circle at 76% 10%, rgba(147, 213, 202, 0.34), transparent 30%),
+    linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.36), transparent);
+  filter: blur(2px);
+  opacity: 0.9;
+  animation: assessment-mist-drift 8s ease-in-out infinite alternate;
+}
+
+/* 这里是顶部状态栏，手机端也保持双列优先，倒计时和退出入口清晰可点。 */
+.assessment-exam__topbar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(132px, 0.36fr) minmax(102px, auto);
+  gap: 12px;
+  align-items: stretch;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(83, 145, 138, 0.22);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.92), transparent 34%),
+    radial-gradient(circle at 82% 24%, rgba(151, 219, 207, 0.32), transparent 32%),
+    linear-gradient(145deg, rgba(250, 255, 252, 0.9), rgba(217, 241, 235, 0.82));
+  box-shadow: 0 18px 42px rgba(55, 115, 112, 0.16);
+  animation: assessment-panel-rise 0.48s ease both;
+}
+
+/* 这里给顶部状态栏加一层流动柔光，避免大面积白底显得单调。 */
+.assessment-exam__topbar::before,
+.assessment-exam__status-stage::before,
+.assessment-exam__side-panel::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  background: linear-gradient(115deg, transparent 0 38%, rgba(255, 255, 255, 0.46) 48%, transparent 58% 100%);
+  background-size: 240% 100%;
+  opacity: 0.72;
+  animation: assessment-ink-light 6.8s ease-in-out infinite;
+}
+
+/* 这里控制标题区文本换行，防止长称呼把倒计时挤出屏幕。 */
+.assessment-exam__title-block {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.assessment-exam__title-block .eyebrow,
+.assessment-exam__title-block h2,
+.assessment-exam__now-text {
+  margin: 0;
+}
+
+.assessment-exam__title-block h2 {
+  color: #173d42;
+  font-size: clamp(1.2rem, 2.4vw, 2.2rem);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.assessment-exam__now-text {
+  color: rgba(35, 83, 86, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* 这里把剩余时间做成青玉圆牌，展开和折叠时都足够醒目。 */
+.assessment-exam__time-orb {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  min-height: 78px;
+  padding: 10px 14px;
+  overflow: hidden;
+  border: 1px solid rgba(83, 145, 138, 0.26);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 28% 0%, rgba(255, 255, 255, 0.86), transparent 42%),
+    linear-gradient(145deg, rgba(230, 250, 245, 0.96), rgba(154, 211, 202, 0.76));
+  color: #173d42;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 14px 28px rgba(65, 130, 122, 0.16);
+}
+
+.assessment-exam__time-orb::after {
+  position: absolute;
+  inset: auto -20% -45% 16%;
+  height: 72%;
+  pointer-events: none;
+  content: '';
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  transform: rotate(-8deg);
+}
+
+.assessment-exam__time-orb span,
+.assessment-exam__time-orb strong {
+  position: relative;
+  z-index: 1;
+}
+
+.assessment-exam__time-orb span {
+  font-size: 0.78rem;
+  color: rgba(35, 83, 86, 0.68);
+}
+
+.assessment-exam__time-orb strong {
+  font-size: clamp(1.5rem, 3vw, 2.45rem);
+  line-height: 1;
+}
+
+/* 这里处理低剩余时间提醒，用暖色但不破坏整体水墨色。 */
+.assessment-exam__time-orb--warning {
+  border-color: rgba(183, 119, 52, 0.4);
+  background: linear-gradient(145deg, rgba(255, 247, 230, 0.98), rgba(236, 199, 135, 0.8));
+  animation: assessment-time-pulse 1.45s ease-in-out infinite;
+}
+
+/* 这里重做临时退出按钮，保持可点面积和水墨印章感。 */
+.assessment-exam__temporary-exit {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 78px;
+  padding: 0 16px;
+  border: 1px solid rgba(83, 145, 138, 0.24);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.56);
+  color: #1d5659;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(60, 118, 114, 0.12);
+  transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.assessment-exam__temporary-exit:hover {
+  transform: translateY(-2px);
+  border-color: rgba(83, 145, 138, 0.38);
+  box-shadow: 0 18px 32px rgba(60, 118, 114, 0.18);
+}
+
+/* 这里是顶部摘要舞台，承载进度条、核心统计和更多抽屉。 */
+.assessment-exam__status-stage {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(83, 145, 138, 0.18);
+  border-radius: 24px;
+  background: rgba(245, 255, 251, 0.72);
+  box-shadow: 0 14px 32px rgba(55, 115, 112, 0.1);
+  animation: assessment-panel-rise 0.56s 0.06s ease both;
+}
+
+.assessment-exam__mobile-summary,
+.assessment-exam__progress-meta,
+.assessment-exam__chapter-meta {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 0;
+}
+
+.assessment-exam__mobile-summary span,
+.assessment-exam__progress-meta span,
+.assessment-exam__chapter-meta span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(83, 145, 138, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: rgba(23, 61, 66, 0.78);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-align: center;
+  white-space: normal;
+}
+
+.assessment-exam__mobile-summary-item--wide,
+.assessment-exam__meta-item--wide,
+.assessment-exam__chapter-desc {
+  grid-column: 1 / -1;
+}
+
+/* 这里让当前章节名更像题帖题签。 */
+.assessment-exam__mobile-summary-item--wide {
+  min-height: 42px !important;
+  color: #173d42 !important;
+  font-weight: 900;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.9), transparent 42%),
+    linear-gradient(145deg, rgba(236, 250, 246, 0.92), rgba(205, 235, 228, 0.72)) !important;
+}
+
+/* 这里是更多按钮，移动端默认显示，桌面端隐藏。 */
+.assessment-exam__overview-toggle,
+.assessment-exam__compact-toggle {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(83, 145, 138, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.56);
+  color: #1d5659;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.assessment-exam__overview-drawer {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  animation: assessment-drawer-open 0.34s ease both;
+}
+
+/* 这里重做章节卡为双列青竹签，点击切章时更像选签。 */
+.assessment-exam__section-track {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 0;
+}
+
+.assessment-exam__section-pill {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  min-height: 82px;
+  align-content: center;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(83, 145, 138, 0.16);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.84), transparent 44%),
+    linear-gradient(145deg, rgba(244, 254, 250, 0.88), rgba(219, 240, 235, 0.72));
+  color: #173d42;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(60, 118, 114, 0.1);
+  transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.assessment-exam__section-pill::after {
+  position: absolute;
+  inset: auto 10px 8px;
+  height: 3px;
+  pointer-events: none;
+  content: '';
+  border-radius: 999px;
+  background: rgba(83, 145, 138, 0.18);
+}
+
+.assessment-exam__section-pill:hover,
+.assessment-exam__section-pill--active {
+  transform: translateY(-2px);
+  border-color: rgba(186, 151, 76, 0.42);
+  box-shadow: 0 16px 30px rgba(60, 118, 114, 0.16);
+}
+
+.assessment-exam__section-pill--active::after,
+.assessment-exam__section-pill--completed::after {
+  background: linear-gradient(90deg, #5aa799, #d8b972);
+}
+
+/* 这里是中部答题主舞台，桌面端自动变成侧栏加题卡。 */
+.assessment-exam__body {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(260px, 0.38fr) minmax(0, 1fr);
+  gap: 14px;
+  overflow: hidden;
+}
+
+.assessment-exam__side-panel,
+.assessment-exam__question-workspace {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(83, 145, 138, 0.28) transparent;
+}
+
+.assessment-exam__side-panel {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden auto;
+  border: 1px solid rgba(83, 145, 138, 0.16);
+  border-radius: 26px;
+  background: rgba(245, 255, 251, 0.64);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  animation: assessment-panel-rise 0.6s 0.1s ease both;
+}
+
+.assessment-exam__chapter-card,
+.assessment-exam__order-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(83, 145, 138, 0.18);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.78), transparent 36%),
+    linear-gradient(145deg, rgba(250, 255, 252, 0.84), rgba(220, 241, 236, 0.66));
+}
+
+.assessment-exam__chapter-head,
+.assessment-exam__order-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.assessment-exam__chapter-title,
+.assessment-exam__order-head > div:first-child {
+  min-width: 0;
+}
+
+.assessment-exam__chapter-title .eyebrow,
+.assessment-exam__chapter-title h2,
+.assessment-exam__order-head h3,
+.assessment-exam__chapter-desc {
+  margin: 0;
+}
+
+.assessment-exam__chapter-title h2,
+.assessment-exam__order-head h3 {
+  color: #173d42;
+  font-size: 1.04rem;
+  line-height: 1.45;
+}
+
+.assessment-exam__chapter-desc {
+  color: rgba(35, 83, 86, 0.72);
+  font-size: 0.9rem;
+  line-height: 1.72;
+}
+
+.assessment-exam__question-workspace {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 2px 2px 10px;
+  animation: assessment-panel-rise 0.62s 0.14s ease both;
+}
+
+/* 这里保留题号网格为特殊多列，方便一次看清三十题。 */
+.assessment-exam__order-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.assessment-exam__order-button {
+  min-height: 42px;
+  border-radius: 14px;
+}
+
+.assessment-exam__catalog-entry {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid rgba(83, 145, 138, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+  color: #173d42;
+  text-align: left;
+}
+
+/* 这里让题目切换有轻柔题帖翻页感。 */
+.assessment-question-switch-enter-active,
+.assessment-question-switch-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
+}
+
+.assessment-question-switch-enter-from,
+.assessment-question-switch-leave-to {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(12px) scale(0.985);
+}
+
+/* 这里是题卡下方操作区，不悬浮，随题目正文自然滚动。 */
+.assessment-exam__actions--dialog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(83, 145, 138, 0.16);
+  border-radius: 22px;
+  background: rgba(245, 255, 251, 0.76);
+  box-shadow: 0 12px 24px rgba(60, 118, 114, 0.1);
+}
+
+.assessment-exam__actions--dialog .ink-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  white-space: nowrap;
+}
+
+.assessment-exam__actions--dialog .ink-button--secondary:last-child {
+  grid-column: 1 / -1;
+}
+
+@keyframes assessment-panel-rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes assessment-drawer-open {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes assessment-mist-drift {
+  from { transform: translate3d(-2%, -2%, 0) scale(1); }
+  to { transform: translate3d(3%, 3%, 0) scale(1.06); }
+}
+
+@keyframes assessment-ink-light {
+  0%, 100% { background-position: 160% 0; }
+  50% { background-position: -80% 0; }
+}
+
+@media (max-width: 720px) {
+  .assessment-exam-dialog {
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .assessment-exam-dialog__panel {
+    height: calc(100dvh - 16px - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 16px - env(safe-area-inset-bottom));
+    padding: 10px 8px;
+    border-radius: 24px;
+  }
+
+  .assessment-exam--dialog {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .assessment-exam__topbar {
+    grid-template-columns: minmax(0, 1fr) minmax(84px, 0.42fr);
+    gap: 8px;
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .assessment-exam__title-block {
+    grid-column: 1 / -1;
+  }
+
+  .assessment-exam__title-block h2 {
+    font-size: 1.08rem;
+  }
+
+  .assessment-exam__now-text {
+    font-size: 0.84rem;
+  }
+
+  .assessment-exam__time-orb,
+  .assessment-exam__temporary-exit {
+    min-height: 58px;
+    border-radius: 18px;
+  }
+
+  .assessment-exam__time-orb strong {
+    font-size: 1.38rem;
+  }
+
+  .assessment-exam__temporary-exit {
+    padding: 0 10px;
+    font-size: 0.86rem;
+  }
+
+  .assessment-exam__status-stage {
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .assessment-exam__mobile-summary span,
+  .assessment-exam__progress-meta span,
+  .assessment-exam__chapter-meta span {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+  }
+
+  .assessment-exam__section-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .assessment-exam__section-pill {
+    min-height: 70px;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .assessment-exam__section-pill strong {
+    font-size: 0.86rem;
+    line-height: 1.45;
+  }
+
+  .assessment-exam__section-pill span,
+  .assessment-exam__section-pill p {
+    font-size: 0.76rem;
+  }
+
+  .assessment-exam__body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 2px 8px;
+  }
+
+  .assessment-exam__side-panel {
+    gap: 10px;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .assessment-exam__chapter-card,
+  .assessment-exam__order-card {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .assessment-exam__chapter-head,
+  .assessment-exam__order-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .assessment-exam__chapter-title h2,
+  .assessment-exam__order-head h3 {
+    font-size: 0.96rem;
+  }
+
+  .assessment-exam__chapter-desc {
+    font-size: 0.84rem;
+    line-height: 1.62;
+  }
+
+  .assessment-exam__order-card:has(.assessment-exam__order-grid) {
+    position: fixed;
+    right: 10px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 26;
+    max-height: min(62vh, 460px);
+    overflow: auto;
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.9), transparent 36%),
+      linear-gradient(180deg, rgba(245, 255, 251, 0.96), rgba(218, 241, 235, 0.94));
+    box-shadow: 0 24px 60px rgba(34, 82, 82, 0.28);
+    animation: assessment-catalog-rise 0.28s ease both;
+  }
+
+  .assessment-exam__order-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .assessment-exam__order-button {
+    min-height: 40px;
+    border-radius: 14px;
+    font-size: 0.84rem;
+  }
+
+  .assessment-exam__question-workspace {
+    gap: 10px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .assessment-exam__actions--dialog {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .assessment-exam__actions--dialog .ink-button {
+    min-height: 48px;
+    padding-inline: 10px;
+    font-size: 0.9rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

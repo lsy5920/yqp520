@@ -154,22 +154,23 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 </template>
 
 <style scoped>
+/* 这里重做问心题帖视觉，只改变展示效果，不改变题目入参、选项顺序和答题事件。 */
 .assessment-question-card {
   position: relative;
   display: grid;
-  gap: 18px;
-  padding: 28px;
+  gap: 20px;
+  padding: 30px;
   overflow: hidden;
   overflow-anchor: none;
-  border: 1px solid rgba(83, 145, 138, 0.22);
-  border-radius: 30px;
+  border: 1px solid rgba(83, 145, 138, 0.24);
+  border-radius: 34px;
   background:
-    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.86), transparent 34%),
-    radial-gradient(circle at 88% 18%, rgba(154, 213, 205, 0.24), transparent 34%),
-    linear-gradient(145deg, rgba(249, 255, 251, 0.94), rgba(221, 241, 235, 0.82));
-  box-shadow: 0 22px 54px rgba(53, 102, 104, 0.18);
+    radial-gradient(circle at 14% 0%, rgba(255, 255, 255, 0.94), transparent 36%),
+    radial-gradient(circle at 92% 18%, rgba(139, 208, 203, 0.32), transparent 34%),
+    linear-gradient(145deg, rgba(252, 255, 253, 0.96), rgba(220, 241, 235, 0.84));
+  box-shadow: 0 26px 62px rgba(53, 102, 104, 0.2);
   isolation: isolate;
-  animation: question-card-enter 0.58s ease both;
+  animation: question-card-enter 0.62s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .assessment-question-card::before {
@@ -178,26 +179,34 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   z-index: -1;
   pointer-events: none;
   content: '';
-  border: 1px solid rgba(186, 151, 76, 0.22);
-  border-radius: 24px;
+  border: 1px solid rgba(186, 151, 76, 0.24);
+  border-radius: 26px;
   background:
-    linear-gradient(120deg, transparent 0 42%, rgba(255, 255, 255, 0.48) 48%, transparent 56% 100%),
+    radial-gradient(circle at 8% 12%, rgba(255, 255, 255, 0.62), transparent 28%),
+    linear-gradient(120deg, transparent 0 42%, rgba(255, 255, 255, 0.54) 48%, transparent 56% 100%),
     repeating-linear-gradient(105deg, rgba(44, 113, 104, 0.05) 0 1px, transparent 1px 22px);
-  background-size: 220% 100%, auto;
-  animation: question-ink-shine 5.8s ease-in-out infinite;
+  background-size: auto, 240% 100%, auto;
+  animation: question-ink-shine 6.4s ease-in-out infinite;
 }
 
 .assessment-question-card::after {
   position: absolute;
-  top: -18px;
-  right: 26px;
-  width: 74px;
-  height: 74px;
+  top: 18px;
+  right: 22px;
+  width: 68px;
+  height: 68px;
   pointer-events: none;
-  content: '';
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.84) 0 28%, rgba(128, 188, 178, 0.28) 29% 48%, transparent 50%);
-  opacity: 0.7;
+  content: '问心';
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(186, 151, 76, 0.32);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(232, 247, 242, 0.9), rgba(145, 201, 191, 0.58));
+  color: rgba(29, 86, 89, 0.82);
+  font-size: 0.9rem;
+  font-weight: 900;
+  opacity: 0.78;
+  transform: rotate(8deg);
 }
 
 .assessment-question-card__head,
@@ -210,6 +219,7 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 
 .assessment-question-card__head {
   justify-content: space-between;
+  padding-right: 82px;
 }
 
 .assessment-question-card__index,
@@ -217,11 +227,13 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 .assessment-question-card__score {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
+  min-height: 36px;
+  padding: 0 15px;
   border-radius: 999px;
   font-size: 0.86rem;
-  border: 1px solid rgba(83, 145, 138, 0.16);
+  font-weight: 800;
+  border: 1px solid rgba(83, 145, 138, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .assessment-question-card__index {
@@ -245,8 +257,9 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 }
 
 .assessment-question-card__title {
-  font-size: 1.36rem;
-  line-height: 1.65;
+  padding: 4px 0 0;
+  font-size: clamp(1.22rem, 2.3vw, 1.55rem);
+  line-height: 1.72;
   color: #173d42;
   word-break: break-word;
 }
@@ -255,11 +268,15 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   color: rgba(35, 83, 86, 0.72);
   font-size: 0.95rem;
   line-height: 1.8;
+  padding: 12px 14px;
+  border: 1px solid rgba(83, 145, 138, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
 }
 
 .assessment-question-card__options {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   overflow-anchor: none;
 }
 
@@ -272,16 +289,18 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   padding: 16px 18px;
   overflow: hidden;
   overflow-anchor: none;
-  border: 1px solid rgba(83, 145, 138, 0.22);
-  border-radius: 22px;
+  border: 1px solid rgba(83, 145, 138, 0.2);
+  border-radius: 24px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(226, 244, 239, 0.58)),
+    radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.72), transparent 36%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(226, 244, 239, 0.6)),
     rgba(246, 253, 249, 0.78);
   color: #173d42;
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  box-shadow: 0 10px 20px rgba(60, 118, 114, 0.08);
   transition: transform 0.28s ease, border-color 0.28s ease, background-color 0.28s ease, box-shadow 0.28s ease;
 }
 
@@ -290,7 +309,10 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   inset: 0;
   pointer-events: none;
   content: '';
-  background: radial-gradient(circle at 20% 20%, rgba(113, 180, 171, 0.2), transparent 42%);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(113, 180, 171, 0.22), transparent 42%),
+    linear-gradient(115deg, transparent 0 42%, rgba(255, 255, 255, 0.44) 50%, transparent 60% 100%);
+  background-size: auto, 220% 100%;
   opacity: 0;
   transition: opacity 0.28s ease;
 }
@@ -301,9 +323,9 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 }
 
 .assessment-question-card__option:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   border-color: rgba(83, 145, 138, 0.42);
-  box-shadow: 0 16px 28px rgba(58, 116, 112, 0.14);
+  box-shadow: 0 18px 32px rgba(58, 116, 112, 0.16);
 }
 
 .assessment-question-card__option:disabled {
@@ -312,30 +334,33 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 }
 
 .assessment-question-card__option--active {
-  border-color: rgba(186, 151, 76, 0.58);
+  border-color: rgba(186, 151, 76, 0.68);
   background:
-    radial-gradient(circle at 88% 20%, rgba(186, 151, 76, 0.2), transparent 34%),
-    linear-gradient(145deg, rgba(233, 248, 242, 0.96), rgba(202, 232, 224, 0.86));
-  box-shadow: 0 18px 34px rgba(83, 145, 138, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.74);
+    radial-gradient(circle at 88% 20%, rgba(216, 185, 114, 0.26), transparent 34%),
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.9), transparent 42%),
+    linear-gradient(145deg, rgba(233, 248, 242, 0.98), rgba(198, 232, 224, 0.9));
+  box-shadow: 0 20px 36px rgba(83, 145, 138, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.78);
 }
 
 .assessment-question-card__option--active::before {
   opacity: 1;
+  animation: question-option-ink 1.2s ease both;
 }
 
 .assessment-question-card__badge {
   position: relative;
   z-index: 1;
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   place-items: center;
   flex-shrink: 0;
   border: 1px solid rgba(83, 145, 138, 0.2);
-  border-radius: 14px;
+  border-radius: 15px;
   background: linear-gradient(145deg, rgba(236, 248, 244, 0.9), rgba(151, 203, 194, 0.42));
   color: #1e5558;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  font-weight: 900;
 }
 
 .assessment-question-card__option-text {
@@ -353,6 +378,12 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   border-color: rgba(149, 110, 39, 0.3);
   background: linear-gradient(145deg, rgba(186, 151, 76, 0.9), rgba(232, 213, 151, 0.86));
   color: #173d42;
+  box-shadow: 0 0 0 4px rgba(216, 185, 114, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+@keyframes question-option-ink {
+  from { background-position: 0 0, 160% 0; }
+  to { background-position: 0 0, -80% 0; }
 }
 
 @keyframes question-card-enter {
@@ -379,9 +410,9 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 
 @media (max-width: 720px) {
   .assessment-question-card {
-    gap: 14px;
-    padding: 18px 14px;
-    border-radius: 24px;
+    gap: 13px;
+    padding: 18px 14px 16px;
+    border-radius: 26px;
   }
 
   .assessment-question-card::before {
@@ -392,6 +423,16 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   .assessment-question-card__head {
     align-items: flex-start;
     flex-direction: column;
+    padding-right: 54px;
+  }
+
+  .assessment-question-card::after {
+    top: 14px;
+    right: 14px;
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    font-size: 0.72rem;
   }
 
   .assessment-question-card__score {
@@ -400,12 +441,13 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 
   .assessment-question-card__title {
     font-size: 1.08rem;
-    line-height: 1.58;
+    line-height: 1.62;
   }
 
   .assessment-question-card__hint {
     font-size: 0.88rem;
     line-height: 1.65;
+    padding: 10px 12px;
   }
 
   .assessment-question-card__options {
@@ -414,9 +456,10 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 
   .assessment-question-card__option {
     align-items: center;
-    min-height: 58px;
-    padding: 12px 12px;
+    min-height: 60px;
+    padding: 12px;
     gap: 10px;
+    border-radius: 20px;
   }
 
   .assessment-question-card__option:hover:not(:disabled) {
