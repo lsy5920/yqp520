@@ -179,15 +179,7 @@ const examChapterCollapsedSummaryText = computed<string>(() => {
     return ''
   }
 
-  const summaryParts = [
-    `本章已答 ${currentSectionAnsweredCount.value} / ${currentSection.value.questions.length} 题`,
-  ]
-
-  if (activeExamQuestionSectionProgressText.value) {
-    summaryParts.push(activeExamQuestionSectionProgressText.value)
-  }
-
-  return summaryParts.join(' · ')
+  return `本章 ${currentSectionAnsweredCount.value} / ${currentSection.value.questions.length} 题`
 })
 
 /**
@@ -1030,15 +1022,15 @@ onBeforeUnmount(() => {
                     </div>
 
                   <div class="assessment-exam__mobile-summary">
-                    <span>当前章节：{{ currentSectionTitleText }}</span>
+                    <span class="assessment-exam__mobile-summary-item assessment-exam__mobile-summary-item--wide">{{ currentSectionTitleText }}</span>
                     <span>已答：{{ answeredCount }}</span>
-                    <span>未答题数：{{ unansweredCount }}</span>
+                    <span>未答：{{ unansweredCount }}</span>
                   </div>
 
                   <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__progress-meta">
                     <span>章节序号：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
                     <span>总题数量：{{ totalQuestions }}</span>
-                    <span>记录方式：{{ storageModeText }}</span>
+                    <span class="assessment-exam__meta-item--wide">记录方式：{{ storageModeText }}</span>
                   </div>
 
                   <button
@@ -1048,7 +1040,7 @@ onBeforeUnmount(() => {
                     :aria-expanded="shouldShowExamOverviewDetails ? 'true' : 'false'"
                     @click="toggleExamOverviewCollapsed"
                   >
-                    {{ shouldShowExamOverviewDetails ? '收起更多信息' : '展开倒计时与章节列表' }}
+                    {{ shouldShowExamOverviewDetails ? '收起' : '更多' }}
                   </button>
 
                   <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__section-track">
@@ -1097,12 +1089,12 @@ onBeforeUnmount(() => {
                   </p>
 
                   <template v-if="shouldShowExamChapterDetails">
-                    <p>{{ currentSection.description }}</p>
+                    <p class="assessment-exam__chapter-desc">{{ currentSection.description }}</p>
                     <div class="assessment-exam__chapter-meta">
                       <span>本章题数：{{ currentSection.questions.length }}</span>
                       <span>本章已答：{{ currentSectionAnsweredCount }}</span>
                       <span v-if="activeExamQuestion">当前题号：第 {{ activeExamQuestion.order }} 题</span>
-                      <span v-if="activeExamQuestionSectionProgressText">{{ activeExamQuestionSectionProgressText }}</span>
+                      <span v-if="activeExamQuestionSectionProgressText" class="assessment-exam__meta-item--wide">{{ activeExamQuestionSectionProgressText }}</span>
                     </div>
                   </template>
                 </article>
@@ -1111,8 +1103,8 @@ onBeforeUnmount(() => {
                   <article class="content-card content-card--soft assessment-exam__order-card">
                     <div class="assessment-exam__order-head">
                       <div>
-                        <p class="eyebrow">题号速切</p>
-                        <h3>按题号直接切换，整卷三十题一眼可见</h3>
+                        <p class="eyebrow">题号</p>
+                        <h3>点题号切换</h3>
                       </div>
 
                       <div class="assessment-exam__order-side">
@@ -1129,7 +1121,7 @@ onBeforeUnmount(() => {
                           :aria-expanded="shouldShowExamOrderDetails ? 'true' : 'false'"
                           @click="toggleExamOrderCollapsed"
                         >
-                          {{ shouldShowExamOrderDetails ? '收起题卷目录' : '打开题卷目录' }}
+                          {{ shouldShowExamOrderDetails ? '收起' : '展开' }}
                         </button>
                       </div>
                     </div>
@@ -1140,7 +1132,7 @@ onBeforeUnmount(() => {
                       class="assessment-exam__catalog-entry"
                       @click="toggleExamOrderCollapsed"
                     >
-                      <span>题卷目录</span>
+                      <span>题号</span>
                       <strong>{{ examOrderCollapsedSummaryText }}</strong>
                     </button>
 
@@ -1671,6 +1663,12 @@ onBeforeUnmount(() => {
 
 .assessment-exam__overview-toggle {
   display: none;
+}
+
+.assessment-exam__meta-item--wide,
+.assessment-exam__mobile-summary-item--wide,
+.assessment-exam__chapter-desc {
+  grid-column: 1 / -1;
 }
 
 .assessment-exam__time-card,
@@ -2699,6 +2697,7 @@ onBeforeUnmount(() => {
 
 .assessment-exam__time-card span,
 .assessment-exam__time-card strong,
+.assessment-exam__mobile-summary span,
 .assessment-exam__progress-meta span,
 .assessment-exam__chapter-meta span,
 .assessment-ready__notice,
@@ -2870,8 +2869,8 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__overview-head {
-    /* 这里把标题和倒计时区改成上下排列，避免窄屏横排互相挤压。 */
-    grid-template-columns: minmax(0, 1fr);
+    /* 这里使用双列布局，标题区域占主要宽度，临时退出按钮在右侧方便点击。 */
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 0.42fr);
     align-items: stretch;
     gap: 12px;
   }
@@ -2880,7 +2879,7 @@ onBeforeUnmount(() => {
 
   .assessment-exam__overview-side {
     display: grid;
-    /* 这里让顶部默认只保留退出按钮，展开更多信息后也不会把弹窗撑宽。 */
+    /* 这里让顶部右侧操作自己成列，不影响左侧章节摘要。 */
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: 8px;
@@ -2909,8 +2908,8 @@ onBeforeUnmount(() => {
 
   .assessment-exam__mobile-summary {
     display: grid;
-    /* 这里顶部常驻只显示当前章节、已答数量和未答数量三项，减少答题区占高。 */
-    grid-template-columns: 1fr;
+    /* 这里采用双列布局，章节名称较长时独占整行，已答和未答并排展示。 */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin-top: 12px;
   }
@@ -2944,8 +2943,8 @@ onBeforeUnmount(() => {
 
   .assessment-exam__progress-meta {
     display: grid;
-    /* 这里把更多统计收进折叠区，展开后单列显示，避免再次挤占宽度。 */
-    grid-template-columns: minmax(0, 1fr);
+    /* 这里更多统计也走双列，记录方式这类长文本按特殊情况跨两列。 */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -2959,21 +2958,17 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__section-track {
-    display: flex;
-    /* 这里把章节卡片改成横向滑动队列，避免七个章节一起挤在一屏里。 */
+    display: grid;
+    /* 这里章节列表改为双列卡片，七章中的最后一张按自然规则落到下一行。 */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin-inline: -4px;
     padding: 0 4px 2px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
   }
 
   .assessment-exam__section-pill {
-    /* 这里固定每张章节卡的可读宽度，让章节标题不会被压到只剩半截。 */
-    flex: 0 0 min(150px, 44vw);
-    scroll-snap-align: start;
+    /* 这里取消横向滑动宽度，交给双列网格平均分配。 */
+    min-width: 0;
   }
 
   .assessment-exam__body {
@@ -2990,12 +2985,27 @@ onBeforeUnmount(() => {
     border-radius: 22px;
   }
 
+  .assessment-exam__chapter-head,
+  .assessment-exam__order-head {
+    /* 这里章节标题和展开按钮也保持双列，标题长时自动换行。 */
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 0.42fr);
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .assessment-exam__chapter-meta {
+    display: grid;
+    /* 这里章节详情采用双列，进度说明较长时跨两列显示。 */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .assessment-exam__question-workspace { gap: 10px; }
 
   .assessment-exam__order-card:has(.assessment-exam__order-grid) {
     position: fixed;
     right: 10px;
-    bottom: calc(78px + env(safe-area-inset-bottom));
+    bottom: calc(14px + env(safe-area-inset-bottom));
     left: 10px;
     z-index: 22;
     max-height: min(62vh, 460px);
@@ -3005,7 +3015,10 @@ onBeforeUnmount(() => {
     animation: assessment-catalog-rise 0.28s ease both;
   }
 
-  .assessment-exam__order-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .assessment-exam__order-grid {
+    /* 这里题号按钮采用五列，是题号网格的特殊情况，比双列更容易一次看清三十题。 */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 
   .assessment-exam__actions--dialog {
     position: relative;
@@ -3033,13 +3046,6 @@ onBeforeUnmount(() => {
   .assessment-exam__actions--dialog .ink-button--secondary:last-child {
     /* 这里让最后一题的交卷按钮整行显示，降低手机端误触上一题和交卷的概率。 */
     grid-column: 1 / -1;
-  }
-
-  .assessment-exam__chapter-head,
-  .assessment-exam__order-head {
-    /* 这里让章节标题和展开按钮上下排布，避免按钮把标题顶出弹窗。 */
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
   }
 
   .assessment-exam__order-side {
