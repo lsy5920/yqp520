@@ -30,12 +30,12 @@ export const rosterBondOptions: RosterBondOption[] = [
 
 // 这里定义卡片封面选项，手机端名帖会用它切换高级视觉。
 export const rosterCoverOptions: RosterCoverOption[] = [
-  { key: 'mist', label: '云雾玄墨', gradient: 'linear-gradient(145deg, #111827, #28445f 52%, #d9b56d)' },
-  { key: 'sword', label: '剑影鎏金', gradient: 'linear-gradient(145deg, #0b1020, #4a1f2b 55%, #d6a84f)' },
-  { key: 'bamboo', label: '竹影青玉', gradient: 'linear-gradient(145deg, #0d1f1a, #1f6b5f 58%, #d7c58b)' },
-  { key: 'moon', label: '月下霜蓝', gradient: 'linear-gradient(145deg, #101827, #315f85 58%, #f1e6c9)' },
-  { key: 'gold', label: '金榜题名', gradient: 'linear-gradient(145deg, #1d1308, #805b25 55%, #f6d78b)' },
-  { key: 'jade', label: '白玉留痕', gradient: 'linear-gradient(145deg, #10201f, #7aa89b 55%, #f8edd2)' },
+  { key: 'mist', label: '云雾玄墨', gradient: 'linear-gradient(145deg, #f7fbf5, #d9efea 46%, #2f8f87)' },
+  { key: 'sword', label: '剑影鎏金', gradient: 'linear-gradient(145deg, #fff8e8, #e9d7ad 48%, #5f6f5f)' },
+  { key: 'bamboo', label: '竹影青玉', gradient: 'linear-gradient(145deg, #f5fbf2, #bfe2d6 52%, #1f6f67)' },
+  { key: 'moon', label: '月下霜蓝', gradient: 'linear-gradient(145deg, #f8fbfb, #d7edf0 50%, #527e8b)' },
+  { key: 'gold', label: '金榜题名', gradient: 'linear-gradient(145deg, #fff8e9, #ead7a7 50%, #8b6f35)' },
+  { key: 'jade', label: '白玉留痕', gradient: 'linear-gradient(145deg, #fbfaf2, #cfe8df 50%, #6e9f92)' },
 ]
 
 // 这里定义登记步骤，手机端卷轴表单按这个顺序展示。

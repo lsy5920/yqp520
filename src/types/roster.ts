@@ -250,12 +250,12 @@ export const defaultRosterRegistrationPosterTemplate: RosterRegistrationPosterTe
 // 这里提供封面渐变查询给需要纯类型文件导入的旧组件兜底。
 export function resolveRosterCoverGradient(coverKey: RosterCoverKey): string {
   const gradientMap: Record<RosterCoverKey, string> = {
-    mist: 'linear-gradient(145deg, #111827, #28445f 52%, #d9b56d)',
-    sword: 'linear-gradient(145deg, #0b1020, #4a1f2b 55%, #d6a84f)',
-    bamboo: 'linear-gradient(145deg, #0d1f1a, #1f6b5f 58%, #d7c58b)',
-    moon: 'linear-gradient(145deg, #101827, #315f85 58%, #f1e6c9)',
-    gold: 'linear-gradient(145deg, #1d1308, #805b25 55%, #f6d78b)',
-    jade: 'linear-gradient(145deg, #10201f, #7aa89b 55%, #f8edd2)',
+    mist: 'linear-gradient(145deg, #f7fbf5, #d9efea 46%, #2f8f87)',
+    sword: 'linear-gradient(145deg, #fff8e8, #e9d7ad 48%, #5f6f5f)',
+    bamboo: 'linear-gradient(145deg, #f5fbf2, #bfe2d6 52%, #1f6f67)',
+    moon: 'linear-gradient(145deg, #f8fbfb, #d7edf0 50%, #527e8b)',
+    gold: 'linear-gradient(145deg, #fff8e9, #ead7a7 50%, #8b6f35)',
+    jade: 'linear-gradient(145deg, #fbfaf2, #cfe8df 50%, #6e9f92)',
   }
   return gradientMap[coverKey]
 }
