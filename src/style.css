@@ -1514,7 +1514,47 @@ img {
   min-width: 0;
 }
 
+/* 云栖名册全页顶部空白修复：外层主内容区已经给固定导航预留高度，名册子页面不再重复留大空白。 */
+.roster-mobile-page,
+.roster-admin-page {
+  padding-top: 0 !important;
+}
+
+/* 云栖名册审核台外壳修复：让审核台和登记、列表页面一样紧贴导航下方开始展示。 */
+.roster-admin-shell {
+  width: min(1180px, 100%) !important;
+  margin: 0 auto !important;
+}
+
+/* 云栖名册审核台空态修复：没有选中名帖时不再撑出大片空白，只保留提示卡片高度。 */
+.roster-admin-editor--empty {
+  min-height: 0 !important;
+  align-items: center !important;
+}
+
+/* 云栖名册审核台列表修复：记录较少时让列表自然收起，避免左栏出现无意义空白。 */
+.roster-admin-list {
+  align-content: start !important;
+}
+
 @media (min-width: 900px) {
+  .roster-list-page.roster-mobile-page,
+  .roster-registration-page.roster-mobile-page,
+  .roster-detail-page.roster-mobile-page,
+  .roster-admin-page {
+    padding-top: 0 !important;
+  }
+
+  .roster-list-page .roster-list-hero,
+  .roster-registration-page .roster-hero-card,
+  .roster-detail-page .roster-detail-card {
+    top: 0 !important;
+  }
+
+  .roster-list-page .roster-search-panel {
+    top: 0 !important;
+  }
+
   .roster-list-page .roster-list-content {
     grid-column: 2 !important;
     align-self: start !important;

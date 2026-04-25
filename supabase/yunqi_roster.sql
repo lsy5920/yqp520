@@ -15,6 +15,15 @@ begin
 end;
 $$;
 
+-- 这里清洗旧表迁移文本，避免旧姓名带着多余空格进入新版真实姓名字段。
+create or replace function public.clean_yunqi_roster_legacy_text(input_text text)
+returns text
+language sql
+immutable
+as $$
+  select trim(regexp_replace(coalesce(input_text, ''), '\s+', ' ', 'g'));
+$$;
+
 -- 这里保留管理员资料表，继续复用现有 Supabase 登录体系。
 create table if not exists public.yunqi_roster_admin_profiles (
   id uuid primary key default gen_random_uuid(),
@@ -213,7 +222,7 @@ begin
     select
       coalesce(nullif(public_slug, ''), 'legacy-' || id::text),
       coalesce(nullif(daohao, ''), nullif(secular_name, ''), '旧名册同门'),
-      '云栖旧友',
+      coalesce(nullif(secular_name, ''), '待补真实姓名'),
       case
         when coalesce(position_key, '') in ('yunsi_wen') then 'strategist'
         when coalesce(position_key, '') in ('yunsi_shi') then 'guardian'
@@ -245,6 +254,15 @@ begin
       coalesce(updated_at, timezone('utc', now()))
     from public.yunqi_roster_entries
     on conflict (public_slug) do nothing;
+
+    -- 这里补救已经迁移过的旧数据：如果真实姓名字段仍是旧默认值，就从旧表 secular_name 安全回填。
+    update public.yunqi_roster_cards as card
+    set title_name = public.clean_yunqi_roster_legacy_text(old_entry.secular_name),
+        internal_note = trim(card.internal_note || '；已从旧表回填真实姓名。')
+    from public.yunqi_roster_entries as old_entry
+    where card.public_slug = coalesce(nullif(old_entry.public_slug, ''), 'legacy-' || old_entry.id::text)
+      and public.clean_yunqi_roster_legacy_text(old_entry.secular_name) <> ''
+      and card.title_name in ('云栖旧友', '云栖同门', '待补真实姓名');
   end if;
 end;
 $$;

@@ -1,4 +1,4 @@
-﻿# 云栖派官方网站
+# 云栖派官方网站
 
 ## 项目介绍
 这是一个为“云栖派”打造的官方官网项目，用来展示门派世界观、立派全典、门规禁律、宗门日常与合并后的入派考核页，并提供统一水墨侠气风格的首页海报、问心榜海报、江湖名帖海报能力、`云栖名册` 线上入册能力与全局背景音乐播放能力。
@@ -688,6 +688,27 @@ for insert
 to anon, authenticated
 with check (status = 'pending' and is_public = false);
 ```
+
+### 旧俗家姓名没有显示到真实姓名怎么办
+如果已经执行过旧版迁移脚本，旧表 `yunqi_roster_entries.secular_name` 可能只进入了内部备注，没有进入新版 `yunqi_roster_cards.title_name`。请在 Supabase SQL Editor 执行下面补救脚本，脚本只会回填仍是旧默认值的记录，不会覆盖已经人工修改过的真实姓名：
+
+```sql
+create or replace function public.clean_yunqi_roster_legacy_text(input_text text)
+returns text
+language sql
+immutable
+as $
+  select trim(regexp_replace(coalesce(input_text, ''), '\s+', ' ', 'g'));
+$;
+
+update public.yunqi_roster_cards as card
+set title_name = public.clean_yunqi_roster_legacy_text(old_entry.secular_name),
+    internal_note = trim(card.internal_note || '；已从旧表回填真实姓名。')
+from public.yunqi_roster_entries as old_entry
+where card.public_slug = coalesce(nullif(old_entry.public_slug, ''), 'legacy-' || old_entry.id::text)
+  and public.clean_yunqi_roster_legacy_text(old_entry.secular_name) <> ''
+  and card.title_name in ('云栖旧友', '云栖同门', '待补真实姓名');
+```
 ## 更新日志
 2026-04-21 23:14 【初次发布】完成云栖派官网首版开发，落地六个核心页面、统一青金云海视觉风格、滚动动效与移动端适配。  
 2026-04-21 23:15 【新增】新增海报分享生成器、背景音乐播放器与首页启播引导，并补齐完整中文 README、安装教程、使用说明与排错文档。  
@@ -799,4 +820,5 @@ with check (status = 'pending' and is_public = false);
 2026-04-25 11:34 【优化】压缩云栖名册公开列表页电脑端顶部与筛选下方空白，将列表页悬浮操作按钮改为底部居中显示，并把歌词浮层改为右侧竖排云签样式，避免遮挡主要内容。
 2026-04-25 11:42 【修复】修复云栖名册公开列表页右侧搜索区与卡片区被左侧大标题卡撑出大空白的问题，将右侧内容重组为独立列；同时修复歌词浮层竖排显示异常，改为逐字自上而下单列展示。
 2026-04-25 11:45 【修复】修复云栖名册登记页基础信息仍显示“称号”的遗漏问题，登记页、搜索框、后台编辑、校验提示和中文注释已统一为“真实姓名”，并顺手修复公开名录页模板少闭合标签导致构建失败的问题。
-
+2026-04-25 12:00 【修复】修复云栖名册审核台、登记页、公开列表和详情页顶部重复留白问题，减少导航下方大片空白；同时修复递交名帖校验失败会跳回第一步的问题，改为保留当前填写步骤，并修复成功弹窗中文乱码。
+2026-04-25 11:50 【修复】修复旧名册迁移时俗家姓名未进入新版真实姓名字段的问题，迁移脚本改为把 secular_name 写入 title_name，并新增已迁移数据的安全回填 SQL，不覆盖人工修改过的真实姓名。

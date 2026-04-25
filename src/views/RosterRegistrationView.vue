@@ -227,7 +227,6 @@ async function handleSubmit(): Promise<void> {
   const errors = validateRosterCardForm(formValue.value)
   if (errors.length > 0) {
     errorList.value = errors
-    activeStepKey.value = 'basic'
     return
   }
 
@@ -403,13 +402,13 @@ async function handleSubmit(): Promise<void> {
       </section>
     </section>
 
-    <div v-if="successMessage" class="roster-success-dialog" role="dialog" aria-modal="true" aria-label="??????">
+    <div v-if="successMessage" class="roster-success-dialog" role="dialog" aria-modal="true" aria-label="名帖递交成功">
       <div class="roster-success-dialog__card">
-        <span>?????</span>
-        <h2>???????</h2>
+        <span>已登记</span>
+        <h2>名帖已递交，待审核</h2>
         <p>{{ successMessage }}</p>
-        <small v-if="successReceiptCode">?????{{ successReceiptCode }}</small>
-        <button type="button" class="roster-button" @click="successMessage = ''">????</button>
+        <small v-if="successReceiptCode">回执号：{{ successReceiptCode }}</small>
+        <button type="button" class="roster-button" @click="successMessage = ''">我知道了</button>
       </div>
     </div>
   </main>
