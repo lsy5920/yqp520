@@ -410,29 +410,30 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
 
 @media (max-width: 720px) {
   .assessment-question-card {
-    gap: 13px;
-    padding: 18px 14px 16px;
-    border-radius: 26px;
+    gap: 10px;
+    padding: 14px 12px 12px;
+    border-radius: 22px;
   }
 
   .assessment-question-card::before {
-    inset: 8px;
-    border-radius: 18px;
+    inset: 7px;
+    border-radius: 16px;
   }
 
   .assessment-question-card__head {
     align-items: flex-start;
     flex-direction: column;
-    padding-right: 54px;
+    gap: 8px;
+    padding-right: 44px;
   }
 
   .assessment-question-card::after {
-    top: 14px;
-    right: 14px;
-    width: 46px;
-    height: 46px;
-    border-radius: 16px;
-    font-size: 0.72rem;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    font-size: 0.66rem;
   }
 
   .assessment-question-card__score {
@@ -440,26 +441,27 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   }
 
   .assessment-question-card__title {
-    font-size: 1.08rem;
-    line-height: 1.62;
+    font-size: 1rem;
+    line-height: 1.5;
   }
 
   .assessment-question-card__hint {
-    font-size: 0.88rem;
-    line-height: 1.65;
-    padding: 10px 12px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    padding: 8px 10px;
+    border-radius: 14px;
   }
 
   .assessment-question-card__options {
-    gap: 10px;
+    gap: 8px;
   }
 
   .assessment-question-card__option {
     align-items: center;
-    min-height: 60px;
-    padding: 12px;
-    gap: 10px;
-    border-radius: 20px;
+    min-height: 50px;
+    padding: 10px;
+    gap: 8px;
+    border-radius: 17px;
   }
 
   .assessment-question-card__option:hover:not(:disabled) {
@@ -467,23 +469,23 @@ function handleOptionClick(optionId: string, event?: MouseEvent): void {
   }
 
   .assessment-question-card__badge {
-    width: 32px;
-    height: 32px;
-    border-radius: 11px;
-    font-size: 0.82rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    font-size: 0.78rem;
   }
 
   .assessment-question-card__option-text {
-    line-height: 1.62;
-    font-size: 0.94rem;
+    line-height: 1.5;
+    font-size: 0.9rem;
   }
 
   .assessment-question-card__index,
   .assessment-question-card__type,
   .assessment-question-card__score {
-    min-height: 30px;
-    padding: 0 10px;
-    font-size: 0.78rem;
+    min-height: 28px;
+    padding: 0 9px;
+    font-size: 0.74rem;
   }
 }
 

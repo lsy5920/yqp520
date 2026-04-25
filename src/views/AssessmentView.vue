@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AssessmentQuestionCard from '@/components/assessment/AssessmentQuestionCard.vue'
@@ -56,14 +56,8 @@ const examSectionSwitchSource = ref<ExamSectionSwitchSource>('dialog-open')
 // 这里记录当前是否处于手机端答题布局，方便只在小屏启用折叠交互。
 const isExamMobileLayout = ref<boolean>(false)
 
-// 这里记录当前章作答情况卡片在手机端是否收起，默认进入答题时先收起。
-const isExamChapterCollapsed = ref<boolean>(false)
-
-// 这里记录题号速切区在手机端是否收起，默认进入答题时先收起。
-const isExamOrderCollapsed = ref<boolean>(false)
-
-// 这里记录答题弹窗顶部更多信息在手机端是否收起，默认只保留当前章节、已答和未答。
-const isExamOverviewCollapsed = ref<boolean>(false)
+// 这里记录题卷抽屉是否打开，手机端默认关闭，避免章节和题号区域挤占答题首屏。
+const isExamNavigatorOpen = ref<boolean>(false)
 
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
@@ -74,7 +68,6 @@ useRevealMotion({
 const {
   answeredCount,
   currentSection,
-  currentSectionAnsweredCount,
   currentSectionIndex,
   currentSectionQuestions,
   formatDuration,
@@ -151,38 +144,6 @@ const activeExamQuestionFlatIndex = computed<number>(() => (
 ))
 
 /**
- * 当前题目在本章节内的位置
- * 用途：答题区展示“本章第几题”，让用户更容易判断当前进度
- */
-const activeExamQuestionIndexInSection = computed<number>(() => (
-  currentSectionQuestions.value.findIndex((question) => question.id === activeExamQuestionId.value)
-))
-
-/**
- * 当前题目章节内位置文本
- * 用途：答题头部直接显示本题处于当前章节的第几题
- */
-const activeExamQuestionSectionProgressText = computed<string>(() => {
-  if (!activeExamQuestion.value || activeExamQuestionIndexInSection.value < 0) {
-    return ''
-  }
-
-  return `本章第 ${activeExamQuestionIndexInSection.value + 1} / ${currentSectionQuestions.value.length} 题`
-})
-
-/**
- * 当前章节收起摘要
- * 用途：手机端收起本章作答情况卡片时，仍保留一行关键进度信息
- */
-const examChapterCollapsedSummaryText = computed<string>(() => {
-  if (!currentSection.value) {
-    return ''
-  }
-
-  return `本章 ${currentSectionAnsweredCount.value} / ${currentSection.value.questions.length} 题`
-})
-
-/**
  * 当前是否已到整卷第一题
  * 用途：控制答题底部“上一题”按钮是否禁用
  */
@@ -217,47 +178,17 @@ const examQuestionOrderList = computed(() => flatExamQuestions.value.map((questi
 }))
 
 /**
- * 题号速切区收起摘要
- * 用途：手机端默认收起题号区时，仍用一行摘要提示当前题号与整卷进度
- */
-const examOrderCollapsedSummaryText = computed<string>(() => {
-  const summaryParts = [`已答 ${answeredCount.value} / ${totalQuestions.value} 题`]
-
-  if (activeExamQuestion.value) {
-    summaryParts.unshift(`当前第 ${activeExamQuestion.value.order} 题`)
-  }
-
-  return summaryParts.join(' · ')
-})
-
-/**
  * 当前章节名称
  * 用途：答题弹窗顶部常驻展示当前章节名称；入参无；返回值为章节标题文本
  */
 const currentSectionTitleText = computed<string>(() => currentSection.value?.title || '当前章节')
 
 /**
- * 顶部更多信息是否应显示完整内容
- * 用途：电脑端始终展开，手机端默认收起倒计时、记录方式和章节横向列表；入参无；返回值为是否展示详情
+ * 题卷导航是否应完整显示
+ * 用途：电脑端常驻显示题卷，手机端只有打开抽屉时显示；入参无；返回值为是否显示完整导航
  */
-const shouldShowExamOverviewDetails = computed<boolean>(() => (
-  !isExamMobileLayout.value || !isExamOverviewCollapsed.value
-))
-
-/**
- * 当前章作答情况区是否应显示完整内容
- * 用途：电脑端始终展开，手机端按折叠开关决定显示详情还是摘要
- */
-const shouldShowExamChapterDetails = computed<boolean>(() => (
-  !isExamMobileLayout.value || !isExamChapterCollapsed.value
-))
-
-/**
- * 题号速切区是否应显示完整内容
- * 用途：电脑端始终展开，手机端按折叠开关决定显示题号网格还是摘要
- */
-const shouldShowExamOrderDetails = computed<boolean>(() => (
-  !isExamMobileLayout.value || !isExamOrderCollapsed.value
+const shouldShowExamNavigator = computed<boolean>(() => (
+  !isExamMobileLayout.value || isExamNavigatorOpen.value
 ))
 
 /**
@@ -373,6 +304,9 @@ function handleSelectExamSection(
   preferredQuestionId = '',
   switchSource: ExamSectionSwitchSource = 'manual',
 ): void {
+  // 这里先关闭手机端题卷抽屉，保证切章后立刻回到单题答题舞台。
+  isExamNavigatorOpen.value = false
+
   if (sectionIndex === currentSectionIndex.value) {
     if (preferredQuestionId) {
       syncActiveExamQuestion(preferredQuestionId)
@@ -403,6 +337,9 @@ function handleSelectExamQuestion(questionId: string): void {
   if (!matchedQuestion) {
     return
   }
+
+  // 这里先关闭手机端题卷抽屉，避免点题号后抽屉继续挡住题目。
+  isExamNavigatorOpen.value = false
 
   if (matchedQuestion.sectionIndex !== currentSectionIndex.value) {
     handleSelectExamSection(matchedQuestion.sectionIndex, matchedQuestion.id, 'question-nav')
@@ -510,9 +447,7 @@ function syncExamMobileLayout(): void {
   isExamMobileLayout.value = window.innerWidth <= 720
 
   if (!isExamMobileLayout.value) {
-    isExamOverviewCollapsed.value = false
-    isExamChapterCollapsed.value = false
-    isExamOrderCollapsed.value = false
+    isExamNavigatorOpen.value = true
     return
   }
 
@@ -530,55 +465,23 @@ function syncExamMobileLayout(): void {
  */
 function resetExamMobilePanels(): void {
   if (!isExamMobileLayout.value) {
-    isExamOverviewCollapsed.value = false
-    isExamChapterCollapsed.value = false
-    isExamOrderCollapsed.value = false
+    isExamNavigatorOpen.value = true
     return
   }
 
-  isExamOverviewCollapsed.value = true
-  isExamChapterCollapsed.value = true
-  isExamOrderCollapsed.value = true
+  isExamNavigatorOpen.value = false
 }
 
 /**
- * 切换弹窗顶部更多信息区
- * 用途：手机端点击后展开或收起顶部倒计时、记录方式和章节进度；入参无；返回值无返回值
+ * 切换题卷抽屉
+ * 用途：手机端点击后打开或关闭章节与题号总览，电脑端保持常驻显示；入参无；返回值无返回值
  */
-function toggleExamOverviewCollapsed(): void {
+function toggleExamNavigator(): void {
   if (!isExamMobileLayout.value) {
     return
   }
 
-  isExamOverviewCollapsed.value = !isExamOverviewCollapsed.value
-}
-
-/**
- * 切换当前章作答情况区
- * 用途：手机端点击后展开或收起当前章节说明与作答信息，桌面端保持始终展开
- * 入参：无
- * 返回值：无返回值
- */
-function toggleExamChapterCollapsed(): void {
-  if (!isExamMobileLayout.value) {
-    return
-  }
-
-  isExamChapterCollapsed.value = !isExamChapterCollapsed.value
-}
-
-/**
- * 切换题号速切区
- * 用途：手机端点击后展开或收起整卷题号网格，减少答题时的垂直占用
- * 入参：无
- * 返回值：无返回值
- */
-function toggleExamOrderCollapsed(): void {
-  if (!isExamMobileLayout.value) {
-    return
-  }
-
-  isExamOrderCollapsed.value = !isExamOrderCollapsed.value
+  isExamNavigatorOpen.value = !isExamNavigatorOpen.value
 }
 
 /**
@@ -988,84 +891,36 @@ onBeforeUnmount(() => {
           <div class="assessment-exam-dialog__backdrop" aria-hidden="true"></div>
 
           <div ref="examDialogPanelRef" class="assessment-exam-dialog__panel">
-            <section class="assessment-exam assessment-exam--dialog">
+            <section class="assessment-exam assessment-exam--immersive">
               <div class="assessment-exam__mist" aria-hidden="true"></div>
 
-              <header class="assessment-exam__topbar">
-                <div class="assessment-exam__title-block">
-                  <p class="eyebrow">答题进行中</p>
-                  <h2 :id="'assessment-exam-dialog-title'">{{ participantTitle }} · 正在问心</h2>
-                  <p v-if="activeExamQuestion" class="assessment-exam__now-text">
-                    第 {{ activeExamQuestion.order }} 题 · {{ currentSectionTitleText }}
-                  </p>
+              <header class="assessment-exam__hud" aria-label="答题状态">
+                <div class="assessment-exam__hud-title">
+                  <p class="eyebrow">问心试炼</p>
+                  <h2 :id="'assessment-exam-dialog-title'">{{ participantTitle }}</h2>
+                  <span v-if="activeExamQuestion">第 {{ activeExamQuestion.order }} 题 · {{ currentSectionTitleText }}</span>
                 </div>
 
-                <div class="assessment-exam__time-orb" :class="{ 'assessment-exam__time-orb--warning': isAssessmentTimeRunningLow }">
+                <div class="assessment-exam__hud-time" :class="{ 'assessment-exam__hud-time--warning': isAssessmentTimeRunningLow }">
                   <span>剩余</span>
                   <strong>{{ remainingTimeText }}</strong>
                 </div>
 
-                <button
-                  type="button"
-                  class="assessment-exam__temporary-exit"
-                  @click="temporarilyExitExamDialog"
-                >
-                  临时退出
+                <button type="button" class="assessment-exam__hud-button" @click="toggleExamNavigator">
+                  题卷
+                </button>
+
+                <button type="button" class="assessment-exam__hud-button assessment-exam__hud-button--ghost" @click="temporarilyExitExamDialog">
+                  退出
                 </button>
               </header>
 
-              <section class="assessment-exam__status-stage" aria-label="答题状态">
-                <div class="assessment-exam__progress-ribbon" aria-hidden="true">
-                  <span :style="{ width: `${Math.max(4, Math.round((answeredCount / Math.max(totalQuestions, 1)) * 100))}%` }"></span>
-                </div>
+              <div class="assessment-exam__thin-progress" aria-hidden="true">
+                <span :style="{ width: `${Math.max(4, Math.round((answeredCount / Math.max(totalQuestions, 1)) * 100))}%` }"></span>
+              </div>
 
-                <div class="assessment-exam__mobile-summary">
-                  <span class="assessment-exam__mobile-summary-item assessment-exam__mobile-summary-item--wide">{{ currentSectionTitleText }}</span>
-                  <span>已答 {{ answeredCount }}</span>
-                  <span>未答 {{ unansweredCount }}</span>
-                </div>
-
-                <button
-                  v-if="isExamMobileLayout"
-                  type="button"
-                  class="assessment-exam__overview-toggle"
-                  :aria-expanded="shouldShowExamOverviewDetails ? 'true' : 'false'"
-                  @click="toggleExamOverviewCollapsed"
-                >
-                  {{ shouldShowExamOverviewDetails ? '收起更多' : '展开更多' }}
-                </button>
-
-                <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__overview-drawer">
-                  <div class="assessment-exam__progress-meta">
-                    <span>第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
-                    <span>共 {{ totalQuestions }} 题</span>
-                    <span class="assessment-exam__meta-item--wide">{{ storageModeText }}</span>
-                  </div>
-
-                  <div class="assessment-exam__section-track">
-                    <button
-                      v-for="section in sectionProgressList"
-                      :key="section.id"
-                      type="button"
-                      class="assessment-exam__section-pill"
-                      :class="{
-                        'assessment-exam__section-pill--active': section.isActive,
-                        'assessment-exam__section-pill--started': section.isStarted && !section.isCompleted,
-                        'assessment-exam__section-pill--completed': section.isCompleted,
-                      }"
-                      :aria-pressed="section.isActive ? 'true' : 'false'"
-                      @click="handleSelectExamSection(section.index)"
-                    >
-                      <p>{{ section.eyebrow }}</p>
-                      <strong>{{ section.title }}</strong>
-                      <span>{{ section.answeredCount }} / {{ section.questionCount }}</span>
-                    </button>
-                  </div>
-                </div>
-              </section>
-
-              <main ref="examBodyRef" class="assessment-exam__body">
-                <section ref="examQuestionListRef" class="assessment-exam__question-workspace">
+              <main ref="examBodyRef" class="assessment-exam__immersive-body">
+                <section ref="examQuestionListRef" class="assessment-exam__single-stage">
                   <Transition name="assessment-question-switch" mode="out-in">
                     <AssessmentQuestionCard
                       v-if="activeExamQuestion"
@@ -1108,81 +963,44 @@ onBeforeUnmount(() => {
                   </nav>
                 </section>
 
-                <aside v-if="currentSection" class="assessment-exam__side-panel">
-                  <article class="assessment-exam__chapter-card">
-                    <div class="assessment-exam__chapter-head">
-                      <div class="assessment-exam__chapter-title">
-                        <p class="eyebrow">{{ currentSection.eyebrow }}</p>
-                        <h2>{{ currentSection.title }}</h2>
+                <Transition name="assessment-navigator-rise">
+                  <aside v-if="shouldShowExamNavigator" class="assessment-exam__navigator" aria-label="题卷导航">
+                    <div class="assessment-exam__navigator-head">
+                      <div>
+                        <p class="eyebrow">题卷</p>
+                        <h3>{{ currentSectionTitleText }}</h3>
                       </div>
+                      <button v-if="isExamMobileLayout" type="button" @click="toggleExamNavigator">收起</button>
+                    </div>
 
+                    <div class="assessment-exam__navigator-meta">
+                      <span>已答 {{ answeredCount }}</span>
+                      <span>未答 {{ unansweredCount }}</span>
+                      <span>第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
+                      <span>共 {{ totalQuestions }} 题</span>
+                    </div>
+
+                    <div class="assessment-exam__navigator-section-grid">
                       <button
-                        v-if="isExamMobileLayout"
+                        v-for="section in sectionProgressList"
+                        :key="section.id"
                         type="button"
-                        class="assessment-exam__compact-toggle"
-                        :aria-expanded="shouldShowExamChapterDetails ? 'true' : 'false'"
-                        @click="toggleExamChapterCollapsed"
+                        class="assessment-exam__section-pill"
+                        :class="{
+                          'assessment-exam__section-pill--active': section.isActive,
+                          'assessment-exam__section-pill--started': section.isStarted && !section.isCompleted,
+                          'assessment-exam__section-pill--completed': section.isCompleted,
+                        }"
+                        :aria-pressed="section.isActive ? 'true' : 'false'"
+                        @click="handleSelectExamSection(section.index)"
                       >
-                        {{ shouldShowExamChapterDetails ? '收起' : '展开' }}
+                        <p>{{ section.eyebrow }}</p>
+                        <strong>{{ section.title }}</strong>
+                        <span>{{ section.answeredCount }} / {{ section.questionCount }}</span>
                       </button>
                     </div>
 
-                    <p v-if="isExamMobileLayout && !shouldShowExamChapterDetails" class="assessment-exam__compact-summary">
-                      {{ examChapterCollapsedSummaryText }}
-                    </p>
-
-                    <template v-if="shouldShowExamChapterDetails">
-                      <p class="assessment-exam__chapter-desc">{{ currentSection.description }}</p>
-                      <div class="assessment-exam__chapter-meta">
-                        <span>本章 {{ currentSection.questions.length }} 题</span>
-                        <span>已答 {{ currentSectionAnsweredCount }}</span>
-                        <span v-if="activeExamQuestion">第 {{ activeExamQuestion.order }} 题</span>
-                        <span v-if="activeExamQuestionSectionProgressText" class="assessment-exam__meta-item--wide">{{ activeExamQuestionSectionProgressText }}</span>
-                      </div>
-                    </template>
-                  </article>
-
-                  <article class="assessment-exam__order-card">
-                    <div class="assessment-exam__order-head">
-                      <div>
-                        <p class="eyebrow">题号</p>
-                        <h3>点题号切换</h3>
-                      </div>
-
-                      <div class="assessment-exam__order-side">
-                        <div v-if="shouldShowExamOrderDetails" class="assessment-exam__order-legend">
-                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--active">当前</span>
-                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--answered">已答</span>
-                          <span class="assessment-exam__legend-chip assessment-exam__legend-chip--pending">未答</span>
-                        </div>
-
-                        <button
-                          v-if="isExamMobileLayout"
-                          type="button"
-                          class="assessment-exam__compact-toggle"
-                          :aria-expanded="shouldShowExamOrderDetails ? 'true' : 'false'"
-                          @click="toggleExamOrderCollapsed"
-                        >
-                          {{ shouldShowExamOrderDetails ? '收起' : '展开' }}
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      v-if="isExamMobileLayout && !shouldShowExamOrderDetails"
-                      type="button"
-                      class="assessment-exam__catalog-entry"
-                      @click="toggleExamOrderCollapsed"
-                    >
-                      <span>题号</span>
-                      <strong>{{ examOrderCollapsedSummaryText }}</strong>
-                    </button>
-
-                    <p v-if="!isExamMobileLayout && !shouldShowExamOrderDetails" class="assessment-exam__compact-summary">
-                      {{ examOrderCollapsedSummaryText }}
-                    </p>
-
-                    <div v-if="shouldShowExamOrderDetails" class="assessment-exam__order-grid">
+                    <div class="assessment-exam__order-grid">
                       <button
                         v-for="question in examQuestionOrderList"
                         :key="question.id"
@@ -1199,8 +1017,8 @@ onBeforeUnmount(() => {
                         {{ question.order }}
                       </button>
                     </div>
-                  </article>
-                </aside>
+                  </aside>
+                </Transition>
               </main>
             </section>
           </div>
@@ -3778,6 +3596,321 @@ onBeforeUnmount(() => {
   .assessment-exam__section-pill,
   .assessment-exam__progress-ribbon span {
     transition: none;
+  }
+}
+
+/* 这里是全新单题沉浸弹窗，覆盖旧答题弹窗的堆叠式布局。 */
+.assessment-exam--immersive {
+  position: relative;
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* 这里让顶部只承担状态展示，不再放章节卡片和题号卡片。 */
+.assessment-exam__hud {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(116px, auto) minmax(76px, auto) minmax(70px, auto);
+  gap: 10px;
+  align-items: stretch;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(83, 145, 138, 0.2);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.92), transparent 34%),
+    linear-gradient(145deg, rgba(250, 255, 252, 0.9), rgba(218, 241, 235, 0.82));
+  box-shadow: 0 16px 34px rgba(55, 115, 112, 0.14);
+  animation: assessment-panel-rise 0.42s ease both;
+}
+
+.assessment-exam__hud-title {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.assessment-exam__hud-title .eyebrow,
+.assessment-exam__hud-title h2,
+.assessment-exam__hud-title span {
+  margin: 0;
+}
+
+.assessment-exam__hud-title h2 {
+  color: #173d42;
+  font-size: clamp(1.05rem, 2.2vw, 1.8rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.assessment-exam__hud-title span {
+  color: rgba(35, 83, 86, 0.68);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.assessment-exam__hud-time,
+.assessment-exam__hud-button {
+  display: grid;
+  place-items: center;
+  min-height: 56px;
+  border: 1px solid rgba(83, 145, 138, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #173d42;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.assessment-exam__hud-time {
+  gap: 2px;
+  background: linear-gradient(145deg, rgba(230, 250, 245, 0.96), rgba(154, 211, 202, 0.76));
+}
+
+.assessment-exam__hud-time span {
+  font-size: 0.72rem;
+  color: rgba(35, 83, 86, 0.68);
+}
+
+.assessment-exam__hud-time strong {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.assessment-exam__hud-time--warning {
+  border-color: rgba(183, 119, 52, 0.4);
+  background: linear-gradient(145deg, rgba(255, 247, 230, 0.98), rgba(236, 199, 135, 0.8));
+  animation: assessment-time-pulse 1.45s ease-in-out infinite;
+}
+
+.assessment-exam__hud-button {
+  padding: 0 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+}
+
+.assessment-exam__hud-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(60, 118, 114, 0.16);
+}
+
+.assessment-exam__hud-button--ghost {
+  color: rgba(35, 83, 86, 0.78);
+}
+
+/* 这里是极细进度条，减少首屏占高。 */
+.assessment-exam__thin-progress {
+  position: relative;
+  z-index: 2;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(83, 145, 138, 0.14);
+}
+
+.assessment-exam__thin-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5aa799, #d8b972, #8bd0cb);
+  box-shadow: 0 0 18px rgba(90, 167, 153, 0.34);
+  transition: width 0.34s ease;
+  animation: assessment-progress-glow 2.4s ease-in-out infinite;
+}
+
+/* 这里是单题主舞台，题目永远在首位。 */
+.assessment-exam__immersive-body {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.36fr);
+  gap: 12px;
+  overflow: hidden;
+}
+
+.assessment-exam__single-stage {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 2px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(83, 145, 138, 0.28) transparent;
+}
+
+/* 这里是题卷抽屉，电脑端作为右侧导航，手机端变为底部抽屉。 */
+.assessment-exam__navigator {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  border: 1px solid rgba(83, 145, 138, 0.18);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.88), transparent 34%),
+    linear-gradient(180deg, rgba(245, 255, 251, 0.9), rgba(218, 241, 235, 0.82));
+  box-shadow: 0 18px 42px rgba(55, 115, 112, 0.14);
+}
+
+.assessment-exam__navigator-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.assessment-exam__navigator-head .eyebrow,
+.assessment-exam__navigator-head h3 {
+  margin: 0;
+}
+
+.assessment-exam__navigator-head h3 {
+  color: #173d42;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.assessment-exam__navigator-head button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(83, 145, 138, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #1d5659;
+  font-weight: 800;
+}
+
+.assessment-exam__navigator-meta,
+.assessment-exam__navigator-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.assessment-exam__navigator-meta span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(83, 145, 138, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: rgba(23, 61, 66, 0.78);
+  font-size: 0.82rem;
+}
+
+.assessment-navigator-rise-enter-active,
+.assessment-navigator-rise-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.assessment-navigator-rise-enter-from,
+.assessment-navigator-rise-leave-to {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+@keyframes assessment-progress-glow {
+  0%, 100% { filter: saturate(1); }
+  50% { filter: saturate(1.3) brightness(1.08); }
+}
+
+@media (max-width: 720px) {
+  .assessment-exam-dialog__panel {
+    padding: 8px;
+  }
+
+  .assessment-exam--immersive {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .assessment-exam__hud {
+    grid-template-columns: minmax(0, 1fr) minmax(72px, auto) minmax(58px, auto) minmax(52px, auto);
+    gap: 6px;
+    padding: 8px;
+    border-radius: 18px;
+  }
+
+  .assessment-exam__hud-title h2 {
+    font-size: 0.96rem;
+  }
+
+  .assessment-exam__hud-title span {
+    font-size: 0.74rem;
+  }
+
+  .assessment-exam__hud-time,
+  .assessment-exam__hud-button {
+    min-height: 46px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+  }
+
+  .assessment-exam__hud-time strong {
+    font-size: 1rem;
+  }
+
+  .assessment-exam__thin-progress {
+    height: 6px;
+  }
+
+  .assessment-exam__immersive-body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .assessment-exam__single-stage {
+    gap: 8px;
+    overflow-y: auto;
+    padding: 0 1px 8px;
+  }
+
+  .assessment-exam__navigator {
+    position: fixed;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 30;
+    max-height: min(68vh, 520px);
+    padding: 12px;
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.92), transparent 34%),
+      linear-gradient(180deg, rgba(245, 255, 251, 0.97), rgba(218, 241, 235, 0.94));
+    box-shadow: 0 26px 70px rgba(34, 82, 82, 0.32);
+  }
+
+  .assessment-exam__navigator-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assessment-exam__order-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .assessment-exam__actions--dialog {
+    gap: 8px;
+    padding: 9px;
+    border-radius: 18px;
+  }
+
+  .assessment-exam__actions--dialog .ink-button {
+    min-height: 46px;
+    font-size: 0.88rem;
   }
 }
 </style>
