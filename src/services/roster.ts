@@ -265,10 +265,17 @@ export async function getCurrentRosterAdminProfile(): Promise<RosterAdminProfile
  * 返回值：返回管理员资料
  */
 export async function requireRosterAdminProfile(): Promise<RosterAdminProfile> {
+  const supabase = getSupabaseClient()
+  const { data: sessionData } = await supabase.auth.getSession()
+  const userId = sessionData.session?.user.id || ''
+  const email = sessionData.session?.user.email || ''
   const profile = await getCurrentRosterAdminProfile()
 
   if (!profile) {
-    throw new Error('当前账号没有名册审核权限，请联系宗门管理员开通。')
+    const sqlHint = userId
+      ? `请先在 Supabase SQL Editor 执行：insert into public.yunqi_roster_admin_profiles (user_id, email, display_name, role, is_active) values ('${userId}', '${email}', '云栖执事', '名册执事', true) on conflict (user_id) do update set email = excluded.email, display_name = excluded.display_name, role = excluded.role, is_active = true;`
+      : '请先确认已经用 Supabase Auth 邮箱密码登录。'
+    throw new Error(`当前账号没有名册审核权限。${sqlHint}`)
   }
 
   return profile
@@ -596,5 +603,6 @@ export async function deleteAdminRosterEntry(entryId: string): Promise<string> {
 
   return entryId
 }
+
 
 

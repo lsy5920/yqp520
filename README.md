@@ -661,6 +661,21 @@ drop function if exists public.admin_delete_roster_entry(uuid);
 - 前端会自动清理旧版名帖草稿、旧归档、旧名帖状态和旧考核草稿，不会修改任何 Supabase 数据库表、函数、策略或 SQL 文件。
 - 如果想确认新版效果，请分别打开 云栖海报、入派考核结果、江湖名帖、名册公开详情 和 名册公开名录 查看对应海报预览。
 
+
+### 审核台登录失败怎么办
+如果 `/roster/admin/login` 输入邮箱密码后仍进不去，最常见原因是这个 Supabase Auth 用户还没有写入 `yunqi_roster_admin_profiles` 执事白名单。新版页面会直接显示可复制的 SQL，其中包含当前登录账号的 `user_id` 和邮箱。把提示里的 SQL 复制到 Supabase 的 `SQL Editor` 执行一次，再回到登录页重新登录即可。
+
+也可以手动执行下面模板，注意把 `user_id` 替换成 Supabase `Authentication -> Users` 里的用户编号：
+
+```sql
+insert into public.yunqi_roster_admin_profiles (user_id, email, display_name, role, is_active)
+values ('替换成你的 auth.users.id', '你的登录邮箱', '云栖执事', '名册执事', true)
+on conflict (user_id) do update
+set email = excluded.email,
+    display_name = excluded.display_name,
+    role = excluded.role,
+    is_active = true;
+```
 ## 更新日志
 2026-04-21 23:14 【初次发布】完成云栖派官网首版开发，落地六个核心页面、统一青金云海视觉风格、滚动动效与移动端适配。  
 2026-04-21 23:15 【新增】新增海报分享生成器、背景音乐播放器与首页启播引导，并补齐完整中文 README、安装教程、使用说明与排错文档。  
@@ -764,3 +779,4 @@ drop function if exists public.admin_delete_roster_entry(uuid);
 2026-04-25 10:45 【删除】删除云栖海报页面顶部使用说明区块及对应旧说明数据，页面进入后直接显示海报填写与预览功能，不影响保存、分享和二维码能力。
 2026-04-25 10:35 【优化】重构云栖名册为手机端江湖卡册，删除前端旧道号、堂口、文牒号等旧数据结构，新增五步卷轴登记、沉浸式公开卡册、名帖详情抽屉、新版执事审核台、新名帖海报、新 Supabase 名帖表与旧表迁移桥，并已通过 npm run build 验证。
 2026-04-25 10:50 【优化】优化云栖名册整体配色为站点背景图同款雾白、淡青绿与深青墨，增强名册登记、公开卡册、详情页、海报和执事审核台文字对比，并新增 PC 端舒展多列布局，避免电脑端过窄或文字看不清。
+2026-04-25 10:58 【修复】优化云栖名册审核台登录失败提示，未加入执事白名单时直接展示可复制的 Supabase 授权 SQL，并同步补充 README 登录排错说明。
