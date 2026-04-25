@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   AssessmentOption,
   AssessmentPaperConfig,
   AssessmentQuestion,
@@ -582,7 +582,7 @@ export const assessmentQuestions: AssessmentQuestion[] = [
 // 这里定义整套考核规则与页面文案，页面展示和结果海报都会从这里读取。
 export const assessmentPaperConfig: AssessmentPaperConfig = {
   version: 'assessment-v1',
-  title: '云栖派问心考核',
+  title: '云栖问心榜',
   lead: '这一卷不为难人，只核对门风、门规、禁律与来去之义是否已经看明白。',
   note: '固定标准题卷 · 满分一百 · 八十分合格 · 限时十分钟',
   durationMinutes: 10,
@@ -618,14 +618,14 @@ export const assessmentPaperConfig: AssessmentPaperConfig = {
   passResultLead: '此卷已过，说明你已明白云栖门风与相处底线，可以从容入门。',
   failResultLead: '此卷未过，不必着急。先去立派全典对照原文，再沉住气来一遍，门风会更扎实。',
   resultPoster: {
-    title: '云栖派问心考核',
-    subtitle: '问心而入 · 以诚为先',
+    title: '云栖问心榜',
+    subtitle: '一卷问心 · 照见本真',
     signature: '云栖派 · 问心录',
-    qrLabel: '扫码赴考',
+    qrLabel: '扫码再问心',
     exportWidth: 1080,
     exportHeight: 1350,
-    passHeadline: '考核已过',
-    failHeadline: '再温原文',
+    passHeadline: '准入山门',
+    failHeadline: '再温原典',
     passCopy: '已知门风，可从容入云栖。',
     failCopy: '未过不急，先读原文，再来问心。',
   },
@@ -637,3 +637,4 @@ export const assessmentContent = {
   sections: assessmentSections,
   questions: assessmentQuestions,
 }
+

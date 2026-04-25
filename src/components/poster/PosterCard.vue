@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 /**
  * 组件入参类型
- * 用途：约束海报预览组件需要的展示数据
+ * 用途：约束普通分享海报需要接收的全部展示内容
  */
 interface PosterCardProps {
   /** 用途：同门称呼 */
@@ -27,173 +27,100 @@ interface PosterCardProps {
 }
 
 const props = withDefaults(defineProps<PosterCardProps>(), {
-  title: '亲爱的同门',
-  message: '愿你在云栖派的每一步，都有热爱、有成长、有回响。',
-  headline: '云栖同道帖',
-  subtitle: '把此刻的祝福留给同路人',
-  signature: '云栖派官网',
+  title: '云中同道',
+  message: '愿你心有山河，身在烟火，仍能守住一寸清明与热忱。',
+  headline: '云栖江湖令',
+  subtitle: '一纸入云栖 · 同道共此心',
+  signature: '云栖派山门',
   qrCodeUrl: '',
-  qrLabel: '扫码入云栖',
-  qrHint: '云栖首页网址',
+  qrLabel: '扫码入山门',
+  qrHint: '云栖首页引路',
   reduceMotion: false,
 })
 
-/** 用途：立派四句总旨，直接取自门派原文。 */
-const credoLines = [
-  '心随云闲，身自安然',
-  '同道相守，不缚尘烦',
-  '无拘无束，以诚为先',
-  '相聚随心，来去随缘',
-]
+/** 用途：海报中固定展示的江湖信条，帮助画面形成门派气质。 */
+const creedList = ['心随云闲', '身自安然', '以诚为先', '来去随缘']
 
 /**
- * 规范化称呼显示
- * 用途：空值时给出友好兜底
+ * 清洗短文本
+ * 用途：把用户输入整理成可安全展示的短句
+ * 入参：value 为原始文本，fallback 为兜底文本
+ * 返回值：返回去掉空格后的文本，空值时返回兜底文本
  */
-const displayTitle = computed<string>(() => props.title?.trim() || '亲爱的同门')
+function normalizeText(value: string | undefined, fallback: string): string {
+  // 这里处理空输入，避免海报出现空白标题。
+  return value?.trim() || fallback
+}
 
-/**
- * 规范化寄语显示
- * 用途：空值时给出友好兜底
- */
-const displayMessage = computed<string>(() => props.message?.trim() || '愿你在云栖派的每一步，都有热爱、有成长、有回响。')
+/** 用途：展示用称呼，空值时使用默认江湖称呼。 */
+const displayTitle = computed<string>(() => normalizeText(props.title, '云中同道'))
 
-/**
- * 规范化主标题显示
- * 用途：让海报标题始终有清晰抬头
- */
-const displayHeadline = computed<string>(() => props.headline?.trim() || '云栖同道帖')
+/** 用途：展示用寄语，空值时使用新版江湖风格文案。 */
+const displayMessage = computed<string>(() => normalizeText(props.message, '愿你心有山河，身在烟火，仍能守住一寸清明与热忱。'))
 
-/**
- * 规范化副标题显示
- * 用途：空值时给出门派风格兜底
- */
-const displaySubtitle = computed<string>(() => props.subtitle?.trim() || '把此刻的祝福留给同路人')
+/** 用途：展示用主标题，空值时使用新版令牌标题。 */
+const displayHeadline = computed<string>(() => normalizeText(props.headline, '云栖江湖令'))
 
-/**
- * 规范化网址显示
- * 用途：把首页链接放到更宽的独立区域里，避免长链接被截断
- */
-const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首页网址')
+/** 用途：展示用副标题，空值时使用新版入山文案。 */
+const displaySubtitle = computed<string>(() => normalizeText(props.subtitle, '一纸入云栖 · 同道共此心'))
+
+/** 用途：展示用二维码提示，空值时说明扫码去向。 */
+const displayQrHint = computed<string>(() => normalizeText(props.qrHint, '云栖首页引路'))
+
+/** 用途：展示用落款，空值时使用山门落款。 */
+const displaySignature = computed<string>(() => normalizeText(props.signature, '云栖派山门'))
 </script>
 
 <template>
-  <article
-    class="poster-card"
-    :class="{ 'poster-card--reduced': reduceMotion }"
-    aria-label="海报预览"
-  >
-    <div class="poster-card__halo poster-card__halo--top" aria-hidden="true" />
-    <div class="poster-card__halo poster-card__halo--bottom" aria-hidden="true" />
-    <div class="poster-card__cloud-band" aria-hidden="true" />
-    <div class="poster-card__mountains" aria-hidden="true" />
-    <div class="poster-card__border" aria-hidden="true" />
-    <div class="poster-card__gold-trace poster-card__gold-trace--left" aria-hidden="true" />
-    <div class="poster-card__gold-trace poster-card__gold-trace--right" aria-hidden="true" />
+  <article class="poster-card" :class="{ 'poster-card--reduced': reduceMotion }" aria-label="云栖江湖令海报预览">
+    <div class="poster-card__paper-texture" aria-hidden="true" />
+    <div class="poster-card__ink-mountain poster-card__ink-mountain--back" aria-hidden="true" />
+    <div class="poster-card__ink-mountain poster-card__ink-mountain--front" aria-hidden="true" />
+    <div class="poster-card__mist poster-card__mist--top" aria-hidden="true" />
+    <div class="poster-card__mist poster-card__mist--bottom" aria-hidden="true" />
+    <div class="poster-card__gold-border" aria-hidden="true" />
 
     <div class="poster-card__content">
-      <header class="poster-card__masthead">
+      <header class="poster-card__header">
         <div class="poster-card__title-block">
           <p class="poster-card__eyebrow">{{ displayHeadline }}</p>
           <h3 class="poster-card__title">{{ displayTitle }}</h3>
           <p class="poster-card__subtitle">{{ displaySubtitle }}</p>
         </div>
 
-        <div class="poster-card__seal-panel">
-          <div class="poster-card__seal">
-            <img src="/images/yunqi-logo.png" alt="云栖派 logo" />
-          </div>
-          <p class="poster-card__seal-copy">青金山门帖</p>
+        <div class="poster-card__seal">
+          <img src="/images/yunqi-logo.png" alt="云栖派标识" />
+          <span>云栖令</span>
         </div>
       </header>
 
-      <section class="poster-card__hero">
-        <section class="poster-card__scroll">
-          <div class="poster-card__scroll-head">
-            <span class="poster-card__section-label">同道寄语</span>
-            <span class="poster-card__scroll-line" />
-          </div>
+      <section class="poster-card__edict">
+        <div class="poster-card__edict-side" aria-hidden="true">令</div>
+        <div class="poster-card__edict-main">
+          <p class="poster-card__section-label">江湖题赠</p>
           <p class="poster-card__message">“{{ displayMessage }}”</p>
-          <div class="poster-card__scroll-footer">
-            <p class="poster-card__motto">云深不问俗事，栖心只守本真。</p>
-            <span class="poster-card__scroll-seal">半文半白立派全典</span>
-          </div>
-        </section>
-
-        <aside class="poster-card__hero-side">
-          <section class="poster-card__side-card">
-            <p class="poster-card__section-label">门派总旨</p>
-            <div class="poster-card__credo-list">
-              <span
-                v-for="line in credoLines"
-                :key="line"
-                class="poster-card__credo-item"
-              >
-                {{ line }}
-              </span>
-            </div>
-          </section>
-
-          <section class="poster-card__side-card poster-card__side-card--ornament">
-            <div class="poster-card__ornament" aria-hidden="true">
-              <span class="poster-card__ornament-ring" />
-              <span class="poster-card__ornament-ring poster-card__ornament-ring--inner" />
-              <span class="poster-card__ornament-core" />
-            </div>
-            <p class="poster-card__ornament-title">同道相守</p>
-            <p class="poster-card__ornament-copy">无拘无束，以诚为先；相聚随心，来去随缘。</p>
-          </section>
-        </aside>
+          <p class="poster-card__motto">云深不问俗事，栖心只守本真。</p>
+        </div>
       </section>
 
-      <section class="poster-card__story">
-        <div class="poster-card__story-main">
-          <p class="poster-card__section-label">山门题记</p>
-          <p class="poster-card__story-title">云栖无山，以心为山；宗门无殿，以情为殿。</p>
-          <p class="poster-card__story-copy">我辈聚于此，不为争霸江湖，不为扬名立万，只为在浮躁世间留一处可以放心相处、安心停靠的人情之地。</p>
-        </div>
-
-        <div class="poster-card__story-side">
-          <span class="poster-card__story-tag">清净同道</span>
-          <span class="poster-card__story-tag">不负相逢</span>
-          <span class="poster-card__story-tag">以诚为先</span>
-        </div>
+      <section class="poster-card__creed-row" aria-label="云栖信条">
+        <span v-for="item in creedList" :key="item" class="poster-card__creed-item">{{ item }}</span>
       </section>
 
       <footer class="poster-card__footer">
-        <div class="poster-card__footer-left">
-          <div class="poster-card__signature-group">
-            <p class="poster-card__section-label">落款</p>
-            <div class="poster-card__signature-line" />
-            <p class="poster-card__signature">{{ signature }}</p>
-          </div>
-
-          <div class="poster-card__url-strip">
-            <div class="poster-card__url-head">
-              <span class="poster-card__url-label">山门首页</span>
-              <span class="poster-card__url-tip">海报扫码默认回到首页</span>
-            </div>
-            <p class="poster-card__url-text">{{ displayQrHint }}</p>
-          </div>
+        <div class="poster-card__signature">
+          <span>{{ displaySignature }}</span>
+          <small>水墨侠气新版海报</small>
         </div>
 
         <div class="poster-card__qr-panel">
-          <div class="poster-card__qr-shell">
-            <img
-              v-if="qrCodeUrl"
-              class="poster-card__qr-image"
-              :src="qrCodeUrl"
-              alt="云栖首页二维码"
-            />
-            <div v-else class="poster-card__qr-placeholder" aria-hidden="true">
-              云
-            </div>
+          <div class="poster-card__qr-box">
+            <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="云栖派二维码" />
+            <span v-else>栖</span>
           </div>
-
           <div class="poster-card__qr-copy">
-            <p class="poster-card__section-label">山门引路</p>
             <strong>{{ qrLabel }}</strong>
-            <span>扫码即可直达云栖首页，先入山门，再观全典。</span>
+            <span>{{ displayQrHint }}</span>
           </div>
         </div>
       </footer>
@@ -204,727 +131,276 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || '云栖首�
 <style scoped>
 .poster-card {
   position: relative;
-  overflow: hidden;
   width: 100%;
   height: 100%;
-  border-radius: 32px;
+  overflow: hidden;
+  border-radius: 34px;
+  color: #2b2118;
   background:
-    radial-gradient(circle at 18% 10%, rgba(139, 208, 203, 0.22), transparent 24%),
-    radial-gradient(circle at 82% 12%, rgba(216, 185, 114, 0.22), transparent 22%),
-    linear-gradient(180deg, #f7fcf8 0%, #e7f5ef 46%, #d7ece8 100%);
-  box-shadow: 0 28px 72px rgba(42, 101, 101, 0.22);
-  color: #173d42;
+    radial-gradient(circle at 16% 10%, rgba(179, 30, 24, 0.16), transparent 23%),
+    radial-gradient(circle at 86% 18%, rgba(188, 145, 65, 0.24), transparent 24%),
+    linear-gradient(145deg, #f8eed7 0%, #ead8b8 48%, #d9c195 100%);
+  box-shadow: 0 30px 72px rgba(13, 10, 6, 0.34);
 }
 
-.poster-card__halo,
-.poster-card__cloud-band,
-.poster-card__mountains,
-.poster-card__border,
-.poster-card__gold-trace {
+.poster-card__paper-texture,
+.poster-card__ink-mountain,
+.poster-card__mist,
+.poster-card__gold-border {
   position: absolute;
   pointer-events: none;
 }
 
-.poster-card__halo {
-  width: 340px;
-  height: 340px;
-  border-radius: 999px;
-  filter: blur(40px);
-  animation: poster-halo-breathe 7s ease-in-out infinite;
-}
-
-.poster-card__halo--top {
-  top: -80px;
-  right: -60px;
-  background: rgba(216, 185, 114, 0.18);
-}
-
-.poster-card__halo--bottom {
-  bottom: 160px;
-  left: -100px;
-  background: rgba(139, 208, 203, 0.16);
-  animation-delay: -2.4s;
-}
-
-.poster-card__cloud-band {
-  inset: 140px 68px auto;
-  height: 190px;
-  border-radius: 999px;
+.poster-card__paper-texture {
+  inset: 0;
   background:
-    radial-gradient(circle at 12% 52%, rgba(255, 255, 255, 0.16), transparent 22%),
-    radial-gradient(circle at 38% 44%, rgba(255, 255, 255, 0.12), transparent 18%),
-    radial-gradient(circle at 62% 58%, rgba(255, 255, 255, 0.14), transparent 20%),
-    radial-gradient(circle at 88% 46%, rgba(255, 255, 255, 0.1), transparent 18%);
-  filter: blur(26px);
-  opacity: 0.7;
-  animation: poster-cloud-drift 10s ease-in-out infinite;
+    linear-gradient(90deg, rgba(78, 52, 29, 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(78, 52, 29, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.34), transparent 18%),
+    radial-gradient(circle at 78% 74%, rgba(79, 50, 24, 0.10), transparent 22%);
+  background-size: 36px 36px, 42px 42px, auto, auto;
+  mix-blend-mode: multiply;
+  opacity: 0.56;
 }
 
-.poster-card__mountains {
-  inset: auto 0 0 0;
-  height: 20%;
-  background:
-    linear-gradient(155deg, transparent 0 18%, rgba(4, 17, 25, 0.95) 18% 100%),
-    linear-gradient(24deg, transparent 0 22%, rgba(8, 27, 36, 0.98) 22% 100%),
-    linear-gradient(180deg, transparent 0 22%, rgba(2, 11, 17, 0.94) 22% 100%);
-  clip-path: polygon(0 100%, 0 72%, 12% 54%, 28% 76%, 47% 38%, 64% 82%, 82% 46%, 100% 74%, 100% 100%);
-  opacity: 0.92;
+.poster-card__ink-mountain {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.82;
 }
 
-.poster-card__border {
-  inset: 22px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  border-radius: 28px;
+.poster-card__ink-mountain--back {
+  height: 34%;
+  background: linear-gradient(180deg, rgba(43, 33, 24, 0), rgba(43, 33, 24, 0.34));
+  clip-path: polygon(0 100%, 0 62%, 13% 42%, 30% 68%, 46% 28%, 64% 66%, 80% 36%, 100% 64%, 100% 100%);
 }
 
-.poster-card__gold-trace {
-  width: 1px;
-  background: linear-gradient(180deg, rgba(216, 185, 114, 0), rgba(216, 185, 114, 0.68), rgba(216, 185, 114, 0));
-  opacity: 0.5;
+.poster-card__ink-mountain--front {
+  height: 24%;
+  background: linear-gradient(180deg, rgba(25, 20, 16, 0), rgba(25, 20, 16, 0.74));
+  clip-path: polygon(0 100%, 0 70%, 18% 46%, 36% 74%, 54% 38%, 74% 78%, 90% 52%, 100% 72%, 100% 100%);
 }
 
-.poster-card__gold-trace--left {
-  top: 120px;
-  bottom: 220px;
-  left: 54px;
+.poster-card__mist {
+  width: 420px;
+  height: 120px;
+  border-radius: 999px;
+  background: rgba(255, 248, 230, 0.42);
+  filter: blur(22px);
+  animation: poster-card-mist 8s ease-in-out infinite;
 }
 
-.poster-card__gold-trace--right {
+.poster-card__mist--top {
   top: 170px;
-  bottom: 180px;
-  right: 54px;
+  left: -70px;
+}
+
+.poster-card__mist--bottom {
+  right: -80px;
+  bottom: 240px;
+  animation-delay: -3s;
+}
+
+.poster-card__gold-border {
+  inset: 26px;
+  border: 2px solid rgba(143, 98, 35, 0.45);
+  border-radius: 28px;
+  box-shadow: inset 0 0 0 1px rgba(255, 246, 209, 0.45);
 }
 
 .poster-card__content {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  gap: 24px;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 26px;
   height: 100%;
-  padding: 42px 42px 38px;
+  padding: 58px 58px 46px;
 }
 
-.poster-card__masthead {
+.poster-card__header,
+.poster-card__footer {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
 }
 
-.poster-card__title-block {
+.poster-card__title-block,
+.poster-card__edict-main,
+.poster-card__signature,
+.poster-card__qr-copy {
   display: grid;
-  gap: 12px;
-  max-width: 620px;
+  gap: 10px;
 }
 
 .poster-card__eyebrow,
-.poster-card__title,
 .poster-card__subtitle,
-.poster-card__message,
-.poster-card__motto,
 .poster-card__section-label,
-.poster-card__story-title,
-.poster-card__story-copy,
-.poster-card__signature {
+.poster-card__motto,
+.poster-card__signature small,
+.poster-card__qr-copy span {
   margin: 0;
+  color: rgba(73, 47, 25, 0.72);
+  letter-spacing: 0.12em;
 }
 
 .poster-card__eyebrow,
-.poster-card__section-label,
-.poster-card__seal-copy {
-  font-size: 13px;
-  letter-spacing: 0.22em;
-  color: rgba(139, 208, 203, 0.88);
+.poster-card__section-label {
+  font-size: 28px;
+  font-weight: 800;
+  color: #8f241d;
 }
 
 .poster-card__title {
-  font-size: clamp(60px, 8.2vw, 96px);
-  line-height: 1.02;
-  letter-spacing: 0.04em;
+  margin: 0;
+  font-size: 92px;
+  line-height: 1.04;
+  letter-spacing: 0.08em;
+  color: #221812;
+  text-shadow: 0 4px 0 rgba(255, 246, 209, 0.48);
 }
 
 .poster-card__subtitle {
-  font-size: 18px;
-  line-height: 1.8;
-  color: rgba(35, 83, 86, 0.72);
-}
-
-.poster-card__seal-panel {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
+  font-size: 28px;
 }
 
 .poster-card__seal {
   display: grid;
-  width: 118px;
-  height: 118px;
   place-items: center;
-  border: 1px solid rgba(216, 185, 114, 0.42);
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 34% 30%, rgba(216, 185, 114, 0.32), transparent 30%),
-    linear-gradient(160deg, rgba(12, 44, 58, 0.94), rgba(6, 20, 28, 0.98));
-  color: #1c5558;
-  font-size: 28px;
-  letter-spacing: 0.14em;
-  box-shadow:
-    inset 0 0 0 10px rgba(216, 185, 114, 0.08),
-    0 18px 36px rgba(0, 0, 0, 0.24);
-  animation: poster-seal-float 6s ease-in-out infinite;
+  gap: 8px;
+  width: 150px;
+  height: 170px;
+  border: 2px solid rgba(143, 36, 29, 0.55);
+  border-radius: 26px;
+  color: #8f241d;
+  background: rgba(255, 246, 229, 0.44);
+  transform: rotate(4deg);
 }
 
-.poster-card__hero {
+.poster-card__seal img {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+}
+
+.poster-card__seal span {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.poster-card__edict {
   display: grid;
-  grid-template-columns: minmax(0, 1.24fr) minmax(260px, 0.76fr);
-  gap: 22px;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 28px;
+  align-items: stretch;
   min-height: 0;
+  padding: 34px;
+  border: 1px solid rgba(143, 98, 35, 0.34);
+  border-radius: 34px;
+  background: rgba(255, 248, 230, 0.62);
+  box-shadow: inset 0 0 40px rgba(104, 67, 28, 0.08);
 }
 
-.poster-card__scroll {
-  position: relative;
+.poster-card__edict-side {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 24px;
-  min-height: 0;
-  padding: 34px 34px 30px;
-  border-radius: 30px;
-  background:
-    linear-gradient(180deg, rgba(247, 239, 219, 0.96), rgba(229, 212, 176, 0.94)),
-    rgba(247, 239, 219, 0.94);
-  color: #173241;
-  box-shadow:
-    inset 0 0 0 1px rgba(165, 123, 52, 0.18),
-    0 24px 44px rgba(0, 0, 0, 0.18);
-}
-
-.poster-card__scroll::before,
-.poster-card__scroll::after {
-  content: '';
-  position: absolute;
-  top: 26px;
-  bottom: 26px;
-  width: 10px;
+  place-items: center;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(184, 145, 74, 0.62), rgba(109, 76, 24, 0.2));
-}
-
-.poster-card__scroll::before {
-  left: 12px;
-}
-
-.poster-card__scroll::after {
-  right: 12px;
-}
-
-.poster-card__scroll-head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.poster-card__scroll-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(151, 98, 31, 0.56), rgba(151, 98, 31, 0));
+  color: #f7ead1;
+  background: linear-gradient(180deg, #8f241d, #531811);
+  font-size: 72px;
+  font-weight: 900;
+  writing-mode: vertical-rl;
 }
 
 .poster-card__message {
-  align-self: center;
-  font-size: clamp(30px, 4.4vw, 52px);
-  line-height: 1.78;
-  color: #173241;
-  white-space: pre-wrap;
-}
-
-.poster-card__scroll-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  margin: 0;
+  font-size: 54px;
+  line-height: 1.42;
+  font-weight: 900;
+  color: #2b2118;
 }
 
 .poster-card__motto {
-  color: rgba(151, 98, 31, 0.96);
-  font-size: 17px;
-  letter-spacing: 0.08em;
-}
-
-.poster-card__scroll-seal {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(151, 98, 31, 0.16);
-  color: rgba(151, 98, 31, 0.92);
-  font-size: 14px;
-  letter-spacing: 0.08em;
-}
-
-.poster-card__hero-side {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
-}
-
-.poster-card__side-card {
-  display: grid;
-  gap: 18px;
-  padding: 24px 22px;
-  border-radius: 28px;
-  border: 1px solid rgba(216, 185, 114, 0.18);
-  background:
-    linear-gradient(180deg, rgba(247, 252, 248, 0.9), rgba(222, 242, 236, 0.94)),
-    rgba(236, 248, 244, 0.72);
-  backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 16px 36px rgba(42, 101, 101, 0.12);
-}
-
-.poster-card__credo-list {
-  display: grid;
-  gap: 12px;
-}
-
-.poster-card__credo-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 62px;
-  padding: 0 16px;
-  border: 1px solid rgba(216, 185, 114, 0.18);
-  border-radius: 999px;
-  background: rgba(229, 246, 240, 0.78);
-  color: #1c5558;
-  font-size: 17px;
-  letter-spacing: 0.06em;
-  text-align: center;
-}
-
-.poster-card__side-card--ornament {
-  justify-items: center;
-  align-content: center;
-  text-align: center;
-}
-
-.poster-card__ornament {
-  position: relative;
-  display: grid;
-  width: 188px;
-  height: 188px;
-  place-items: center;
-}
-
-.poster-card__ornament-ring,
-.poster-card__ornament-core {
-  position: absolute;
-  border-radius: 999px;
-}
-
-.poster-card__ornament-ring {
-  inset: 0;
-  border: 1px solid rgba(216, 185, 114, 0.28);
-  box-shadow: inset 0 0 0 12px rgba(216, 185, 114, 0.04);
-  animation: poster-ring-spin 15s linear infinite;
-}
-
-.poster-card__ornament-ring--inner {
-  inset: 22px;
-  border-color: rgba(139, 208, 203, 0.18);
-  animation-direction: reverse;
-  animation-duration: 10s;
-}
-
-.poster-card__ornament-core {
-  inset: 48px;
-  background:
-    radial-gradient(circle at 38% 32%, rgba(216, 185, 114, 0.38), transparent 34%),
-    linear-gradient(180deg, rgba(238, 249, 245, 0.96), rgba(199, 231, 226, 0.98));
-  border: 1px solid rgba(139, 208, 203, 0.18);
-}
-
-.poster-card__ornament-title {
-  margin: 0;
-  color: #1c5558;
+  align-self: end;
   font-size: 24px;
-  letter-spacing: 0.16em;
 }
 
-.poster-card__ornament-copy {
-  margin: 0;
-  color: rgba(35, 83, 86, 0.74);
-  font-size: 15px;
-  line-height: 1.9;
-}
-
-.poster-card__story {
+.poster-card__creed-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 20px;
-}
-
-.poster-card__story-main {
-  display: grid;
-  gap: 12px;
-  padding: 24px 26px;
-  border-radius: 26px;
-  border: 1px solid rgba(139, 208, 203, 0.14);
-  background: rgba(239, 249, 246, 0.72);
-}
-
-.poster-card__story-title {
-  color: #173d42;
-  font-size: 29px;
-  line-height: 1.65;
-}
-
-.poster-card__story-copy {
-  color: rgba(35, 83, 86, 0.72);
-  font-size: 16px;
-  line-height: 1.9;
-}
-
-.poster-card__story-side {
-  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  align-content: center;
 }
 
-.poster-card__story-tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 54px;
-  padding: 0 14px;
+.poster-card__creed-item {
+  display: grid;
+  place-items: center;
+  min-height: 76px;
+  border: 1px solid rgba(143, 98, 35, 0.34);
   border-radius: 999px;
-  border: 1px solid rgba(216, 185, 114, 0.2);
-  background: rgba(229, 246, 240, 0.78);
-  color: rgba(216, 185, 114, 0.96);
-  font-size: 15px;
-  letter-spacing: 0.1em;
+  color: #3d2a1b;
+  background: rgba(255, 248, 230, 0.54);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
-.poster-card__footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 292px;
-  gap: 20px;
-  align-items: stretch;
+.poster-card__signature span {
+  color: #2b2118;
+  font-size: 28px;
+  font-weight: 900;
 }
 
-.poster-card__footer-left {
-  display: grid;
-  gap: 16px;
-}
-
-.poster-card__signature-group {
-  display: grid;
-  gap: 12px;
-}
-
-.poster-card__signature-line {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(216, 185, 114, 0.5), rgba(216, 185, 114, 0.02));
-}
-
-.poster-card__signature {
-  color: rgba(35, 83, 86, 0.72);
-  font-size: 17px;
-}
-
-.poster-card__url-strip {
-  display: grid;
-  gap: 10px;
-  padding: 18px 20px;
-  border-radius: 24px;
-  border: 1px solid rgba(216, 185, 114, 0.16);
-  background:
-    linear-gradient(180deg, rgba(248, 253, 249, 0.92), rgba(224, 243, 237, 0.96)),
-    rgba(236, 248, 244, 0.76);
-}
-
-.poster-card__url-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.poster-card__url-label {
-  color: rgba(216, 185, 114, 0.96);
-  font-size: 16px;
-  letter-spacing: 0.14em;
-}
-
-.poster-card__url-tip {
-  color: rgba(54, 116, 116, 0.7);
-  font-size: 13px;
-}
-
-.poster-card__url-text {
-  margin: 0;
-  color: rgba(35, 83, 86, 0.82);
-  font-size: 15px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+.poster-card__signature small,
+.poster-card__qr-copy span {
+  font-size: 18px;
 }
 
 .poster-card__qr-panel {
   display: grid;
-  gap: 16px;
-  align-content: center;
+  grid-template-columns: 150px 1fr;
+  gap: 18px;
+  align-items: center;
+  max-width: 390px;
   padding: 18px;
-  border: 1px solid rgba(216, 185, 114, 0.22);
-  border-radius: 28px;
-  background: rgba(239, 249, 246, 0.84);
-  backdrop-filter: blur(12px);
+  border-radius: 26px;
+  background: rgba(255, 248, 230, 0.66);
+  border: 1px solid rgba(143, 98, 35, 0.34);
 }
 
-.poster-card__qr-shell {
+.poster-card__qr-box {
   display: grid;
-  width: 138px;
-  height: 138px;
   place-items: center;
-  padding: 8px;
+  width: 150px;
+  height: 150px;
   border-radius: 22px;
-  background: rgba(244, 239, 226, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(216, 185, 114, 0.18);
+  background: #fff8e8;
+  color: #8f241d;
+  font-size: 62px;
+  font-weight: 900;
 }
 
-.poster-card__qr-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 12px;
-}
-
-.poster-card__qr-placeholder {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  place-items: center;
-  border-radius: 12px;
-  background:
-    linear-gradient(135deg, rgba(232, 247, 241, 0.95), rgba(202, 231, 226, 0.98)),
-    #d8eee8;
-  color: #173d42;
-  font-size: 34px;
-  letter-spacing: 0.26em;
-}
-
-.poster-card__qr-copy {
-  display: grid;
-  gap: 8px;
+.poster-card__qr-box img {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
 }
 
 .poster-card__qr-copy strong {
-  color: rgba(216, 185, 114, 0.96);
-  font-size: 28px;
-  line-height: 1.2;
+  color: #221812;
+  font-size: 26px;
 }
 
-.poster-card__qr-copy span {
-  color: rgba(35, 83, 86, 0.72);
-  font-size: 16px;
-  line-height: 1.8;
+@keyframes poster-card-mist {
+  0%, 100% { transform: translateX(0); opacity: 0.42; }
+  50% { transform: translateX(46px); opacity: 0.7; }
 }
 
 .poster-card--reduced,
 .poster-card--reduced * {
-  transition: none !important;
   animation: none !important;
-}
-
-@keyframes poster-halo-breathe {
-  0%,
-  100% {
-    opacity: 0.38;
-    transform: scale(0.96);
-  }
-
-  50% {
-    opacity: 0.72;
-    transform: scale(1.04);
-  }
-}
-
-@keyframes poster-cloud-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(18px, -10px, 0);
-  }
-}
-
-@keyframes poster-seal-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes poster-ring-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  transition: none !important;
 }
 </style>
-
-/* 新版云门邀帖：统一 1080×1350 的淡青白水墨海报。 */
-.poster-card {
-  border-radius: 44px;
-  background:
-    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.88), transparent 24%),
-    radial-gradient(circle at 16% 74%, rgba(139, 208, 203, 0.24), transparent 28%),
-    linear-gradient(145deg, #fbfff9 0%, #e9f8f0 46%, #d5ede9 100%);
-  color: #173d42;
-  box-shadow: 0 34px 90px rgba(42, 101, 101, 0.22);
-}
-
-.poster-card::before {
-  position: absolute;
-  inset: 34px;
-  border: 1px solid rgba(84, 154, 151, 0.28);
-  border-radius: 34px;
-  background:
-    linear-gradient(90deg, transparent 0 49%, rgba(84, 154, 151, 0.14) 49% 51%, transparent 51%),
-    radial-gradient(circle at 80% 18%, rgba(216, 185, 114, 0.18), transparent 18%);
-  content: '';
-  pointer-events: none;
-}
-
-.poster-card::after {
-  position: absolute;
-  right: 60px;
-  bottom: 215px;
-  width: 360px;
-  height: 120px;
-  border-radius: 999px 999px 40px 40px;
-  background: linear-gradient(180deg, rgba(84, 154, 151, 0.16), rgba(84, 154, 151, 0));
-  content: '';
-  pointer-events: none;
-}
-
-.poster-card__cloud-band,
-.poster-card__mountains,
-.poster-card__gold-trace,
-.poster-card__hero-side {
-  display: none;
-}
-
-.poster-card__content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 34px;
-  height: 100%;
-  padding: 82px 76px 70px;
-}
-
-.poster-card__masthead,
-.poster-card__footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 28px;
-  align-items: center;
-}
-
-.poster-card__eyebrow,
-.poster-card__subtitle,
-.poster-card__seal-copy,
-.poster-card__section-label,
-.poster-card__story-copy,
-.poster-card__url-tip,
-.poster-card__qr-copy span {
-  color: rgba(35, 83, 86, 0.72);
-}
-
-.poster-card__title {
-  max-width: 760px;
-  color: #173d42;
-  font-size: 76px;
-  line-height: 1.04;
-  letter-spacing: 0.04em;
-}
-
-.poster-card__seal-panel,
-.poster-card__seal {
-  border-color: rgba(84, 154, 151, 0.28);
-  background: rgba(255, 255, 255, 0.62);
-  color: #8c7130;
-}
-
-.poster-card__hero {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
-.poster-card__scroll,
-.poster-card__story-main,
-.poster-card__url-strip,
-.poster-card__qr-panel {
-  border: 1px solid rgba(84, 154, 151, 0.22);
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-}
-
-.poster-card__scroll {
-  min-height: 440px;
-  padding: 54px 56px;
-  border-radius: 34px;
-}
-
-.poster-card__message {
-  color: #173d42;
-  font-size: 54px;
-  line-height: 1.38;
-}
-
-.poster-card__story {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
-.poster-card__story-main {
-  padding: 30px 34px;
-  border-radius: 30px;
-}
-
-.poster-card__story-title {
-  color: #173d42;
-  font-size: 32px;
-}
-
-.poster-card__footer {
-  align-items: stretch;
-}
-
-.poster-card__footer-left {
-  display: grid;
-  gap: 16px;
-}
-
-.poster-card__qr-panel {
-  grid-template-columns: auto minmax(0, 1fr);
-  min-width: 380px;
-  border-radius: 28px;
-}
-
-.poster-card__qr-shell {
-  background: #f8fffb;
-  box-shadow: inset 0 0 0 1px rgba(23, 61, 66, 0.18), 0 12px 28px rgba(42, 101, 101, 0.12);
-}

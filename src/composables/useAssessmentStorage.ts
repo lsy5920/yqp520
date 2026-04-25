@@ -1,10 +1,13 @@
-import { readonly, ref } from 'vue'
+﻿import { readonly, ref } from 'vue'
 
 // 这里定义存储模式类型，方便页面知道当前是本地持久记录还是仅当前会话可用。
 type AssessmentStorageMode = 'local' | 'session'
 
 // 这里集中定义考核草稿存储键名，方便答题页和其他页面统一复用。
-export const ASSESSMENT_DRAFT_STORAGE_KEY = 'yunqi-assessment-draft'
+export const ASSESSMENT_DRAFT_STORAGE_KEY = 'yunqi-assessment-draft-v2'
+
+// 这里保留旧版考核草稿键名，新版启动时只清理它，不再恢复旧草稿。
+export const ASSESSMENT_LEGACY_DRAFT_STORAGE_KEY = 'yunqi-assessment-draft'
 
 // 这里集中定义考核结果存储键名，方便名册登记页读取最近一次考核资格。
 export const ASSESSMENT_RESULT_STORAGE_KEY = 'yunqi-assessment-result'
@@ -88,10 +91,22 @@ export function useAssessmentStorage() {
     }
   }
 
+  /**
+   * 清理旧版考核草稿
+   * 用途：新版问心榜海报不再读取旧草稿，避免旧答题进度影响新版结果
+   * 入参：无
+   * 返回值：删除成功返回 true，失败返回 false
+   */
+  function clearLegacyDraft(): boolean {
+    return safeRemove(ASSESSMENT_LEGACY_DRAFT_STORAGE_KEY)
+  }
   return {
     storageMode: readonly(storageMode),
     safeReadJson,
     safeRemove,
     safeWriteJson,
+    clearLegacyDraft,
   }
 }
+
+

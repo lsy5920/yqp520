@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   CanonSection,
   HighlightItem,
   MusicLyricLine,
@@ -313,13 +313,13 @@ const joinKeyPoints = [
 
 // 这里定义海报模板，用于海报生成器和导出尺寸控制。
 const posterTemplate: PosterTemplate = {
-  id: 'yunqi-official',
-  name: '青金云海帖',
-  title: '云栖同道帖',
-  phrase: '云深不问俗事，栖心只守本真。',
-  defaultBlessing: '愿你心随云闲，身自安然；同道相守，不缚尘烦。',
-  stampText: '云栖印',
-  qrLabel: '扫码入云栖',
+  id: 'yunqi-jianghu-ink',
+  name: '水墨江湖令',
+  title: '云栖江湖令',
+  phrase: '云深有路，侠气自来。',
+  defaultBlessing: '愿你心有山河，身在烟火，仍能守住一寸清明与热忱。',
+  stampText: '云栖令',
+  qrLabel: '扫码入山门',
   exportWidth: 1080,
   exportHeight: 1350,
 }
@@ -403,13 +403,14 @@ export const siteContent = {
   assessment: assessmentContent,
   poster: {
     template: posterTemplate,
-    defaultTitle: '云中同门',
+    defaultTitle: '云中同道',
     introLines: [
-      '这是一张为云栖派量身定制的门面海报。',
-      '你可以填写自己的同门称呼与一句寄语，生成一张带着门派气质的专属分享图。',
-      '海报会默认嵌入云栖首页二维码，方便扫码后直接回到山门首页。',
+      '新版海报采用水墨侠气风格，像一张可分享的云栖江湖令。',
+      '你可以填写称呼与题赠，生成宣纸、墨山、朱印与金线边框组成的专属海报。',
+      '海报会默认嵌入云栖首页二维码，方便扫码回到山门。',
       '若当前环境支持原生分享，会优先唤起系统分享；否则会自动保存图片到本地。',
     ],
   },
   musicTracks,
 }
+

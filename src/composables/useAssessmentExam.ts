@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, readonly, ref } from 'vue'
+﻿import { computed, onBeforeUnmount, readonly, ref } from 'vue'
 import {
   ASSESSMENT_DRAFT_STORAGE_KEY,
   ASSESSMENT_RESULT_STORAGE_KEY,
@@ -74,7 +74,7 @@ function formatDuration(rawSeconds: number): string {
 // 这里导出入派考核主逻辑，统一管理答题、计时、评分、本地草稿和最新结果。
 export function useAssessmentExam(options: UseAssessmentExamOptions) {
   // 这里接入考核专用本地存储工具，统一兜底浏览器存储不可用的情况。
-  const { safeReadJson, safeRemove, safeWriteJson, storageMode } = useAssessmentStorage()
+  const { clearLegacyDraft, safeReadJson, safeRemove, safeWriteJson, storageMode } = useAssessmentStorage()
 
   // 这里保存页面当前阶段，控制开考前、答题中和结果页三种状态切换。
   const phase = ref<AssessmentPhase>('ready')
@@ -524,6 +524,7 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
    * 返回值：无返回值
    */
   function initializeAssessment(): void {
+    clearLegacyDraft()
     restoreLatestResult()
 
     const storedDraft = safeReadJson<AssessmentDraft>(ASSESSMENT_DRAFT_STORAGE_KEY)
@@ -715,3 +716,5 @@ export function useAssessmentExam(options: UseAssessmentExamOptions) {
     goToPreviousSection,
   }
 }
+
+

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   MemberCardFieldConfig,
   MemberCardFieldGroupConfig,
   MemberCardFormValue,
@@ -6,7 +6,7 @@ import type {
 
 // 这里定义江湖名帖本机存储要用到的键名，方便新旧版本分开管理与迁移。
 export const memberCardStorageKeys = {
-  state: 'yunqi-jianghu-card-state-v3',
+  state: 'yunqi-jianghu-card-state-v4',
   legacyState: 'yunqi-member-card-state-v2',
   legacyDraft: 'yunqi-member-card-draft',
   legacyArchives: 'yunqi-member-card-archives',
@@ -151,3 +151,4 @@ export function createDefaultMemberCardForm(): MemberCardFormValue {
     ...memberCardDefaultForm,
   }
 }
+

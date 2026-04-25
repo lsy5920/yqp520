@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   PublicRosterEntry,
   RosterContributionOption,
   RosterFreeTimeOption,
@@ -131,32 +131,32 @@ export const rosterHallLabelMap: Record<RosterHallKey, string> = rosterHallOptio
 
 // 这里定义海报名帖的固定模板尺寸与文案，供详情页与导出组件统一使用。
 export const rosterPosterTemplate = {
-  title: '云栖派入册名帖',
-  subtitle: '云栖派档案司 · 入册文牒',
+  title: '云栖入册名牒',
+  subtitle: '执事朱批 · 名册留痕',
   exportWidth: 1080,
   exportHeight: 1350,
-  pendingSeal: '待审核',
-  approvedSeal: '准予入册',
+  pendingSeal: '待阅帖',
+  approvedSeal: '准入山门',
   deferredSeal: '暂缓入册',
   rejectedSeal: '不予收录',
 }
 
 // 这里定义名册登记招募海报模板，统一控制公开名录页固定海报的文案与尺寸。
 export const rosterRegistrationPosterTemplate: RosterRegistrationPosterTemplate = {
-  eyebrow: '云栖派门籍',
-  title: '云栖名册',
-  subtitle: '云海留名，先观同道，再入册留帖',
-  lead: '线上递帖，执事批阅，牒成之后自入云栖门籍。若你也愿在喧尘之外留下一笔温柔江湖，可循此帖先观同门，再递入册文牒。',
-  processTitle: '入册行程',
-  processList: ['线上登记', '执事批阅', '准予入册', '生成云名帖'],
-  qrLabel: '扫码阅名录',
-  qrCaption: '先看名录，再入册留名',
-  closingTitle: '山门题记',
-  closingCopy: '云深有栖处，名牒待君题。若愿与同道并肩而行，便循此帖缓步入山，先阅同门风骨，再留自己一页门籍。',
-  sealText: '招募印',
-  signature: '云栖派档案司 制',
-  shareTitle: '云栖名册登记招募海报',
-  shareText: '云栖名册公开名录已备好，先观同门，再递入册文牒。',
+  eyebrow: '云栖山门榜',
+  title: '名册招募令',
+  subtitle: '一纸递山门 · 同道入名册',
+  lead: '山门榜已张，名册正候同道。若你愿在云栖留下一页江湖名牒，可先阅同门，再递文书，待执事朱批入册。',
+  processTitle: '入山四步',
+  processList: ['扫码阅榜', '递交文牒', '执事朱批', '名册留痕'],
+  qrLabel: '扫码阅榜',
+  qrCaption: '先阅同门，再递名牒',
+  closingTitle: '招募题记',
+  closingCopy: '江湖不问来处，云栖只重真心。若愿守住清明、善意与分寸，便循此令入山，留下一页属于自己的名牒。',
+  sealText: '招募令',
+  signature: '云栖派山门榜房 制',
+  shareTitle: '云栖名册招募令',
+  shareText: '云栖山门榜已张，先阅同门，再递名牒。',
   exportWidth: 1080,
   exportHeight: 1350,
 }
@@ -297,3 +297,4 @@ export function createEmptyPublicRosterEntry(): PublicRosterEntry {
     posterEnabled: true,
   }
 }
+

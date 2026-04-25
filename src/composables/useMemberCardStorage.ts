@@ -1,19 +1,11 @@
-import { readonly, ref } from 'vue'
+﻿import { readonly, ref } from 'vue'
 import { createDefaultMemberCardForm, memberCardStorageKeys } from '@/data/memberCardContent'
 import {
   memberCardSchemaVersion,
   type MemberCardFormValue,
-  type MemberCardLegacyArchiveRecord,
-  type MemberCardLegacyCurrentFormValue,
-  type MemberCardLegacyFormValue,
-  type MemberCardLegacyPersistedStateV2,
   type MemberCardPersistedState,
 } from '@/types/memberCard'
-import {
-  migrateCurrentMemberCardForm,
-  migrateLegacyMemberCardForm,
-  normalizeMemberCardFormValue,
-} from '@/utils/memberCard'
+import { normalizeMemberCardFormValue } from '@/utils/memberCard'
 
 // 这里记录当前存储模式，方便页面知道本机持久化是否正常。
 type MemberCardStorageMode = 'local' | 'session'
@@ -130,7 +122,7 @@ export function useMemberCardStorage() {
 
   /**
    * 规范化任意表单内容
-   * 用途：把新字段、旧字段和更早字段统一映射成新版江湖名帖结构
+   * 用途：只接收新版名帖字段，旧字段会被清理成空白草稿
    * 入参：rawForm 为原始表单内容
    * 返回值：返回新版江湖名帖表单
    */
@@ -154,62 +146,7 @@ export function useMemberCardStorage() {
       })
     }
 
-    if ('daoName' in formObject || 'worldName' in formObject || 'residence' in formObject || 'shortTags' in formObject) {
-      return migrateCurrentMemberCardForm({
-        daoName: typeof formObject.daoName === 'string' ? formObject.daoName : '',
-        worldName: typeof formObject.worldName === 'string' ? formObject.worldName : '',
-        residence: typeof formObject.residence === 'string' ? formObject.residence : '',
-        shortTags: typeof formObject.shortTags === 'string' ? formObject.shortTags : '',
-        origin: typeof formObject.origin === 'string' ? formObject.origin : '',
-        motto: typeof formObject.motto === 'string' ? formObject.motto : '',
-        avatarDataUrl: typeof formObject.avatarDataUrl === 'string' ? formObject.avatarDataUrl : '',
-      } as MemberCardLegacyCurrentFormValue)
-    }
-
-    return migrateLegacyMemberCardForm({
-      title: typeof formObject.title === 'string' ? formObject.title : '',
-      secularName: typeof formObject.secularName === 'string' ? formObject.secularName : '',
-      region: typeof formObject.region === 'string' ? formObject.region : '',
-      hobbies: typeof formObject.hobbies === 'string' ? formObject.hobbies : '',
-      origin: typeof formObject.origin === 'string' ? formObject.origin : '',
-      motto: typeof formObject.motto === 'string' ? formObject.motto : '',
-      avatarDataUrl: typeof formObject.avatarDataUrl === 'string' ? formObject.avatarDataUrl : '',
-    } as MemberCardLegacyFormValue)
-  }
-
-  /**
-   * 统计旧归档摘要
-   * 用途：从旧同门录里提取最大帖号和最近一次生成时间，方便迁移到新版
-   * 入参：rawArchives 为原始旧归档内容
-   * 返回值：返回整理后的帖号和时间摘要
-   */
-  function summarizeLegacyArchives(rawArchives: unknown): { issuedCount: number; lastIssuedAt: number | null } {
-    if (!Array.isArray(rawArchives)) {
-      return {
-        issuedCount: 0,
-        lastIssuedAt: null,
-      }
-    }
-
-    return rawArchives.reduce<{ issuedCount: number; lastIssuedAt: number | null }>((summary, rawRecord) => {
-      if (!rawRecord || typeof rawRecord !== 'object') {
-        return summary
-      }
-
-      const record = rawRecord as MemberCardLegacyArchiveRecord
-      const nextNumber = normalizeIssuedNumber(record.number) ?? 0
-      const nextTime = normalizeIssuedTime(record.createdAt)
-
-      return {
-        issuedCount: Math.max(summary.issuedCount, nextNumber),
-        lastIssuedAt: nextTime && (!summary.lastIssuedAt || nextTime > summary.lastIssuedAt)
-          ? nextTime
-          : summary.lastIssuedAt,
-      }
-    }, {
-      issuedCount: 0,
-      lastIssuedAt: null,
-    })
+    return createDefaultMemberCardForm()
   }
 
   /**
@@ -246,37 +183,31 @@ export function useMemberCardStorage() {
   }
 
   /**
-   * 读取旧版状态并迁移
-   * 用途：把 v2 状态和更早的草稿键一次性迁移到新版江湖名帖状态
+   * 清理旧版名帖本地记录
+   * 用途：新版水墨侠气海报不再沿用旧草稿和旧归档，避免旧结构污染新版画面
    * 入参：无
-   * 返回值：存在旧数据时返回迁移后的新版状态，不存在时返回 null
+   * 返回值：无
    */
-  function loadLegacyState(): MemberCardPersistedState | null {
-    const legacyState = safeReadJson<MemberCardLegacyPersistedStateV2 | null>(memberCardStorageKeys.legacyState)
-    const legacyDraft = safeReadJson<unknown>(memberCardStorageKeys.legacyDraft)
-    const legacyArchives = safeReadJson<unknown>(memberCardStorageKeys.legacyArchives)
-
-    const legacyStateDraft = legacyState?.draft ?? null
-    const legacyStateSummary = summarizeLegacyArchives(legacyState?.archives)
-    const legacySeparateSummary = summarizeLegacyArchives(legacyArchives)
-    const hasLegacyData = legacyStateDraft !== null || legacyDraft !== null || legacyStateSummary.issuedCount > 0 || legacySeparateSummary.issuedCount > 0
-
-    if (!hasLegacyData) {
-      return null
+  function clearLegacyLocalState(): void {
+    if (typeof window === 'undefined') {
+      return
     }
 
-    const migratedDraftSource = legacyStateDraft ?? legacyDraft
-    const issuedCount = Math.max(legacyStateSummary.issuedCount, legacySeparateSummary.issuedCount)
-    const lastIssuedAt = [legacyStateSummary.lastIssuedAt, legacySeparateSummary.lastIssuedAt]
-      .filter((item): item is number => typeof item === 'number')
-      .sort((left, right) => right - left)[0] ?? null
+    try {
+      const legacyKeys = [
+        'yunqi-jianghu-card-state-v3',
+        memberCardStorageKeys.legacyState,
+        memberCardStorageKeys.legacyDraft,
+        memberCardStorageKeys.legacyArchives,
+      ]
 
-    return {
-      version: memberCardSchemaVersion,
-      draft: migratedDraftSource === null ? null : normalizeAnyFormValue(migratedDraftSource),
-      issuedCount,
-      currentIssuedNumber: null,
-      lastIssuedAt,
+      legacyKeys.forEach((key) => {
+        window.localStorage.removeItem(key)
+      })
+    } catch (error) {
+      // 这里兜底浏览器禁止访问本地存储的情况，清理失败不影响新海报继续运行。
+      console.warn('清理旧版江湖名帖本地记录失败：', error)
+      storageMode.value = 'session'
     }
   }
 
@@ -303,7 +234,7 @@ export function useMemberCardStorage() {
 
   /**
    * 读取当前状态
-   * 用途：优先读取新版状态，读不到时自动迁移旧数据
+   * 用途：优先读取新版状态，读不到时清理旧数据并创建空白状态
    * 入参：无
    * 返回值：返回当前可用的新版状态
    */
@@ -319,11 +250,7 @@ export function useMemberCardStorage() {
       return memoryState.value
     }
 
-    const legacyState = loadLegacyState()
-
-    if (legacyState) {
-      return saveState(legacyState)
-    }
+    clearLegacyLocalState()
 
     const emptyState: MemberCardPersistedState = {
       version: memberCardSchemaVersion,
@@ -411,3 +338,7 @@ export function useMemberCardStorage() {
     issueCard,
   }
 }
+
+
+
+

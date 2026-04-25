@@ -1,5 +1,5 @@
-// 这里定义江湖名帖的数据版本号，方便后续继续安全升级本机草稿结构。
-export const memberCardSchemaVersion = 3 as const
+﻿// 这里定义江湖名帖的数据版本号，方便后续继续安全升级本机草稿结构。
+export const memberCardSchemaVersion = 4 as const
 
 // 这里定义江湖名帖允许直接编辑的文字字段键名，方便页面按统一规则渲染输入项。
 export type MemberCardEditableFieldKey =
@@ -139,3 +139,4 @@ export interface MemberCardLegacyPersistedStateV2 {
   // 这里保存旧版归档列表。
   archives?: MemberCardLegacyArchiveRecord[] | unknown
 }
+
