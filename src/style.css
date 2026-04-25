@@ -3,6 +3,7 @@
   --color-bg-soft: rgba(221, 242, 236, 0.78);
   --color-panel: rgba(248, 250, 242, 0.76);
   --color-panel-strong: rgba(246, 250, 243, 0.9);
+  --color-surface-readable: rgba(255, 255, 250, 0.92);
   --color-border: rgba(84, 154, 151, 0.26);
   --color-border-strong: rgba(46, 124, 123, 0.4);
   --color-text: #173d42;
@@ -12,13 +13,17 @@
   --color-gold-strong: #7b5b25;
   --color-cyan: #3faaa7;
   --color-danger: #a76449;
+  --color-focus: #1b8078;
   --shadow-soft: 0 24px 60px rgba(37, 103, 101, 0.14);
   --shadow-strong: 0 32px 80px rgba(29, 84, 84, 0.22);
+  --shadow-focus: 0 0 0 4px rgba(27, 128, 120, 0.22);
   --radius-large: 28px;
   --radius-medium: 20px;
   --radius-small: 14px;
-  --content-width: min(1180px, calc(100vw - 48px));
+  --content-width: min(1180px, calc(100vw - clamp(24px, 5vw, 56px)));
   --transition-base: 320ms ease;
+  --transition-fast: 180ms ease;
+  --touch-target: 44px;
   --site-player-bottom: 20px;
   --site-player-bottom-mobile: 10px;
   --site-backtop-bottom: 104px;
@@ -31,6 +36,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 116px;
   background:
     radial-gradient(circle at top, rgba(131, 210, 203, 0.24), transparent 42%),
     linear-gradient(180deg, #edf7f1 0%, #d8f0ec 48%, #f6f2e7 100%);
@@ -39,8 +45,9 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
   color: var(--color-text);
   font-family: 'Noto Serif SC', 'STKaiti', 'KaiTi', 'FangSong', serif;
   text-rendering: optimizeLegibility;
@@ -62,7 +69,8 @@ body.assessment-exam-open {
 button,
 a,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -72,8 +80,26 @@ a {
 }
 
 button {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   border: none;
   background: none;
+  touch-action: manipulation;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+input,
+select {
+  min-height: var(--touch-target);
+}
+
+textarea {
+  min-height: 112px;
 }
 
 img {
@@ -97,6 +123,38 @@ img {
   border: 0;
 }
 
+.skip-link {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 16px;
+  z-index: 1000;
+  min-height: var(--touch-target);
+  padding: 10px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface-readable);
+  color: var(--color-text);
+  box-shadow: var(--shadow-focus);
+  transform: translateY(-160%);
+  transition: transform var(--transition-fast);
+}
+
+.skip-link:focus-visible {
+  outline: none;
+  transform: translateY(0);
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+  box-shadow: var(--shadow-focus);
+}
+
+:where(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .site-shell {
   position: relative;
   min-height: 100vh;
@@ -109,6 +167,10 @@ img {
   width: var(--content-width);
   margin: 0 auto;
   padding: 136px 0 120px;
+}
+
+.site-main:focus {
+  outline: none;
 }
 
 .site-background {
@@ -167,7 +229,7 @@ img {
 
 .site-header {
   position: fixed;
-  inset: 18px 0 auto;
+  inset: calc(18px + env(safe-area-inset-top)) 0 auto;
   z-index: 10;
 }
 
@@ -1570,5 +1632,298 @@ img {
   .roster-list-page .roster-card-stack {
     display: grid !important;
     margin-top: 0 !important;
+  }
+}
+
+/* 全站可访问性优化：统一触控尺寸、焦点状态和文字节奏，保证手机与键盘操作都清楚。 */
+body * {
+  letter-spacing: 0 !important;
+}
+
+/* 全站链接与按钮优化：避免只有悬停才有反馈，触屏点击也能快速响应。 */
+.site-brand,
+.site-nav__link,
+.site-footer__link,
+.ink-button,
+.back-top-button,
+.home-action,
+.home-mini-button,
+.anchor-list a,
+.roster-button,
+.roster-filter-track button,
+.roster-step-pill,
+.roster-choice-card,
+.roster-tag-list button,
+.roster-tag-input button,
+.roster-state-card button,
+.roster-state-card a,
+.roster-detail-actions a,
+.roster-detail-state a,
+.roster-float-actions a,
+.roster-admin-hero__actions a,
+.roster-admin-hero__actions button,
+.roster-admin-toolbar button,
+.roster-admin-list button,
+.roster-admin-actions button,
+.roster-poster-studio__actions button,
+.music-player button {
+  min-height: var(--touch-target) !important;
+  touch-action: manipulation;
+}
+
+/* 全站悬停优化：只在支持悬停的设备上播放位移动效，避免手机端误触后出现跳动感。 */
+@media (hover: hover) and (pointer: fine) {
+  .site-nav__link:hover,
+  .site-footer__link:hover,
+  .quick-card:hover,
+  .anchor-list a:hover,
+  .ink-button:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* 触屏优化：手机和平板上不做上浮位移，只保留颜色和阴影变化。 */
+@media (hover: none) {
+  .site-nav__link:hover,
+  .site-footer__link:hover,
+  .quick-card:hover,
+  .anchor-list a:hover,
+  .ink-button:hover {
+    transform: none;
+  }
+}
+
+/* 导航可读性优化：桌面端导航保持紧凑，移动端抽屉保持可滚动且不压住系统安全区。 */
+.site-nav__link {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.site-nav__link--active {
+  border: 1px solid rgba(55, 139, 137, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+}
+
+.site-drawer {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* 表单可读性优化：全站输入框使用清晰浅底深字，避免移动端缩放和低对比。 */
+:where(input, select, textarea) {
+  max-width: 100%;
+  border-radius: 14px;
+  caret-color: var(--color-focus);
+}
+
+:where(input, select, textarea)::placeholder {
+  color: rgba(23, 61, 66, 0.46);
+}
+
+/* 内容宽度优化：长正文限制阅读宽度，桌面端不让段落铺满整屏。 */
+.page-banner__lead,
+.page-banner__note,
+.hero-panel__lead,
+.section-heading p,
+.content-card p,
+.ornament-card p,
+.quick-card small,
+.canon-card p,
+.list-column {
+  max-width: 72ch;
+}
+
+/* 浮层避让优化：固定控件统一给底部安全区留位置，减少遮挡表单与卡片操作。 */
+.site-shell {
+  --site-player-bottom: 24px;
+  --site-player-bottom-mobile: 16px;
+  --site-backtop-bottom: 116px;
+  --site-backtop-bottom-mobile: 152px;
+}
+
+.site-footer {
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+/* 名册与后台控件优化：筛选、列表项和后台按钮保持足够点击面积。 */
+.roster-filter-track,
+.roster-step-track,
+.roster-tag-list,
+.roster-admin-toolbar,
+.roster-admin-actions,
+.roster-poster-studio__actions {
+  gap: 10px !important;
+}
+
+.roster-admin-toolbar {
+  align-items: stretch !important;
+}
+
+.roster-admin-toolbar input,
+.roster-admin-toolbar select,
+.roster-admin-toolbar button {
+  min-height: var(--touch-target) !important;
+}
+
+.roster-admin-list button {
+  text-align: left;
+}
+
+/* 桌面端优化：公开内容页保持舒展，审核台和名册页减少无效空白。 */
+@media (min-width: 1200px) {
+  .site-main,
+  .site-header__inner,
+  .site-drawer,
+  .site-footer {
+    width: min(1240px, calc(100vw - 64px));
+  }
+
+  .site-nav--desktop {
+    width: min(100%, 920px);
+  }
+
+  .page {
+    gap: 48px;
+  }
+
+  .content-card,
+  .ornament-card,
+  .quick-card {
+    padding: 30px;
+  }
+}
+
+/* 平板端优化：导航切换为抽屉后，内容卡片保持单列阅读，不制造横向滚动。 */
+@media (max-width: 920px) {
+  .site-main {
+    padding-top: calc(122px + env(safe-area-inset-top));
+  }
+
+  .site-drawer {
+    max-height: min(72dvh, calc(100dvh - 112px - env(safe-area-inset-top)));
+  }
+}
+
+/* 手机端优化：所有主要页面给底部播放器和系统手势留出空间，按钮排列不挤压文字。 */
+@media (max-width: 720px) {
+  html {
+    scroll-padding-top: 98px;
+  }
+
+  .site-main {
+    width: min(100vw - 20px, 430px);
+    padding-top: calc(104px + env(safe-area-inset-top));
+    padding-bottom: calc(190px + env(safe-area-inset-bottom));
+  }
+
+  .site-header {
+    inset: calc(10px + env(safe-area-inset-top)) 0 auto;
+  }
+
+  .site-header__inner {
+    min-height: 64px;
+  }
+
+  .site-menu-button {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
+
+  .site-drawer {
+    max-height: min(74dvh, calc(100dvh - 96px - env(safe-area-inset-top)));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .site-nav--mobile .site-nav__link {
+    min-height: 58px !important;
+    padding: 12px 10px;
+  }
+
+  .site-footer {
+    width: min(100vw - 20px, 430px);
+    padding-bottom: calc(154px + env(safe-area-inset-bottom));
+  }
+
+  .hero-panel__actions,
+  .page-banner__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel__actions > .ink-button,
+  .page-banner__actions > .ink-button,
+  .hero-panel__actions > .ink-button:last-child:nth-child(odd),
+  .page-banner__actions > .ink-button:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .ink-button,
+  .home-action,
+  .home-mini-button,
+  .roster-button {
+    width: 100%;
+  }
+
+  .back-top-button {
+    right: 10px;
+    min-width: var(--touch-target);
+    width: var(--touch-target);
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .roster-filter-track,
+  .roster-step-track,
+  .roster-tag-list {
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .roster-float-actions {
+    bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+    width: min(100vw - 24px, 430px) !important;
+  }
+}
+
+/* 小屏兜底：极窄设备下抽屉和底部链接改为单列，避免文字被挤压。 */
+@media (max-width: 380px) {
+  .site-nav--mobile,
+  .site-footer__links {
+    grid-template-columns: 1fr;
+  }
+
+  .site-brand__name {
+    font-size: 0.88rem;
+  }
+}
+
+/* 减少动态效果：尊重系统设置，关闭漂浮、发光、页面切换和滚动显现动画。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .site-background__mist,
+  .site-background__glow,
+  [data-reveal],
+  .reveal-on-scroll {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .page-fade-enter-from,
+  .page-fade-leave-to,
+  .drawer-fade-enter-from,
+  .drawer-fade-leave-to,
+  .utility-fade-enter-from,
+  .utility-fade-leave-to {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

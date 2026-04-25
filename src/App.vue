@@ -57,6 +57,8 @@ onMounted(() => {
 
 <template>
   <div class="site-shell" :style="siteShellStyle">
+    <a class="skip-link" href="#site-main">跳到主要内容</a>
+
     <div class="site-background" aria-hidden="true">
       <div class="site-background__mist site-background__mist--near"></div>
       <div class="site-background__mist site-background__mist--far"></div>
@@ -66,7 +68,7 @@ onMounted(() => {
 
     <SiteHeader />
 
-    <main class="site-main">
+    <main id="site-main" class="site-main" tabindex="-1">
       <RouterView v-slot="{ Component, route }">
         <Transition name="page-fade" mode="out-in">
           <component :is="Component" :key="route.fullPath" />

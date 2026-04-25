@@ -1,5 +1,6 @@
 import { gsap } from 'gsap'
 import { onBeforeUnmount, onMounted, unref, type Ref } from 'vue'
+import { useReducedMotion } from '@/composables/useReducedMotion'
 
 // 这里定义可传入的参数类型，方便按需指定根节点和减动效状态。
 interface RevealMotionOptions {
@@ -9,6 +10,9 @@ interface RevealMotionOptions {
 
 // 这里导出章节显现动效，让页面内容进入视口时更有层次感。
 export function useRevealMotion(options: RevealMotionOptions) {
+  // 这里读取系统减弱动态效果偏好，调用方未传入时使用这份默认状态。
+  const systemReducedMotion = useReducedMotion()
+
   // 这里保存观察器，便于组件卸载时清理监听。
   let observer: IntersectionObserver | null = null
 
@@ -41,7 +45,7 @@ export function useRevealMotion(options: RevealMotionOptions) {
     }
 
     // 如果用户开启了减少动态效果，就直接展示最终状态。
-    if (options.reducedMotion?.value) {
+    if (options.reducedMotion?.value || systemReducedMotion.value) {
       revealElements.forEach(showElementImmediately)
       return
     }

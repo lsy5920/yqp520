@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { siteContent } from '@/data/siteContent'
 
@@ -28,6 +28,16 @@ function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value
 }
 
+/**
+ * 收起移动端菜单
+ * 用途：在路由切换、键盘退出或其他场景统一关闭抽屉
+ * 入参：无
+ * 返回值：无返回值
+ */
+function closeMenu(): void {
+  isMenuOpen.value = false
+}
+
 // 这里统一判断导航是否高亮，名册相关子页面都归到同一个入口下。
 function isNavItemActive(path: string): boolean {
   if (path === '/roster/list') {
@@ -36,6 +46,30 @@ function isNavItemActive(path: string): boolean {
 
   return route.path === path
 }
+
+/**
+ * 处理键盘退出菜单
+ * 用途：用户按下 Escape 时收起移动端导航，避免键盘用户被抽屉遮挡
+ * 入参：event 为浏览器键盘事件
+ * 返回值：无返回值
+ */
+function handleMenuEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || !isMenuOpen.value) {
+    return
+  }
+
+  closeMenu()
+}
+
+// 这里在组件挂载后监听键盘，给移动端抽屉补充键盘退出能力。
+onMounted(() => {
+  window.addEventListener('keydown', handleMenuEscape)
+})
+
+// 这里在组件卸载时清理监听，避免长期运行时残留重复事件。
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleMenuEscape)
+})
 </script>
 
 <template>
@@ -62,6 +96,7 @@ function isNavItemActive(path: string): boolean {
           :to="item.path"
           class="site-nav__link"
           :class="{ 'site-nav__link--active': isNavItemActive(item.path) }"
+          :aria-current="isNavItemActive(item.path) ? 'page' : undefined"
         >
           <span>{{ item.label }}</span>
           <small>{{ item.hint }}</small>
@@ -93,6 +128,7 @@ function isNavItemActive(path: string): boolean {
             :to="item.path"
             class="site-nav__link"
             :class="{ 'site-nav__link--active': isNavItemActive(item.path) }"
+            :aria-current="isNavItemActive(item.path) ? 'page' : undefined"
           >
             <span>{{ item.label }}</span>
             <small>{{ item.hint }}</small>

@@ -1,17 +1,19 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
-import AssessmentView from '@/views/AssessmentView.vue'
-import CanonView from '@/views/CanonView.vue'
-import DisciplineView from '@/views/DisciplineView.vue'
-import HomeView from '@/views/HomeView.vue'
-import LifeView from '@/views/LifeView.vue'
-import MemberCardView from '@/views/MemberCardView.vue'
-import PosterView from '@/views/PosterView.vue'
-import RosterAdminLoginView from '@/views/RosterAdminLoginView.vue'
-import RosterAdminView from '@/views/RosterAdminView.vue'
-import RosterEntryDetailView from '@/views/RosterEntryDetailView.vue'
-import RosterListView from '@/views/RosterListView.vue'
-import RosterRegistrationView from '@/views/RosterRegistrationView.vue'
+
+// 这里把页面组件改成按路由加载，减少首次打开首页时需要下载的代码量。
+const HomeView = () => import('@/views/HomeView.vue')
+const CanonView = () => import('@/views/CanonView.vue')
+const DisciplineView = () => import('@/views/DisciplineView.vue')
+const LifeView = () => import('@/views/LifeView.vue')
+const AssessmentView = () => import('@/views/AssessmentView.vue')
+const PosterView = () => import('@/views/PosterView.vue')
+const MemberCardView = () => import('@/views/MemberCardView.vue')
+const RosterRegistrationView = () => import('@/views/RosterRegistrationView.vue')
+const RosterListView = () => import('@/views/RosterListView.vue')
+const RosterEntryDetailView = () => import('@/views/RosterEntryDetailView.vue')
+const RosterAdminLoginView = () => import('@/views/RosterAdminLoginView.vue')
+const RosterAdminView = () => import('@/views/RosterAdminView.vue')
 
 // 这里集中定义全站路由，方便后续继续扩展专题页与工作台。
 export const routes: RouteRecordRaw[] = [
