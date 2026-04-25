@@ -1065,6 +1065,49 @@ onBeforeUnmount(() => {
               </section>
 
               <main ref="examBodyRef" class="assessment-exam__body">
+                <section ref="examQuestionListRef" class="assessment-exam__question-workspace">
+                  <Transition name="assessment-question-switch" mode="out-in">
+                    <AssessmentQuestionCard
+                      v-if="activeExamQuestion"
+                      :key="activeExamQuestion.id"
+                      :question="activeExamQuestion"
+                      :selected-option-ids="getSelectedOptionIds(activeExamQuestion.id)"
+                      @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
+                      @update-single="setSingleAnswer($event.questionId, $event.optionId)"
+                    />
+                  </Transition>
+
+                  <nav class="assessment-exam__actions assessment-exam__actions--dialog" aria-label="题目切换">
+                    <button
+                      type="button"
+                      class="ink-button ink-button--ghost"
+                      :disabled="isFirstExamQuestion"
+                      @click="goToPreviousExamQuestion"
+                    >
+                      上一题
+                    </button>
+
+                    <button
+                      v-if="!isLastExamQuestion"
+                      type="button"
+                      class="ink-button ink-button--secondary"
+                      @click="goToNextExamQuestion"
+                    >
+                      下一题
+                    </button>
+
+                    <button
+                      v-else
+                      type="button"
+                      class="ink-button ink-button--secondary"
+                      :disabled="isSubmitting"
+                      @click="submitExam"
+                    >
+                      {{ isSubmitting ? '正在交卷...' : '完成本卷并交卷' }}
+                    </button>
+                  </nav>
+                </section>
+
                 <aside v-if="currentSection" class="assessment-exam__side-panel">
                   <article class="assessment-exam__chapter-card">
                     <div class="assessment-exam__chapter-head">
@@ -1158,49 +1201,6 @@ onBeforeUnmount(() => {
                     </div>
                   </article>
                 </aside>
-
-                <section ref="examQuestionListRef" class="assessment-exam__question-workspace">
-                  <Transition name="assessment-question-switch" mode="out-in">
-                    <AssessmentQuestionCard
-                      v-if="activeExamQuestion"
-                      :key="activeExamQuestion.id"
-                      :question="activeExamQuestion"
-                      :selected-option-ids="getSelectedOptionIds(activeExamQuestion.id)"
-                      @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
-                      @update-single="setSingleAnswer($event.questionId, $event.optionId)"
-                    />
-                  </Transition>
-
-                  <nav class="assessment-exam__actions assessment-exam__actions--dialog" aria-label="题目切换">
-                    <button
-                      type="button"
-                      class="ink-button ink-button--ghost"
-                      :disabled="isFirstExamQuestion"
-                      @click="goToPreviousExamQuestion"
-                    >
-                      上一题
-                    </button>
-
-                    <button
-                      v-if="!isLastExamQuestion"
-                      type="button"
-                      class="ink-button ink-button--secondary"
-                      @click="goToNextExamQuestion"
-                    >
-                      下一题
-                    </button>
-
-                    <button
-                      v-else
-                      type="button"
-                      class="ink-button ink-button--secondary"
-                      :disabled="isSubmitting"
-                      @click="submitExam"
-                    >
-                      {{ isSubmitting ? '正在交卷...' : '完成本卷并交卷' }}
-                    </button>
-                  </nav>
-                </section>
               </main>
             </section>
           </div>
@@ -3564,14 +3564,14 @@ onBeforeUnmount(() => {
 
   .assessment-exam--dialog {
     grid-template-rows: auto auto minmax(0, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
 
   .assessment-exam__topbar {
-    grid-template-columns: minmax(0, 1fr) minmax(84px, 0.42fr);
-    gap: 8px;
-    padding: 12px;
-    border-radius: 22px;
+    grid-template-columns: minmax(0, 1fr) minmax(74px, 0.34fr);
+    gap: 7px;
+    padding: 10px;
+    border-radius: 20px;
   }
 
   .assessment-exam__title-block {
@@ -3579,39 +3579,59 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__title-block h2 {
-    font-size: 1.08rem;
+    font-size: 1rem;
   }
 
   .assessment-exam__now-text {
-    font-size: 0.84rem;
+    font-size: 0.78rem;
   }
 
   .assessment-exam__time-orb,
   .assessment-exam__temporary-exit {
-    min-height: 58px;
-    border-radius: 18px;
+    min-height: 48px;
+    border-radius: 16px;
   }
 
   .assessment-exam__time-orb strong {
-    font-size: 1.38rem;
+    font-size: 1.12rem;
+  }
+
+  .assessment-exam__time-orb span {
+    font-size: 0.7rem;
   }
 
   .assessment-exam__temporary-exit {
     padding: 0 10px;
-    font-size: 0.86rem;
+    font-size: 0.78rem;
   }
 
   .assessment-exam__status-stage {
-    padding: 10px;
-    border-radius: 20px;
+    gap: 7px;
+    padding: 8px;
+    border-radius: 18px;
   }
 
   .assessment-exam__mobile-summary span,
   .assessment-exam__progress-meta span,
   .assessment-exam__chapter-meta span {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.76rem;
+  }
+
+  .assessment-exam__mobile-summary {
+    gap: 6px;
+  }
+
+  .assessment-exam__mobile-summary-item--wide {
+    min-height: 32px !important;
+  }
+
+  .assessment-exam__overview-toggle,
+  .assessment-exam__compact-toggle {
     min-height: 34px;
     padding: 0 10px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
   }
 
   .assessment-exam__section-track {
@@ -3637,20 +3657,45 @@ onBeforeUnmount(() => {
 
   .assessment-exam__body {
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: 8px;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0 2px 8px;
   }
 
   .assessment-exam__side-panel {
-    gap: 10px;
+    gap: 8px;
     padding: 0;
     overflow: visible;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+  }
+
+  .assessment-exam__chapter-card:has(.assessment-exam__compact-summary),
+  .assessment-exam__order-card:has(.assessment-exam__catalog-entry) {
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .assessment-exam__chapter-card:has(.assessment-exam__compact-summary) .assessment-exam__chapter-head,
+  .assessment-exam__chapter-card:has(.assessment-exam__compact-summary) .assessment-exam__compact-summary,
+  .assessment-exam__order-card:has(.assessment-exam__catalog-entry) .assessment-exam__order-head {
+    display: none;
+  }
+
+  .assessment-exam__catalog-entry {
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 16px;
+  }
+
+  .assessment-exam__catalog-entry strong {
+    font-size: 0.82rem;
   }
 
   .assessment-exam__chapter-card,
@@ -3702,7 +3747,8 @@ onBeforeUnmount(() => {
   }
 
   .assessment-exam__question-workspace {
-    gap: 10px;
+    order: -1;
+    gap: 8px;
     overflow: visible;
     padding: 0;
   }
