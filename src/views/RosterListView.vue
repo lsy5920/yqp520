@@ -1351,7 +1351,7 @@ function closeScroll(): void {
 
 @media (max-width: 720px) {
   .cloud-roster-page {
-    padding-bottom: calc(148px + env(safe-area-inset-bottom));
+    padding-bottom: calc(206px + env(safe-area-inset-bottom));
   }
 
   .cloud-roster-shell {
@@ -1375,24 +1375,61 @@ function closeScroll(): void {
 
   .jade-pendant-field {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 10px;
+    gap: 14px 10px;
     min-height: auto;
-    padding: 18px 0 28px;
+    padding: 18px 0 112px;
   }
 
   .jade-pendant {
-    min-height: 232px;
-    transform: translate3d(var(--jade-x), var(--jade-y), 0) rotate(var(--jade-rotate)) scale(var(--jade-scale));
+    min-height: clamp(194px, 50vw, 220px);
+    transform: translate3d(0, 0, 0) rotate(var(--jade-rotate)) scale(0.92);
+    transition: transform 180ms ease, filter 180ms ease;
   }
 
   .jade-pendant__body {
-    width: 136px;
-    min-height: 184px;
-    padding: 42px 14px 18px;
+    width: min(36vw, 128px);
+    min-height: clamp(166px, 45vw, 178px);
+    padding: 38px 12px 16px;
+    animation: none;
+  }
+
+  .jade-pendant__glow {
+    width: min(42vw, 148px);
+    height: min(50vw, 172px);
+    filter: blur(20px);
+    opacity: 0.72;
+  }
+
+  .jade-pendant__hole {
+    top: 18px;
+    width: 30px;
+    height: 30px;
   }
 
   .jade-pendant strong {
-    font-size: clamp(1.42rem, 7vw, 1.9rem);
+    max-width: 4.2em;
+    overflow-wrap: anywhere;
+    font-size: clamp(1.3rem, 6vw, 1.68rem);
+  }
+
+  .jade-pendant small {
+    font-size: 0.72rem;
+  }
+
+  .jade-pendant em,
+  .jade-pendant b {
+    font-size: 0.76rem;
+  }
+
+  .jade-pendant:hover {
+    filter: none;
+    transform: translate3d(0, 0, 0) rotate(var(--jade-rotate)) scale(0.92);
+  }
+
+  .jade-pendant--active,
+  .jade-pendant--active:hover {
+    filter: saturate(1.05);
+    transform: translate3d(0, -4px, 0) rotate(var(--jade-rotate)) scale(0.95);
   }
 
   .jade-scroll {
@@ -1413,9 +1450,46 @@ function closeScroll(): void {
     right: -9px;
   }
 
-  .jade-scroll__grid,
+  .jade-scroll__head {
+    padding-right: 58px;
+  }
+
+  .jade-scroll__head h2 {
+    font-size: clamp(2.25rem, 13vw, 4rem);
+  }
+
+  .jade-scroll blockquote {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .jade-scroll__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .jade-scroll__panel {
+    min-height: 96px;
+    padding: 12px 10px;
+    border-radius: 16px;
+  }
+
+  .jade-scroll__panel p {
+    overflow-wrap: anywhere;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
   .jade-scroll__actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .jade-scroll__actions a,
+  .jade-scroll__actions button {
+    min-width: 0;
+    padding: 0 8px;
+    text-align: center;
   }
 
   .cloud-roster-islands {
@@ -1475,6 +1549,13 @@ function closeScroll(): void {
     right: 10px;
     left: 10px;
     width: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .jade-scroll__grid,
+  .jade-scroll__actions {
+    grid-template-columns: 1fr;
   }
 }
 
