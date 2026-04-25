@@ -954,7 +954,7 @@ onBeforeUnmount(() => {
                     <button
                       v-else
                       type="button"
-                      class="ink-button ink-button--secondary"
+                      class="ink-button ink-button--secondary assessment-exam__submit-button"
                       :disabled="isSubmitting"
                       @click="submitExam"
                     >
@@ -2864,7 +2864,7 @@ onBeforeUnmount(() => {
     white-space: nowrap;
   }
 
-  .assessment-exam__actions--dialog .ink-button--secondary:last-child {
+  .assessment-exam__actions--dialog .assessment-exam__submit-button {
     /* 这里让最后一题的交卷按钮整行显示，降低手机端误触上一题和交卷的概率。 */
     grid-column: 1 / -1;
   }
@@ -3344,7 +3344,7 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.assessment-exam__actions--dialog .ink-button--secondary:last-child {
+.assessment-exam__actions--dialog .assessment-exam__submit-button {
   grid-column: 1 / -1;
 }
 
