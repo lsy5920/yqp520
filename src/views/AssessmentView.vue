@@ -62,6 +62,9 @@ const isExamChapterCollapsed = ref<boolean>(false)
 // 这里记录题号速切区在手机端是否收起，默认进入答题时先收起。
 const isExamOrderCollapsed = ref<boolean>(false)
 
+// 这里记录答题弹窗顶部更多信息在手机端是否收起，默认只保留当前章节、已答和未答。
+const isExamOverviewCollapsed = ref<boolean>(false)
+
 // 这里启用页面滚动显现动效，让开考前的规则介绍更有层次感。
 useRevealMotion({
   rootRef: pageRef,
@@ -234,6 +237,20 @@ const examOrderCollapsedSummaryText = computed<string>(() => {
 
   return summaryParts.join(' · ')
 })
+
+/**
+ * 当前章节名称
+ * 用途：答题弹窗顶部常驻展示当前章节名称；入参无；返回值为章节标题文本
+ */
+const currentSectionTitleText = computed<string>(() => currentSection.value?.title || '当前章节')
+
+/**
+ * 顶部更多信息是否应显示完整内容
+ * 用途：电脑端始终展开，手机端默认收起倒计时、记录方式和章节横向列表；入参无；返回值为是否展示详情
+ */
+const shouldShowExamOverviewDetails = computed<boolean>(() => (
+  !isExamMobileLayout.value || !isExamOverviewCollapsed.value
+))
 
 /**
  * 当前章作答情况区是否应显示完整内容
@@ -501,6 +518,7 @@ function syncExamMobileLayout(): void {
   isExamMobileLayout.value = window.innerWidth <= 720
 
   if (!isExamMobileLayout.value) {
+    isExamOverviewCollapsed.value = false
     isExamChapterCollapsed.value = false
     isExamOrderCollapsed.value = false
     return
@@ -520,13 +538,27 @@ function syncExamMobileLayout(): void {
  */
 function resetExamMobilePanels(): void {
   if (!isExamMobileLayout.value) {
+    isExamOverviewCollapsed.value = false
     isExamChapterCollapsed.value = false
     isExamOrderCollapsed.value = false
     return
   }
 
+  isExamOverviewCollapsed.value = true
   isExamChapterCollapsed.value = true
   isExamOrderCollapsed.value = true
+}
+
+/**
+ * 切换弹窗顶部更多信息区
+ * 用途：手机端点击后展开或收起顶部倒计时、记录方式和章节进度；入参无；返回值无返回值
+ */
+function toggleExamOverviewCollapsed(): void {
+  if (!isExamMobileLayout.value) {
+    return
+  }
+
+  isExamOverviewCollapsed.value = !isExamOverviewCollapsed.value
 }
 
 /**
@@ -975,6 +1007,7 @@ onBeforeUnmount(() => {
 
                       <div class="assessment-exam__overview-side">
                         <div
+                          v-if="shouldShowExamOverviewDetails"
                           class="assessment-exam__time-card"
                           :class="{ 'assessment-exam__time-card--warning': isAssessmentTimeRunningLow }"
                         >
@@ -992,18 +1025,33 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
 
-                    <div class="assessment-exam__progress-ribbon" aria-hidden="true">
+                    <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__progress-ribbon" aria-hidden="true">
                       <span :style="{ width: `${Math.max(4, Math.round((answeredCount / Math.max(totalQuestions, 1)) * 100))}%` }"></span>
                     </div>
 
-                    <div class="assessment-exam__progress-meta">
-                    <span>当前章节：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
-                    <span>已答题数：{{ answeredCount }} / {{ totalQuestions }}</span>
+                  <div class="assessment-exam__mobile-summary">
+                    <span>当前章节：{{ currentSectionTitleText }}</span>
+                    <span>已答：{{ answeredCount }}</span>
                     <span>未答题数：{{ unansweredCount }}</span>
+                  </div>
+
+                  <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__progress-meta">
+                    <span>章节序号：第 {{ currentSectionIndex + 1 }} / {{ sectionBundles.length }} 章</span>
+                    <span>总题数量：{{ totalQuestions }}</span>
                     <span>记录方式：{{ storageModeText }}</span>
                   </div>
 
-                  <div class="assessment-exam__section-track">
+                  <button
+                    v-if="isExamMobileLayout"
+                    type="button"
+                    class="assessment-exam__overview-toggle"
+                    :aria-expanded="shouldShowExamOverviewDetails ? 'true' : 'false'"
+                    @click="toggleExamOverviewCollapsed"
+                  >
+                    {{ shouldShowExamOverviewDetails ? '收起更多信息' : '展开倒计时与章节列表' }}
+                  </button>
+
+                  <div v-if="shouldShowExamOverviewDetails" class="assessment-exam__section-track">
                     <button
                       v-for="section in sectionProgressList"
                       :key="section.id"
@@ -1127,37 +1175,37 @@ onBeforeUnmount(() => {
                     @toggle-multiple="toggleMultipleAnswer($event.questionId, $event.optionId)"
                     @update-single="setSingleAnswer($event.questionId, $event.optionId)"
                   />
+
+                  <div class="assessment-exam__actions assessment-exam__actions--dialog">
+                    <button
+                      type="button"
+                      class="ink-button ink-button--ghost"
+                      :disabled="isFirstExamQuestion"
+                      @click="goToPreviousExamQuestion"
+                    >
+                      上一题
+                    </button>
+
+                    <button
+                      v-if="!isLastExamQuestion"
+                      type="button"
+                      class="ink-button ink-button--secondary"
+                      @click="goToNextExamQuestion"
+                    >
+                      下一题
+                    </button>
+
+                    <button
+                      v-else
+                      type="button"
+                      class="ink-button ink-button--secondary"
+                      :disabled="isSubmitting"
+                      @click="submitExam"
+                    >
+                      {{ isSubmitting ? '正在交卷...' : '完成本卷并交卷' }}
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div class="assessment-exam__actions assessment-exam__actions--dialog">
-                <button
-                  type="button"
-                  class="ink-button ink-button--ghost"
-                  :disabled="isFirstExamQuestion"
-                  @click="goToPreviousExamQuestion"
-                >
-                  上一题
-                </button>
-
-                <button
-                  v-if="!isLastExamQuestion"
-                  type="button"
-                  class="ink-button ink-button--secondary"
-                  @click="goToNextExamQuestion"
-                >
-                  下一题
-                </button>
-
-                <button
-                  v-else
-                  type="button"
-                  class="ink-button ink-button--secondary"
-                  :disabled="isSubmitting"
-                  @click="submitExam"
-                >
-                  {{ isSubmitting ? '正在交卷...' : '完成本卷并交卷' }}
-                </button>
               </div>
             </section>
           </div>
@@ -1556,6 +1604,7 @@ onBeforeUnmount(() => {
 }
 
 .assessment-ready__stats,
+.assessment-exam__mobile-summary,
 .assessment-exam__progress-meta,
 .assessment-exam__chapter-meta,
 .assessment-result__footer-meta {
@@ -1566,6 +1615,7 @@ onBeforeUnmount(() => {
 }
 
 .assessment-ready__stats span,
+.assessment-exam__mobile-summary span,
 .assessment-exam__progress-meta span,
 .assessment-exam__chapter-meta span,
 .assessment-result__footer-meta span,
@@ -1617,6 +1667,10 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 12px;
   justify-items: end;
+}
+
+.assessment-exam__overview-toggle {
+  display: none;
 }
 
 .assessment-exam__time-card,
@@ -1905,6 +1959,9 @@ onBeforeUnmount(() => {
 .assessment-exam__actions--dialog {
   flex: 0 0 auto;
   margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
   border: 1px solid rgba(147, 203, 198, 0.18);
   border-radius: 26px;
@@ -2798,7 +2855,7 @@ onBeforeUnmount(() => {
   .assessment-exam--dialog {
     display: grid;
     height: 100%;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 10px;
   }
 
@@ -2823,8 +2880,8 @@ onBeforeUnmount(() => {
 
   .assessment-exam__overview-side {
     display: grid;
-    /* 这里让倒计时占主要宽度，临时退出按钮保留可点区域但不撑宽。 */
-    grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
+    /* 这里让顶部默认只保留退出按钮，展开更多信息后也不会把弹窗撑宽。 */
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: 8px;
     justify-items: stretch;
@@ -2846,14 +2903,49 @@ onBeforeUnmount(() => {
   .assessment-exam__temporary-exit {
     width: 100%;
     min-width: 76px;
-    min-height: 54px;
+    min-height: 46px;
     padding: 0 10px;
+  }
+
+  .assessment-exam__mobile-summary {
+    display: grid;
+    /* 这里顶部常驻只显示当前章节、已答数量和未答数量三项，减少答题区占高。 */
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .assessment-exam__mobile-summary span {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    justify-content: center;
+    padding: 0 10px;
+    color: #1d5659;
+    background: rgba(255, 255, 255, 0.52);
+    white-space: normal;
+  }
+
+  .assessment-exam__overview-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 38px;
+    margin-top: 10px;
+    padding: 0 12px;
+    border: 1px solid rgba(83, 145, 138, 0.2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.46);
+    color: #1d5659;
+    font-size: 0.84rem;
+    cursor: pointer;
   }
 
   .assessment-exam__progress-meta {
     display: grid;
-    /* 这里把四条统计改成两列小卡片，手机端一眼可见且不横向溢出。 */
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* 这里把更多统计收进折叠区，展开后单列显示，避免再次挤占宽度。 */
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 
@@ -2865,8 +2957,6 @@ onBeforeUnmount(() => {
     min-width: 0;
     white-space: normal;
   }
-
-  .assessment-exam__progress-meta span:last-child { grid-column: 1 / -1; }
 
   .assessment-exam__section-track {
     display: flex;
@@ -2924,7 +3014,8 @@ onBeforeUnmount(() => {
     /* 这里把底部按钮改为两列，交卷按钮单独占整行，避免按钮被挤到屏幕外。 */
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
-    padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+    margin-top: 0;
+    padding: 10px 8px;
     border: 1px solid rgba(83, 145, 138, 0.2);
     background: rgba(245, 255, 251, 0.9);
     backdrop-filter: blur(18px);
@@ -2939,8 +3030,8 @@ onBeforeUnmount(() => {
     white-space: nowrap;
   }
 
-  .assessment-exam__actions--dialog .ink-button--primary {
-    /* 这里让主要交卷按钮整行显示，降低手机端误触上一题和下一题的概率。 */
+  .assessment-exam__actions--dialog .ink-button--secondary:last-child {
+    /* 这里让最后一题的交卷按钮整行显示，降低手机端误触上一题和交卷的概率。 */
     grid-column: 1 / -1;
   }
 
