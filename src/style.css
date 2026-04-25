@@ -1165,20 +1165,19 @@ img {
   background: rgba(255, 255, 255, 0.58);
 }
 
-/* 云栖名册新版配色覆盖：统一使用站点背景图的雾白、淡青绿、深青墨，保证手机和电脑端文字都清晰。 */
+/* 云栖名册新版配色覆盖：名册页不再单独铺背景，只沿用全站统一背景，避免和其他页面不一致。 */
 .roster-mobile-page,
 .roster-admin-page {
-  background:
-    linear-gradient(180deg, rgba(248, 252, 247, 0.88), rgba(229, 246, 241, 0.76)),
-    url('/images/site-background.png') center top / cover fixed no-repeat !important;
+  background: transparent !important;
   color: #123a3c !important;
 }
 
-/* 云栖名册电脑端外壳：从窄手机壳升级为舒展画布，避免电脑端内容挤成一列。 */
+/* 云栖名册电脑端外壳：宽度跟随全站内容区，避免在页面中横向溢出导致布局错乱。 */
 .roster-list-page .roster-phone-shell,
 .roster-registration-page .roster-phone-shell,
 .roster-detail-page .roster-phone-shell {
-  width: min(1180px, calc(100vw - 48px)) !important;
+  width: 100% !important;
+  max-width: 100% !important;
   color: #123a3c !important;
 }
 
@@ -1382,7 +1381,7 @@ img {
   .roster-registration-page .roster-phone-shell,
   .roster-detail-page .roster-phone-shell {
     display: grid !important;
-    grid-template-columns: minmax(320px, 0.78fr) minmax(0, 1.22fr) !important;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr) !important;
     gap: 22px !important;
     align-items: start !important;
   }
@@ -1438,11 +1437,6 @@ img {
 @media (min-width: 1200px) {
   .roster-card-stack {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-
-  .roster-list-page .roster-phone-shell {
-    width: min(1360px, calc(100vw - 64px)) !important;
-    grid-template-columns: 360px minmax(0, 1fr) !important;
   }
 }
 
