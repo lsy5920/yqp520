@@ -47,7 +47,7 @@ interface RosterCardRow {
 
 // 这里定义后台资料数据库行类型，服务层会转换成前端驼峰结构。
 interface RosterAdminProfileRow {
-  id: string
+  id?: string
   user_id: string
   email: string
   display_name: string
@@ -132,7 +132,7 @@ async function withRosterTimeout<T>(task: PromiseLike<T>, timeoutMessage: string
  */
 function mapAdminProfile(row: RosterAdminProfileRow): RosterAdminProfile {
   return {
-    id: row.id,
+    id: row.id || row.user_id,
     userId: row.user_id,
     email: row.email,
     displayName: row.display_name,
@@ -246,7 +246,7 @@ export async function getCurrentRosterAdminProfile(): Promise<RosterAdminProfile
 
   const { data, error } = await supabase
     .from('yunqi_roster_admin_profiles')
-    .select('id,user_id,email,display_name,role,is_active')
+    .select('user_id,email,display_name,role,is_active')
     .eq('user_id', userId)
     .eq('is_active', true)
     .maybeSingle()
@@ -603,6 +603,7 @@ export async function deleteAdminRosterEntry(entryId: string): Promise<string> {
 
   return entryId
 }
+
 
 
 

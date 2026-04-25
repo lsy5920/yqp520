@@ -47,8 +47,11 @@ const isSubmitting = ref<boolean>(false)
 // 这里记录校验和提交错误，方便用户按提示修改。
 const errorList = ref<string[]>([])
 
-// 这里记录成功提示，提交完成后显示回执。
+// 这里记录成功弹窗提示，提交完成后提醒用户等待审核。
 const successMessage = ref<string>('')
+
+// 这里记录成功回执号，方便弹窗里展示登记已经成功。
+const successReceiptCode = ref<string>('')
 
 // 这里计算当前步骤序号，供下一步和上一步使用。
 const activeStepIndex = computed<number>(() => rosterRegistrationSteps.findIndex((step) => step.key === activeStepKey.value))
@@ -214,6 +217,7 @@ async function checkName(): Promise<void> {
 async function handleSubmit(): Promise<void> {
   errorList.value = []
   successMessage.value = ''
+  successReceiptCode.value = ''
 
   if (!isSupabaseConfigured()) {
     errorList.value = [getSupabaseConfigErrorText()]
@@ -387,9 +391,6 @@ async function handleSubmit(): Promise<void> {
           <div v-if="errorList.length" class="roster-message roster-message--error">
             <p v-for="error in errorList" :key="error">{{ error }}</p>
           </div>
-          <div v-if="successMessage" class="roster-message roster-message--success">
-            <p>{{ successMessage }}</p>
-          </div>
         </div>
 
         <div class="roster-form-actions">
@@ -401,6 +402,16 @@ async function handleSubmit(): Promise<void> {
         </div>
       </section>
     </section>
+
+    <div v-if="successMessage" class="roster-success-dialog" role="dialog" aria-modal="true" aria-label="??????">
+      <div class="roster-success-dialog__card">
+        <span>?????</span>
+        <h2>???????</h2>
+        <p>{{ successMessage }}</p>
+        <small v-if="successReceiptCode">?????{{ successReceiptCode }}</small>
+        <button type="button" class="roster-button" @click="successMessage = ''">????</button>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -724,9 +735,52 @@ async function handleSubmit(): Promise<void> {
   background: rgba(127, 29, 29, 0.22);
 }
 
-.roster-message--success {
-  border: 1px solid rgba(74, 222, 128, 0.32);
-  background: rgba(20, 83, 45, 0.24);
+.roster-success-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(12, 48, 50, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.roster-success-dialog__card {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 390px);
+  padding: 28px 22px;
+  border: 1px solid rgba(47, 155, 145, 0.28);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top, rgba(191, 232, 223, 0.62), transparent 42%),
+    rgba(255, 255, 250, 0.96);
+  color: #123a3c;
+  text-align: center;
+  box-shadow: 0 28px 70px rgba(28, 74, 75, 0.22);
+}
+
+.roster-success-dialog__card span {
+  color: #1f817a;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+}
+
+.roster-success-dialog__card h2,
+.roster-success-dialog__card p {
+  margin: 0;
+}
+
+.roster-success-dialog__card h2 {
+  font-size: 2rem;
+  color: #123a3c;
+}
+
+.roster-success-dialog__card p,
+.roster-success-dialog__card small {
+  color: rgba(18, 58, 60, 0.72);
+  line-height: 1.75;
 }
 
 .roster-form-actions {
@@ -776,4 +830,5 @@ async function handleSubmit(): Promise<void> {
   }
 }
 </style>
+
 

@@ -27,6 +27,11 @@ create table if not exists public.yunqi_roster_admin_profiles (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+-- 这里兼容已经存在的旧管理员表；旧表如果缺少 id 列，补上后前后端都能稳定读取。
+alter table public.yunqi_roster_admin_profiles add column if not exists id uuid default gen_random_uuid();
+update public.yunqi_roster_admin_profiles set id = gen_random_uuid() where id is null;
+alter table public.yunqi_roster_admin_profiles alter column id set not null;
+
 -- 这里创建新版名帖表，业务代码只读写这张表。
 create table if not exists public.yunqi_roster_cards (
   id uuid primary key default gen_random_uuid(),
@@ -248,3 +253,4 @@ $$;
 -- insert into public.yunqi_roster_admin_profiles (user_id, email, display_name, role, is_active)
 -- values ('替换为 auth.users.id', 'admin@example.com', '云栖执事', '名册执事', true)
 -- on conflict (user_id) do update set email = excluded.email, display_name = excluded.display_name, role = excluded.role, is_active = excluded.is_active;
+
