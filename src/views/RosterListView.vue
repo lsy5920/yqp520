@@ -428,55 +428,57 @@ function closeScroll(): void {
         </div>
       </section>
 
-      <section v-if="selectedCard" class="jade-scroll-overlay" role="dialog" aria-modal="true" :aria-label="`${selectedCard.jianghuName}的公开名帖卷轴`" @click.self="closeScroll">
-        <article ref="scrollDialogRef" class="jade-scroll" :style="getRosterGenderGlowStyle(selectedCard.genderKey)">
-          <span class="jade-scroll__glow" aria-hidden="true"></span>
-          <span class="jade-scroll__axis jade-scroll__axis--left" aria-hidden="true"></span>
-          <span class="jade-scroll__axis jade-scroll__axis--right" aria-hidden="true"></span>
-          <button type="button" class="jade-scroll__close" aria-label="关闭名帖卷轴" @click="closeScroll">收起</button>
+      <Teleport to="body">
+        <section v-if="selectedCard" class="jade-scroll-overlay" role="dialog" aria-modal="true" :aria-label="`${selectedCard.jianghuName}的公开名帖卷轴`" @click.self="closeScroll">
+          <article ref="scrollDialogRef" class="jade-scroll" :style="getRosterGenderGlowStyle(selectedCard.genderKey)">
+            <span class="jade-scroll__glow" aria-hidden="true"></span>
+            <span class="jade-scroll__axis jade-scroll__axis--left" aria-hidden="true"></span>
+            <span class="jade-scroll__axis jade-scroll__axis--right" aria-hidden="true"></span>
+            <button type="button" class="jade-scroll__close" aria-label="关闭名帖卷轴" @click="closeScroll">收起</button>
 
-          <header class="jade-scroll__head">
-            <span>云中名帖 · {{ selectedCard.genderLabel }}</span>
-            <h2>{{ selectedCard.jianghuName }}</h2>
-            <p>{{ selectedCard.displayTitle }} · {{ selectedCard.identityLabel }}</p>
-          </header>
+            <header class="jade-scroll__head">
+              <span>云中名帖 · {{ selectedCard.genderLabel }}</span>
+              <h2>{{ selectedCard.jianghuName }}</h2>
+              <p>{{ selectedCard.displayTitle }} · {{ selectedCard.identityLabel }}</p>
+            </header>
 
-          <blockquote>{{ selectedCard.motto }}</blockquote>
+            <blockquote>{{ selectedCard.motto }}</blockquote>
 
-          <div class="jade-scroll__grid">
-            <section class="jade-scroll__panel jade-scroll__panel--wide">
-              <span>公开故事</span>
-              <p>{{ selectedCard.storyText }}</p>
-            </section>
-            <section class="jade-scroll__panel">
-              <span>所在江湖</span>
-              <p>{{ selectedCard.regionText }}</p>
-            </section>
-            <section class="jade-scroll__panel">
-              <span>羁绊状态</span>
-              <p>{{ selectedCard.bondLabel }} · {{ selectedCard.bondText }}</p>
-            </section>
-            <section class="jade-scroll__panel">
-              <span>玉佩光效</span>
-              <p>{{ selectedCard.genderKey === 'male' ? '青蓝玉光' : selectedCard.genderKey === 'female' ? '粉红玉光' : '清白本色' }}</p>
-            </section>
-            <section class="jade-scroll__panel">
-              <span>入册时间</span>
-              <p>{{ formatRosterDate(selectedCard.approvedAt) }}</p>
-            </section>
-          </div>
+            <div class="jade-scroll__grid">
+              <section class="jade-scroll__panel jade-scroll__panel--wide">
+                <span>公开故事</span>
+                <p>{{ selectedCard.storyText }}</p>
+              </section>
+              <section class="jade-scroll__panel">
+                <span>所在江湖</span>
+                <p>{{ selectedCard.regionText }}</p>
+              </section>
+              <section class="jade-scroll__panel">
+                <span>羁绊状态</span>
+                <p>{{ selectedCard.bondLabel }} · {{ selectedCard.bondText }}</p>
+              </section>
+              <section class="jade-scroll__panel">
+                <span>玉佩光效</span>
+                <p>{{ selectedCard.genderKey === 'male' ? '青蓝玉光' : selectedCard.genderKey === 'female' ? '粉红玉光' : '清白本色' }}</p>
+              </section>
+              <section class="jade-scroll__panel">
+                <span>入册时间</span>
+                <p>{{ formatRosterDate(selectedCard.approvedAt) }}</p>
+              </section>
+            </div>
 
-          <div class="jade-scroll__tags">
-            <i v-for="tag in selectedCard.skillTags" :key="tag">#{{ tag }}</i>
-            <i v-if="selectedCard.skillTags.length === 0">#云深待补</i>
-          </div>
+            <div class="jade-scroll__tags">
+              <i v-for="tag in selectedCard.skillTags" :key="tag">#{{ tag }}</i>
+              <i v-if="selectedCard.skillTags.length === 0">#云深待补</i>
+            </div>
 
-          <footer class="jade-scroll__actions">
-            <RouterLink :to="`/roster/entry/${selectedCard.publicSlug}`">打开独立详情</RouterLink>
-            <button type="button" @click="closeScroll">继续看玉佩</button>
-          </footer>
-        </article>
-      </section>
+            <footer class="jade-scroll__actions">
+              <RouterLink :to="`/roster/entry/${selectedCard.publicSlug}`">打开独立详情</RouterLink>
+              <button type="button" @click="closeScroll">继续看玉佩</button>
+            </footer>
+          </article>
+        </section>
+      </Teleport>
 
       <nav class="cloud-roster-floating" aria-label="名册快捷操作">
         <RouterLink to="/roster">递名帖</RouterLink>
@@ -968,7 +970,7 @@ function closeScroll(): void {
 .jade-scroll-overlay {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 1200;
   display: grid;
   place-items: center;
   padding: max(22px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
@@ -1436,11 +1438,17 @@ function closeScroll(): void {
 
   .jade-scroll {
     gap: 14px;
-    max-height: calc(100svh - 32px);
+    max-height: calc(100svh - 28px);
     overflow-x: hidden;
     overscroll-behavior: contain;
-    padding: 34px 22px 24px;
+    padding: 46px 22px 24px;
     border-radius: 26px;
+  }
+
+  .jade-scroll__close {
+    top: 12px;
+    right: 16px;
+    z-index: 2;
   }
 
   .jade-scroll__axis {
