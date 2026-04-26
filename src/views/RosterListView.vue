@@ -163,35 +163,12 @@ watch(selectedCard, async (nextCard) => {
     return
   }
 
-  if (isMobileRosterViewport()) {
-    gsap.fromTo(
-      scrollDialogRef.value,
-      { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' },
-    )
-    return
-  }
-
   gsap.fromTo(
     scrollDialogRef.value,
     { opacity: 0, scaleX: 0.26, scaleY: 0.92, y: 28, filter: 'blur(10px)' },
     { opacity: 1, scaleX: 1, scaleY: 1, y: 0, filter: 'blur(0px)', duration: 0.86, ease: 'power3.out' },
   )
 }, { flush: 'post' })
-
-/**
- * 判断当前是否为手机名册视口
- * 用途：手机浏览器对模糊形变动画更敏感，这里用于切换为更稳的轻量动画
- * 入参：无
- * 返回值：是手机窄屏时返回 true，否则返回 false
- */
-function isMobileRosterViewport(): boolean {
-  if (typeof window === 'undefined') {
-    return false
-  }
-
-  return window.matchMedia('(max-width: 720px)').matches
-}
 
 /**
  * 加载公开名帖列表
@@ -1375,38 +1352,7 @@ function closeScroll(): void {
 @media (max-width: 720px) {
   .cloud-roster-page {
     padding-bottom: calc(206px + env(safe-area-inset-bottom));
-    overflow-x: clip;
-    overflow-y: visible;
-  }
-
-  .cloud-roster-sky {
-    position: absolute;
-  }
-
-  .cloud-roster-sky__cloud,
-  .cloud-roster-sky__halo,
-  .cloud-roster-hero::before,
-  .cloud-roster-island,
-  .cloud-person-card,
-  .jade-pendant-skeleton {
-    animation: none !important;
-  }
-
-  .cloud-roster-sky__cloud,
-  .cloud-roster-hero::before,
-  .jade-pendant__glow,
-  .jade-pendant__shadow,
-  .jade-scroll::before {
-    filter: none;
-  }
-
-  .cloud-roster-hero,
-  .cloud-roster-command,
-  .cloud-state-card,
-  .cloud-roster-floating a,
-  .jade-scroll-overlay {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    overflow-x: hidden;
   }
 
   .cloud-roster-shell {
@@ -1433,37 +1379,27 @@ function closeScroll(): void {
     gap: 14px 10px;
     min-height: auto;
     padding: 18px 0 112px;
-    contain: layout paint;
   }
 
   .jade-pendant {
     -webkit-tap-highlight-color: transparent;
-    backface-visibility: hidden;
-    contain: layout paint style;
     min-height: clamp(194px, 50vw, 220px);
     touch-action: manipulation;
     transform: translate3d(0, 0, 0) rotate(var(--jade-rotate)) scale(0.92);
-    transition: transform 160ms ease;
-    will-change: auto;
+    transition: transform 180ms ease, filter 180ms ease;
   }
 
   .jade-pendant__body {
-    backface-visibility: hidden;
     width: min(36vw, 128px);
     min-height: clamp(166px, 45vw, 178px);
     padding: 38px 12px 16px;
-    animation: none;
-    transform: translateZ(0);
   }
 
   .jade-pendant__glow {
     width: min(42vw, 148px);
     height: min(50vw, 172px);
-    opacity: 0.38;
-  }
-
-  .jade-pendant__shadow {
-    opacity: 0.42;
+    filter: blur(20px);
+    opacity: 0.72;
   }
 
   .jade-pendant__hole {
@@ -1494,12 +1430,8 @@ function closeScroll(): void {
 
   .jade-pendant--active,
   .jade-pendant--active:hover {
-    filter: none;
+    filter: saturate(1.05);
     transform: translate3d(0, -4px, 0) rotate(var(--jade-rotate)) scale(0.95);
-  }
-
-  .jade-scroll-overlay {
-    background: rgba(23, 78, 83, 0.18);
   }
 
   .jade-scroll {
@@ -1509,7 +1441,6 @@ function closeScroll(): void {
     overscroll-behavior: contain;
     padding: 34px 22px 24px;
     border-radius: 26px;
-    transform: translateZ(0);
   }
 
   .jade-scroll__axis {
@@ -1575,7 +1506,8 @@ function closeScroll(): void {
   }
 
   .cloud-roster-command {
-    top: 84px;
+    position: relative;
+    top: auto;
     border-radius: 26px;
   }
 
