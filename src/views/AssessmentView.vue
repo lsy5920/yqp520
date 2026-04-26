@@ -807,7 +807,7 @@ onBeforeUnmount(() => {
               正式答卷
             </button>
             <RouterLink to="/canon" class="ink-button ink-button--ghost">
-              先阅立派典章
+              先阅立派金典
             </RouterLink>
           </div>
         </article>
@@ -1082,7 +1082,7 @@ onBeforeUnmount(() => {
           </div>
 
           <p v-if="shouldShowRetakeNotice" class="assessment-result__retake-note">
-            建议三日后补考。首版暂不做本地强锁，你可以先温立派典章，再决定何时重考。
+            建议三日后补考。首版暂不做本地强锁，你可以先温立派金典，再决定何时重考。
           </p>
 
           <div class="assessment-result__actions">
@@ -1105,7 +1105,7 @@ onBeforeUnmount(() => {
               class="ink-button"
               :class="latestResult.passed ? 'ink-button--ghost' : 'ink-button--primary'"
             >
-              去看立派典章
+            去看立派金典
             </RouterLink>
           </div>
         </article>

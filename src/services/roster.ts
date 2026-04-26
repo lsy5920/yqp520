@@ -609,6 +609,7 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
   const nextEntryNo = payload.status === 'approved'
     ? (payload.entryNo && isValidRosterEntryNo(payload.entryNo) ? payload.entryNo : await getNextAvailableRosterEntryNo())
     : null
+  const nextIsPublic = payload.status === 'approved'
 
   if (payload.status === 'approved' && payload.entryNo && !isValidRosterEntryNo(payload.entryNo)) {
     throw new Error('入册编号必须是大于 0 的整数，并且不能包含数字 4。')
@@ -628,7 +629,7 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
     cover_key: payload.coverKey,
     status: payload.status,
     entry_no: nextEntryNo,
-    is_public: payload.isPublic,
+    is_public: nextIsPublic,
     is_region_public: payload.isRegionPublic,
     is_story_public: payload.isStoryPublic,
     contact_text: payload.contactText.trim(),

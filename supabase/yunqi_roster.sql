@@ -96,6 +96,12 @@ alter table public.yunqi_roster_cards
 add constraint yunqi_roster_cards_entry_no_check
 check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0));
 
+-- 这里补救已入册但未公开的历史名帖，避免前台名册和人数统计漏掉新审核记录。
+update public.yunqi_roster_cards
+set is_public = true
+where status = 'approved'
+  and is_public = false;
+
 -- 这里给历史已入册且公开的名帖补发编号，避免前台和后台一直显示待授编号。
 do $$
 declare

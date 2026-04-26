@@ -28,7 +28,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/canon',
     name: 'canon',
     component: CanonView,
-    meta: { title: '立派典章' },
+    meta: { title: '立派金典' },
   },
   {
     path: '/discipline',

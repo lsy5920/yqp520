@@ -76,6 +76,11 @@ watch(() => route.query.entry, () => {
   void selectEntryFromRouteQuery()
 })
 
+// 这里监听审核状态变化，已入册名帖默认公开，避免保存后前台名册和人数统计查不到。
+watch(() => editForm.value?.status, (nextStatus, previousStatus) => {
+  syncApprovedPublicFlag(nextStatus, previousStatus)
+})
+
 /**
  * 加载后台列表
  * 用途：按状态和关键词查询新名帖表
@@ -198,7 +203,7 @@ function buildEditForm(entry: AdminRosterCardRecord): AdminRosterCardSavePayload
     coverKey: entry.coverKey,
     status: entry.status,
     entryNo: entry.entryNo,
-    isPublic: entry.isPublic,
+    isPublic: entry.status === 'approved' ? true : entry.isPublic,
     isRegionPublic: entry.isRegionPublic,
     isStoryPublic: entry.isStoryPublic,
     contactText: entry.contactText,
@@ -206,6 +211,27 @@ function buildEditForm(entry: AdminRosterCardRecord): AdminRosterCardSavePayload
     featuredLevel: entry.featuredLevel,
     reviewNote: entry.reviewNote,
     internalNote: entry.internalNote,
+  }
+}
+
+/**
+ * 同步已入册公开开关
+ * 用途：状态改为已入册时自动公开，改回非入册时自动隐藏
+ * 入参：nextStatus 为新状态，previousStatus 为旧状态
+ * 返回值：无返回值
+ */
+function syncApprovedPublicFlag(nextStatus: RosterCardStatus | undefined, previousStatus: RosterCardStatus | undefined): void {
+  if (!editForm.value || !nextStatus) {
+    return
+  }
+
+  if (nextStatus === 'approved') {
+    editForm.value.isPublic = true
+    return
+  }
+
+  if (previousStatus === 'approved') {
+    editForm.value.isPublic = false
   }
 }
 
@@ -363,7 +389,7 @@ async function handleLogout(): Promise<void> {
             <label><span>状态</span><select v-model="editForm.status"><option value="pending">待审</option><option value="approved">已入册</option><option value="deferred">暂缓</option><option value="rejected">退回</option></select></label>
             <label><span>热度</span><input v-model.number="editForm.heatValue" min="0" type="number" /></label>
             <label><span>推荐等级</span><input v-model.number="editForm.featuredLevel" min="0" max="9" type="number" /></label>
-            <label class="check"><input v-model="editForm.isPublic" type="checkbox" />公开展示</label>
+            <label class="check"><input v-model="editForm.isPublic" :disabled="editForm.status === 'approved'" type="checkbox" />公开展示<span>已入册会自动开启</span></label>
             <label class="check"><input v-model="editForm.isRegionPublic" type="checkbox" />公开地域</label>
             <label class="check"><input v-model="editForm.isStoryPublic" type="checkbox" />公开故事</label>
             <label class="wide"><span>联系方式</span><input v-model="editForm.contactText" type="text" /></label>
