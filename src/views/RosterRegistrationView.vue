@@ -13,6 +13,7 @@ import {
   rosterContent,
   rosterCoverOptions,
   rosterGenderOptions,
+  rosterRegistrationGenderOptions,
   rosterIdentityOptions,
   rosterRegistrationSteps,
   rosterSkillPresets,
@@ -499,7 +500,7 @@ async function handleSubmit(): Promise<void> {
             <span>性别光效</span>
             <div class="roster-gender-options">
               <button
-                v-for="item in rosterGenderOptions"
+                v-for="item in rosterRegistrationGenderOptions"
                 :key="item.key"
                 type="button"
                 class="roster-gender-card"
@@ -855,7 +856,7 @@ async function handleSubmit(): Promise<void> {
 }
 
 .roster-gender-options {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .roster-gender-card {

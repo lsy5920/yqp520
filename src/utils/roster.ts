@@ -108,6 +108,11 @@ export function validateRosterCardForm(form: RosterCardFormValue): string[] {
     errors.push('请选择门派身份')
   }
 
+  // 这里校验性别光效，新登记只允许选择男生或女生，旧数据里的未选择不再作为表单入口。
+  if (normalizedForm.genderKey === 'unspecified') {
+    errors.push('请选择性别光效')
+  }
+
   // 这里校验宣言，避免卡片缺少核心记忆点。
   if (!normalizedForm.motto) {
     errors.push('请填写江湖宣言')

@@ -29,6 +29,9 @@ export const rosterGenderOptions: RosterGenderOption[] = [
   { key: 'unspecified', label: '未选择', description: '公开玉佩保持清白玉本色，不额外泛光。', glowLabel: '清白本色' },
 ]
 
+// 这里定义登记页可选择的性别光效，只保留男生和女生，旧数据的未选择只作为后台兜底。
+export const rosterRegistrationGenderOptions: RosterGenderOption[] = rosterGenderOptions.filter((item) => item.key !== 'unspecified')
+
 // 这里定义羁绊选项，表达成员想怎样和大家同行。
 export const rosterBondOptions: RosterBondOption[] = [
   { key: 'seeking', label: '寻同路人', description: '想认识更多同门，一起做点有趣的事。' },
@@ -64,7 +67,7 @@ export const rosterContent = {
   list: {
     eyebrow: '云栖名册 · 玉佩云海',
     title: '清白玉佩浮于云海，同门名号一眼相逢',
-    lead: '新版名册化作多枚清白玉玉佩：男生泛青蓝光，女生泛粉红光，未选择性别保持玉色本真；轻点玉佩，名帖卷轴缓缓展开。',
+    lead: '新版名册化作多枚清白玉玉佩：青蓝与粉红光效轻轻浮动，正面只留道名、编号与身份；轻点玉佩，名帖卷轴缓缓展开。',
     searchPlaceholder: '搜索道名、编号、身份、地域或专长云签',
     emptyText: '这片玉佩云海暂未寻到同门踪迹，换个关键词或身份云签试试看。',
   },

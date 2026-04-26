@@ -421,7 +421,6 @@ function closeScroll(): void {
               <small>{{ card.identityLabel }}</small>
               <strong>{{ card.jianghuName }}</strong>
               <em>{{ card.displayTitle }}</em>
-              <b>{{ card.genderLabel }}</b>
             </span>
             <span class="jade-pendant__shadow" aria-hidden="true"></span>
           </button>
@@ -437,7 +436,7 @@ function closeScroll(): void {
             <button type="button" class="jade-scroll__close" aria-label="关闭名帖卷轴" @click="closeScroll">收起</button>
 
             <header class="jade-scroll__head">
-              <span>云中名帖 · {{ selectedCard.genderLabel }}</span>
+              <span>云中名帖</span>
               <h2>{{ selectedCard.jianghuName }}</h2>
               <p>{{ selectedCard.displayTitle }} · {{ selectedCard.identityLabel }}</p>
             </header>
@@ -899,8 +898,7 @@ function closeScroll(): void {
 
 .jade-pendant small,
 .jade-pendant strong,
-.jade-pendant em,
-.jade-pendant b {
+.jade-pendant em {
   position: relative;
   z-index: 1;
   margin: 0;
@@ -924,11 +922,6 @@ function closeScroll(): void {
   color: rgba(16, 70, 80, 0.68);
   font-style: normal;
   font-weight: 800;
-}
-
-.jade-pendant b {
-  color: var(--roster-gender-ink);
-  font-size: 0.82rem;
 }
 
 .jade-pendant__shadow {
@@ -1420,8 +1413,7 @@ function closeScroll(): void {
     font-size: 0.72rem;
   }
 
-  .jade-pendant em,
-  .jade-pendant b {
+  .jade-pendant em {
     font-size: 0.76rem;
   }
 
