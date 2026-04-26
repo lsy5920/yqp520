@@ -400,7 +400,7 @@ export async function submitRosterEntry(payload: SubmitRosterCardPayload): Promi
 
 /**
  * 获取公开名帖列表
- * 用途：公开卡册页加载已入册且公开的名帖
+ * 用途：公开卡册页加载已入册名帖，避免旧公开开关脏数据漏掉同门
  * 入参：options 为搜索和筛选参数
  * 返回值：返回公开名帖列表
  */
@@ -410,7 +410,6 @@ export async function listPublicRosterEntries(options: ListPublicRosterEntriesOp
     .from('yunqi_roster_cards')
     .select('*')
     .eq('status', 'approved')
-    .eq('is_public', true)
     .order('featured_level', { ascending: false })
     .order('approved_at', { ascending: false })
 
@@ -451,7 +450,6 @@ export async function getPublicRosterEntryBySlug(publicSlug: string): Promise<Pu
       .select('*')
       .eq('public_slug', publicSlug)
       .eq('status', 'approved')
-      .eq('is_public', true)
       .maybeSingle(),
     '加载名帖详情超时，请稍后重试。',
   )

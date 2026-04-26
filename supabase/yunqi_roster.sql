@@ -100,7 +100,14 @@ check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0
 update public.yunqi_roster_cards
 set is_public = true
 where status = 'approved'
-  and is_public = false;
+  and is_public is distinct from true;
+
+-- 这里把公开开关补成稳定默认值，旧表如果曾经允许空值，也会被修正。
+update public.yunqi_roster_cards
+set is_public = false
+where is_public is null;
+alter table public.yunqi_roster_cards alter column is_public set default false;
+alter table public.yunqi_roster_cards alter column is_public set not null;
 
 -- 这里给历史已入册且公开的名帖补发编号，避免前台和后台一直显示待授编号。
 do $$
@@ -199,13 +206,13 @@ for insert
 to anon, authenticated
 with check (status = 'pending' and is_public = false);
 
--- 这里允许任何人读取已经入册且公开的名帖。
+-- 这里允许任何人读取已经入册的名帖；已入册即进入前台名册。
 drop policy if exists yunqi_roster_cards_public_select on public.yunqi_roster_cards;
 create policy yunqi_roster_cards_public_select
 on public.yunqi_roster_cards
 for select
 to anon, authenticated
-using ((status = 'approved' and is_public = true) or public.is_active_yunqi_roster_admin());
+using (status = 'approved' or public.is_active_yunqi_roster_admin());
 
 -- 这里允许管理员更新名帖。
 drop policy if exists yunqi_roster_cards_admin_update on public.yunqi_roster_cards;
