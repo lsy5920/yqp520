@@ -38,16 +38,16 @@ const isExporting = ref<boolean>(false)
 const lastError = ref<string>('')
 
 // 这里计算二维码提示文案。
-const qrHint = computed<string>(() => `${props.entry.jianghuName} 的云海名册令链接`)
+const qrHint = computed<string>(() => `${props.entry.jianghuName} 的云海玉佩帖链接`)
 
 // 这里计算当前是否是待审海报，面板说明会跟着切换。
 const isPendingPoster = computed<boolean>(() => props.status === 'pending')
 
 // 这里计算工作台眉题，方便用户看懂当前海报用途。
-const panelEyebrow = computed<string>(() => (isPendingPoster.value ? '待审名册令' : '正式名册令'))
+const panelEyebrow = computed<string>(() => (isPendingPoster.value ? '待审玉佩帖' : '正式玉佩帖'))
 
 // 这里计算工作台标题，待审时强调保存分享给云司。
-const panelTitle = computed<string>(() => (isPendingPoster.value ? '保存此令，交由云司审核' : '把这封云海名帖带走'))
+const panelTitle = computed<string>(() => (isPendingPoster.value ? '保存此玉佩帖，交由云司审核' : '把这封云海名帖带走'))
 
 // 这里计算工作台说明，明确二维码会动态流转。
 const panelLead = computed<string>(() => (
@@ -111,7 +111,7 @@ async function exportPoster(): Promise<{ dataUrl: string; fileName: string }> {
 
   return {
     dataUrl,
-    fileName: `云海名册令-${props.entry.jianghuName || '同门'}-${Date.now()}.png`,
+    fileName: `云海玉佩帖-${props.entry.jianghuName || '同门'}-${Date.now()}.png`,
   }
 }
 

@@ -16,16 +16,16 @@ useRevealMotion({
 <template>
   <div ref="pageRef" class="page">
     <PageBanner
-      eyebrow="立派全典"
-      title="云栖派 · 半文半白立派全典"
-      lead="此页收录云栖派立派定名、总旨、规矩、宗门架构、日常、入退派与结语，是云栖立门之本。"
+      eyebrow="立派手册"
+      title="云栖派 · 立派说明与同门手册"
+      lead="这里用清楚、现代的方式说明云栖派为什么成立、怎样相处、如何加入和离开。"
       :note="siteContent.site.motto"
     />
 
     <section class="canon-layout">
       <aside class="canon-aside content-card" data-reveal>
         <p class="content-card__eyebrow">章节引路</p>
-        <nav class="anchor-list" aria-label="立派全典章节索引">
+        <nav class="anchor-list" aria-label="立派手册章节索引">
           <a v-for="section in siteContent.canonSections" :key="section.id" :href="`#${section.id}`">
             {{ section.title }}
           </a>

@@ -28,7 +28,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/canon',
     name: 'canon',
     component: CanonView,
-    meta: { title: '立派全典' },
+    meta: { title: '立派手册' },
   },
   {
     path: '/discipline',
@@ -88,7 +88,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/roster/review/:publicSlug',
     name: 'rosterReviewRedirect',
     component: RosterReviewRedirectView,
-    meta: { title: '云海名册令' },
+    meta: { title: '云海玉佩帖' },
   },
   {
     path: '/roster/admin/login',

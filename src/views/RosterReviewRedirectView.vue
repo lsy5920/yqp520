@@ -59,7 +59,7 @@ async function resolveReviewTarget(): Promise<void> {
   shouldShowLoginPrompt.value = false
 
   if (!publicSlug.value) {
-    errorMessage.value = '这张名册令缺少名帖标识，暂时无法打开。'
+    errorMessage.value = '这张玉佩帖缺少名帖标识，暂时无法打开。'
     isChecking.value = false
     return
   }
@@ -93,7 +93,7 @@ async function resolveReviewTarget(): Promise<void> {
     // 这里说明名帖还没公开，扫码者需要先用云司账号登录。
     shouldShowLoginPrompt.value = true
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '名册令识别失败，请稍后再试。'
+    errorMessage.value = error instanceof Error ? error.message : '玉佩帖识别失败，请稍后再试。'
   } finally {
     isChecking.value = false
   }
@@ -114,8 +114,8 @@ onMounted(() => {
     </div>
 
     <section class="cloud-review-card reveal-on-scroll">
-      <p>云海名册令</p>
-      <h1>{{ isChecking ? '正在辨认名帖去向' : (shouldShowLoginPrompt ? '此帖待云司审核' : '名册令暂不可用') }}</h1>
+      <p>云海玉佩帖</p>
+      <h1>{{ isChecking ? '正在辨认名帖去向' : (shouldShowLoginPrompt ? '此帖待云司审核' : '玉佩帖暂不可用') }}</h1>
       <span v-if="isChecking">正在查看这张名帖是否已经正式入册，请稍候。</span>
       <span v-else-if="shouldShowLoginPrompt">这张名帖尚未公开，需要云司登录后进入审核台处理。</span>
       <span v-else>{{ errorMessage || '暂时没有可继续处理的名帖信息。' }}</span>

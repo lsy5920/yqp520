@@ -73,7 +73,7 @@ const errorList = ref<string[]>([])
 // 这里记录最近一次问心榜考核结果，登记页会据此决定是否放行。
 const latestAssessmentResult = ref<AssessmentResult | null>(null)
 
-// 这里记录成功弹窗提示，提交完成后提醒用户保存待审名册令。
+// 这里记录成功弹窗提示，提交完成后提醒用户保存待审玉佩帖。
 const successMessage = ref<string>('')
 
 // 这里记录成功回执号，方便弹窗里展示登记已经成功。
@@ -109,7 +109,7 @@ const assessmentGateView = computed<RosterAssessmentGateView>(() => {
   if (!result) {
     return {
       allowed: false,
-      title: '先过问心榜，再递名册令',
+      title: '先过问心榜，再递玉佩名帖',
       description: '本机还没有找到最近一次入派考核结果。请先完成问心考核，达到八十分合格后再回来登记。',
       scoreText: `当前题卷：${assessmentPaperConfig.version} · 合格线 ${assessmentPaperConfig.passScore} 分`,
     }
@@ -128,7 +128,7 @@ const assessmentGateView = computed<RosterAssessmentGateView>(() => {
     return {
       allowed: false,
       title: '问心榜尚未达标',
-      description: '登记需要当前题卷考核合格，且分数不低于八十分。先温一遍立派全典，再回来会稳很多。',
+      description: '登记需要当前题卷考核合格，且分数不低于八十分。先读一遍立派手册，再回来会稳很多。',
       scoreText: `最近成绩：${Number(result.score || 0)} / ${Number(result.totalScore || assessmentPaperConfig.totalScore)} 分 · 合格线 ${assessmentPaperConfig.passScore} 分`,
     }
   }
@@ -136,7 +136,7 @@ const assessmentGateView = computed<RosterAssessmentGateView>(() => {
   return {
     allowed: true,
     title: '问心榜已合格',
-    description: '本机最近一次考核已经达到登记门槛，可以继续递交云栖名册令。',
+    description: '本机最近一次考核已经达到登记门槛，可以继续递交云栖玉佩名帖。',
     scoreText: `最近成绩：${result.score} / ${result.totalScore} 分 · 已通过`,
   }
 })
@@ -422,7 +422,7 @@ async function handleSubmit(): Promise<void> {
     activeStepKey.value = 'basic'
     successReceiptCode.value = result.publicSlug
     successPosterEntry.value = buildPendingPosterEntry(submittedForm, result.publicSlug)
-    successMessage.value = `名帖已递入云栖案头，回执号：${result.publicSlug}。请保存待审名册令，分享给云司扫码审核。`
+    successMessage.value = `名帖已递入云栖案头，回执号：${result.publicSlug}。请保存待审玉佩帖，分享给云司扫码审核。`
   } catch (error) {
     errorList.value = [error instanceof Error ? error.message : '提交名帖失败，请稍后重试。']
   } finally {

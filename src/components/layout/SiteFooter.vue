@@ -35,7 +35,7 @@ const navItems = computed(() => ([
       </div>
 
       <div class="site-footer__meta">
-        <p>云栖无山，以心为山；宗门无殿，以情为殿。</p>
+        <p>把关系放轻，把真诚放稳；能同行时好好同行，暂时走远时也彼此祝好。</p>
         <p>{{ currentYear }} · 云栖派官方网站首版</p>
       </div>
     </div>

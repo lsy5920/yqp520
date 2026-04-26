@@ -31,7 +31,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || props.templ
 </script>
 
 <template>
-  <article class="roster-registration-poster-card" :class="{ 'roster-registration-poster-card--reduced': reduceMotion }" aria-label="云栖名册招募令海报预览">
+  <article class="roster-registration-poster-card" :class="{ 'roster-registration-poster-card--reduced': reduceMotion }" aria-label="云栖名册招募海报预览">
     <div class="roster-registration-poster-card__texture" aria-hidden="true" />
     <div class="roster-registration-poster-card__mountain roster-registration-poster-card__mountain--back" aria-hidden="true" />
     <div class="roster-registration-poster-card__mountain roster-registration-poster-card__mountain--front" aria-hidden="true" />
@@ -55,7 +55,7 @@ const displayQrHint = computed<string>(() => props.qrHint?.trim() || props.templ
 
       <section class="roster-registration-poster-card__hero">
         <article class="roster-registration-poster-card__edict">
-          <p class="roster-registration-poster-card__section-label">山门招募令</p>
+          <p class="roster-registration-poster-card__section-label">山门招募帖</p>
           <p>{{ template.lead }}</p>
           <strong>云深有路，同道可来。</strong>
         </article>
