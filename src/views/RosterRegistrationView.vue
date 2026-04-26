@@ -128,7 +128,7 @@ const assessmentGateView = computed<RosterAssessmentGateView>(() => {
     return {
       allowed: false,
       title: '问心榜尚未达标',
-      description: '登记需要当前题卷考核合格，且分数不低于八十分。先读一遍立派手册，再回来会稳很多。',
+      description: '登记需要当前题卷考核合格，且分数不低于八十分。先温一遍立派典章，再回来会稳很多。',
       scoreText: `最近成绩：${Number(result.score || 0)} / ${Number(result.totalScore || assessmentPaperConfig.totalScore)} 分 · 合格线 ${assessmentPaperConfig.passScore} 分`,
     }
   }
@@ -1591,5 +1591,6 @@ async function handleSubmit(): Promise<void> {
   }
 }
 </style>
+
 
 

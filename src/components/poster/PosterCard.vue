@@ -28,7 +28,7 @@ interface PosterCardProps {
 
 const props = withDefaults(defineProps<PosterCardProps>(), {
   title: '云中同道',
-  message: '愿你心有山河，身在烟火，仍能守住一寸清明与热忱。',
+  message: '愿你入人间烟火，仍守心上一寸清明；佩玉入云，自有同道相逢。',
   headline: '云栖玉佩帖',
   subtitle: '一纸入云栖 · 同道共此心',
   signature: '云栖派山门',
@@ -56,7 +56,7 @@ function normalizeText(value: string | undefined, fallback: string): string {
 const displayTitle = computed<string>(() => normalizeText(props.title, '云中同道'))
 
 /** 用途：展示用寄语，空值时使用新版江湖风格文案。 */
-const displayMessage = computed<string>(() => normalizeText(props.message, '愿你心有山河，身在烟火，仍能守住一寸清明与热忱。'))
+const displayMessage = computed<string>(() => normalizeText(props.message, '愿你入人间烟火，仍守心上一寸清明；佩玉入云，自有同道相逢。'))
 
 /** 用途：展示用主标题，空值时使用新版玉佩帖标题。 */
 const displayHeadline = computed<string>(() => normalizeText(props.headline, '云栖玉佩帖'))

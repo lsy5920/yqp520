@@ -14,12 +14,12 @@
 
 // 这里定义身份选项，所有名册页面统一从这里读取，避免文案分散。
 export const rosterIdentityOptions: RosterIdentityOption[] = [
-  { key: 'swordsman', label: '执剑游侠', description: '适合外放、果断、愿意冲锋的人。', icon: '剑' },
-  { key: 'healer', label: '青囊医者', description: '适合温柔、耐心、擅长照顾同伴的人。', icon: '药' },
-  { key: 'strategist', label: '云台谋士', description: '适合冷静、会规划、喜欢出主意的人。', icon: '策' },
-  { key: 'artisan', label: '百工匠师', description: '适合会设计、会剪辑、会写作或会整活的人。', icon: '工' },
-  { key: 'wanderer', label: '烟雨行客', description: '适合自由、随性、喜欢记录江湖日常的人。', icon: '游' },
-  { key: 'guardian', label: '护山执事', description: '适合稳定、可靠、愿意守护秩序的人。', icon: '守' },
+  { key: 'swordsman', label: '执剑游侠', description: '性情爽利，遇事敢当，愿为同门先行一步。', icon: '剑' },
+  { key: 'healer', label: '青囊医者', description: '心性温和，善听善护，常能照看他人冷暖。', icon: '药' },
+  { key: 'strategist', label: '云台谋士', description: '思路清明，善谋善断，常为门中诸事出主意。', icon: '策' },
+  { key: 'artisan', label: '百工匠师', description: '手中有巧思，能写能画能剪，也能把趣事做成作品。', icon: '工' },
+  { key: 'wanderer', label: '烟雨行客', description: '来去随心，爱记江湖日常，常把见闻带回云栖。', icon: '游' },
+  { key: 'guardian', label: '护山执事', description: '稳重可靠，愿守秩序，也愿替同门护住一方清净。', icon: '守' },
 ]
 
 // 这里定义性别选项，性别会控制公开名册玉佩外光。
@@ -34,10 +34,10 @@ export const rosterRegistrationGenderOptions: RosterGenderOption[] = rosterGende
 
 // 这里定义羁绊选项，表达成员想怎样和大家同行。
 export const rosterBondOptions: RosterBondOption[] = [
-  { key: 'seeking', label: '寻同路人', description: '想认识更多同门，一起做点有趣的事。' },
-  { key: 'companion', label: '已有同行', description: '已有熟人牵引，希望继续在门中发光。' },
-  { key: 'mentor', label: '愿做引路', description: '愿意帮助新人熟悉门派节奏。' },
-  { key: 'quiet', label: '静修旁观', description: '喜欢低调潜水，但会默默支持大家。' },
+  { key: 'seeking', label: '寻同路人', description: '愿在云海中多认几位同道，一起做些有趣之事。' },
+  { key: 'companion', label: '已有同行', description: '已有故人牵引入门，愿继续在门中留光。' },
+  { key: 'mentor', label: '愿做引路', description: '愿替新同门指一段路，少些迷雾，多些安心。' },
+  { key: 'quiet', label: '静修旁观', description: '喜静不喜闹，却也默默守着这一方云栖。' },
 ]
 
 // 这里定义卡片封面选项，手机端名帖会用它切换高级视觉。
@@ -67,15 +67,15 @@ export const rosterContent = {
   list: {
     eyebrow: '云栖名册 · 玉佩云海',
     title: '清白玉佩浮于云海，同门名号一眼相逢',
-    lead: '新版名册化作多枚清白玉玉佩：青蓝与粉红光效轻轻浮动，正面只留道名、编号与身份；轻点玉佩，名帖卷轴缓缓展开。',
+    lead: '名册不再作纸上长卷，而化作多枚清白玉佩浮于云海。玉面只留道名、编号与身份；轻点玉佩，名帖卷轴自云中缓缓展开。',
     searchPlaceholder: '搜索道名、编号、身份、地域或专长云签',
     emptyText: '这片玉佩云海暂未寻到同门踪迹，换个关键词或身份云签试试看。',
   },
   registration: {
     eyebrow: '云栖名册登记 · 五重云阶',
     title: '沿云阶写下属于你的云中名帖',
-    lead: '五步完成登记，执事审核后即可化作公开云笺。草稿会自动留在本机，误关页面也不怕。',
-    pledge: '我确认所填内容真实友善，愿以温和、尊重、长期同行的方式加入云栖名册。',
+    lead: '循五重云阶递上名帖，待执事校阅落印后，便可化作云海中一枚清白玉佩。',
+    pledge: '我确认所填皆为真诚之言，愿守云栖门风，以温和、尊重、长久同行之心入册。',
   },
   detail: {
     loading: '名帖正在云雾中缓缓展开……',
@@ -84,7 +84,7 @@ export const rosterContent = {
   admin: {
     eyebrow: '云栖名册审核台 · 云端执事案',
     title: '执事坐看云卷，校阅新名帖',
-    lead: '这里用于审核登记、调整展示内容、设置推荐等级和记录处理备注；视觉更轻，操作仍保持清晰高效。',
+    lead: '此处为云司校阅名帖、调整公开内容、记录处理意见之案台；云气在外，章法在内。',
   },
 }
 

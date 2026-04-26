@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router'
+﻿import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
 // 这里把页面组件改成按路由加载，减少首次打开首页时需要下载的代码量。
@@ -28,7 +28,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/canon',
     name: 'canon',
     component: CanonView,
-    meta: { title: '立派手册' },
+    meta: { title: '立派典章' },
   },
   {
     path: '/discipline',
@@ -136,3 +136,4 @@ router.afterEach((to) => {
   const pageTitle = typeof to.meta.title === 'string' ? to.meta.title : '云栖派'
   document.title = `${pageTitle} | 云栖派`
 })
+
