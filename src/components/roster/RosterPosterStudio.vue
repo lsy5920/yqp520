@@ -38,7 +38,7 @@ const isExporting = ref<boolean>(false)
 const lastError = ref<string>('')
 
 // 这里计算二维码提示文案。
-const qrHint = computed<string>(() => `${props.entry.jianghuName} 的云海玉佩帖链接`)
+const qrHint = computed<string>(() => `${props.entry.daoName} 的云海玉佩帖链接`)
 
 // 这里计算当前是否是待审海报，面板说明会跟着切换。
 const isPendingPoster = computed<boolean>(() => props.status === 'pending')
@@ -52,8 +52,8 @@ const panelTitle = computed<string>(() => (isPendingPoster.value ? '保存此玉
 // 这里计算工作台说明，明确二维码会动态流转。
 const panelLead = computed<string>(() => (
   isPendingPoster.value
-    ? `为「${props.entry.jianghuName}」生成待审海报，二维码会带云司进入审核，审核通过后同一链接会进入公开详情。`
-    : `为「${props.entry.jianghuName}」生成正式入册海报，二维码会进入公开名帖详情。`
+    ? `为「${props.entry.daoName}」生成待审海报，二维码会带云司进入审核，审核通过后同一链接会进入公开详情。`
+    : `为「${props.entry.daoName}」生成正式入册海报，二维码会进入公开名帖详情。`
 ))
 
 // 这里计算复制按钮文案，待审海报复制的是审核入口。
@@ -111,7 +111,7 @@ async function exportPoster(): Promise<{ dataUrl: string; fileName: string }> {
 
   return {
     dataUrl,
-    fileName: `云海玉佩帖-${props.entry.jianghuName || '同门'}-${Date.now()}.png`,
+    fileName: `云海玉佩帖-${props.entry.daoName || '同门'}-${Date.now()}.png`,
   }
 }
 

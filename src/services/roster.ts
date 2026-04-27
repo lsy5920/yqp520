@@ -12,7 +12,15 @@ import type {
   SubmitRosterCardPayload,
   SubmitRosterCardResult,
 } from '@/types/roster'
-import { createRosterPublicSlug, hydratePublicRosterCard, normalizeRosterCardForm, normalizeRosterGenderKey } from '@/utils/roster'
+import {
+  createRosterPublicSlug,
+  formatRosterEntryTitle,
+  hydratePublicRosterCard,
+  normalizeRosterCardForm,
+  normalizeRosterEntryGeneration,
+  normalizeRosterGenderKey,
+  validateRosterDaoName,
+} from '@/utils/roster'
 
 // 这里定义请求超时时间，避免网络异常时页面一直转圈。
 const ROSTER_REQUEST_TIMEOUT_MS = 20000
@@ -22,6 +30,7 @@ interface RosterCardRow {
   id: string
   public_slug: string
   jianghu_name: string
+  dao_name: string
   title_name: string
   identity_key: string
   gender_key: string
@@ -33,6 +42,7 @@ interface RosterCardRow {
   bond_text: string
   cover_key: string
   status: RosterCardStatus
+  entry_generation: string | null
   entry_no: number | null
   is_public: boolean
   is_region_public: boolean
@@ -152,12 +162,15 @@ function mapAdminProfile(row: RosterAdminProfileRow): RosterAdminProfile {
 function mapPublicRosterCard(row: RosterCardRow): PublicRosterCard {
   const identity = getRosterIdentityOption(row.identity_key as never)
   const bond = getRosterBondOption(row.bond_key as never)
+  const entryGeneration = normalizeRosterEntryGeneration(row.entry_generation || '云')
 
   return hydratePublicRosterCard({
     id: row.id,
     publicSlug: row.public_slug,
     jianghuName: row.jianghu_name,
-    displayTitle: row.entry_no ? `云栖第 ${row.entry_no} 号` : '待授编号',
+    daoName: row.dao_name || '云未名',
+    displayTitle: formatRosterEntryTitle(row.entry_no, entryGeneration),
+    entryGeneration,
     entryNo: row.entry_no,
     identityKey: identity.key,
     identityLabel: identity.label,
@@ -189,6 +202,7 @@ function mapAdminRosterCard(row: RosterCardRow): AdminRosterCardRecord {
     ...mapPublicRosterCard({ ...row, is_region_public: true, is_story_public: true }),
     status: row.status,
     titleName: row.title_name,
+    entryGeneration: normalizeRosterEntryGeneration(row.entry_generation || '云'),
     entryNo: row.entry_no,
     isPublic: row.is_public,
     isRegionPublic: row.is_region_public,
@@ -365,6 +379,7 @@ export async function submitRosterEntry(payload: SubmitRosterCardPayload): Promi
   const insertPayload = {
     public_slug: publicSlug,
     jianghu_name: form.jianghuName,
+    dao_name: form.daoName,
     title_name: form.titleName,
     identity_key: form.identityKey,
     gender_key: form.genderKey,
@@ -429,7 +444,8 @@ export async function listPublicRosterEntries(options: ListPublicRosterEntriesOp
   const filteredRows = keyword
     ? rows.filter((row) => {
       const genderLabel = getRosterGenderOption(normalizeRosterGenderKey(row.gender_key)).label
-      return [row.jianghu_name, String(row.entry_no || ''), row.region_text, row.motto, genderLabel, ...(row.skill_tags || [])].some((item) => item.includes(keyword))
+      const entryTitle = formatRosterEntryTitle(row.entry_no, row.entry_generation || '云')
+      return [row.jianghu_name, row.dao_name, String(row.entry_no || ''), entryTitle, row.region_text, row.motto, genderLabel, ...(row.skill_tags || [])].some((item) => item.includes(keyword))
     })
     : rows
 
@@ -478,7 +494,7 @@ export async function listAdminRosterEntries(options: ListAdminRosterEntriesOpti
 
   const keyword = options.keyword?.trim()
   if (keyword) {
-    query = query.or(`jianghu_name.ilike.%${keyword}%,title_name.ilike.%${keyword}%,region_text.ilike.%${keyword}%,contact_text.ilike.%${keyword}%`)
+    query = query.or(`dao_name.ilike.%${keyword}%,jianghu_name.ilike.%${keyword}%,title_name.ilike.%${keyword}%,region_text.ilike.%${keyword}%,contact_text.ilike.%${keyword}%`)
   }
 
   const { data, error } = await withRosterTimeout(query, '加载审核台名帖超时，请稍后重试。')
@@ -548,23 +564,25 @@ export async function listRosterReviewLogs(cardId: string): Promise<RosterReview
  * 校验入册编号
  * 用途：确认后台手动填写的编号符合规则
  * 入参：entryNo 为后台填写的编号
- * 返回值：编号为正整数且不包含数字 4 时返回 true
+ * 返回值：编号为正整数时返回 true
  */
 function isValidRosterEntryNo(entryNo: number): boolean {
-  return Number.isInteger(entryNo) && entryNo > 0 && !String(entryNo).includes('4')
+  return Number.isInteger(entryNo) && entryNo > 0
 }
 
 /**
  * 获取下一个可用编号
- * 用途：审核通过时自动按最大编号顺延生成新编号
- * 入参：无
- * 返回值：返回不包含数字 4 的下一个编号
+ * 用途：审核通过时按辈分字自动顺延生成新编号
+ * 入参：entryGeneration 为辈分字
+ * 返回值：返回同辈分字下一个编号
  */
-async function getNextAvailableRosterEntryNo(): Promise<number> {
+async function getNextAvailableRosterEntryNo(entryGeneration = '云'): Promise<number> {
   const supabase = getSupabaseClient()
+  const generationText = normalizeRosterEntryGeneration(entryGeneration)
   const { data, error } = await supabase
     .from('yunqi_roster_cards')
     .select('entry_no')
+    .eq('entry_generation', generationText)
     .not('entry_no', 'is', null)
     .order('entry_no', { ascending: false })
     .limit(1)
@@ -574,13 +592,7 @@ async function getNextAvailableRosterEntryNo(): Promise<number> {
   }
 
   const maxEntryNo = Number((data?.[0] as { entry_no?: number } | undefined)?.entry_no || 0)
-  let nextEntryNo = maxEntryNo + 1
-
-  while (!isValidRosterEntryNo(nextEntryNo)) {
-    nextEntryNo += 1
-  }
-
-  return nextEntryNo
+  return maxEntryNo + 1
 }
 
 /**
@@ -604,17 +616,24 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
   }
 
   const oldCard = oldRow as RosterCardRow
+  const nextEntryGeneration = normalizeRosterEntryGeneration(payload.entryGeneration || '云')
   const nextEntryNo = payload.status === 'approved'
-    ? (payload.entryNo && isValidRosterEntryNo(payload.entryNo) ? payload.entryNo : await getNextAvailableRosterEntryNo())
+    ? (payload.entryNo && isValidRosterEntryNo(payload.entryNo) ? payload.entryNo : await getNextAvailableRosterEntryNo(nextEntryGeneration))
     : null
   const nextIsPublic = payload.status === 'approved'
 
   if (payload.status === 'approved' && payload.entryNo && !isValidRosterEntryNo(payload.entryNo)) {
-    throw new Error('入册编号必须是大于 0 的整数，并且不能包含数字 4。')
+    throw new Error('入册编号必须是大于 0 的整数。')
+  }
+
+  const daoNameError = validateRosterDaoName(payload.daoName)
+  if (daoNameError) {
+    throw new Error(daoNameError)
   }
 
   const updatePayload = {
     jianghu_name: payload.jianghuName.trim(),
+    dao_name: payload.daoName.trim(),
     title_name: payload.titleName.trim(),
     identity_key: payload.identityKey,
     gender_key: payload.genderKey,
@@ -626,6 +645,7 @@ export async function saveAdminRosterEntry(payload: AdminRosterCardSavePayload):
     bond_text: payload.bondText.trim(),
     cover_key: payload.coverKey,
     status: payload.status,
+    entry_generation: nextEntryGeneration,
     entry_no: nextEntryNo,
     is_public: nextIsPublic,
     is_region_public: payload.isRegionPublic,

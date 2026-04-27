@@ -33,6 +33,19 @@ const detailStyle = computed<Record<string, string>>(() => ({
   ...getRosterGenderGlowStyle(entry.value.genderKey),
 }))
 
+// 这里计算玉佩光色，只展示光效，不在公开详情里直写性别。
+const jadeGlowLabel = computed<string>(() => {
+  if (entry.value.genderKey === 'male') {
+    return '青蓝玉光'
+  }
+
+  if (entry.value.genderKey === 'female') {
+    return '粉红玉光'
+  }
+
+  return '清白本色'
+})
+
 // 这里计算公开标签汇总，避免空标签撑出无意义区域。
 const visibleTags = computed<string[]>(() => entry.value.skillTags.filter(Boolean))
 
@@ -103,12 +116,12 @@ async function loadEntryDetail(): Promise<void> {
         <article class="cloud-detail-hero" :style="detailStyle" data-reveal>
           <span class="cloud-detail-hero__mist" aria-hidden="true"></span>
           <header>
-            <span>{{ entry.identityLabel }} · {{ entry.genderLabel }}</span>
+            <span>{{ entry.identityLabel }} 路 {{ entry.bondLabel }}</span>
             <small>{{ formatRosterDate(entry.approvedAt) }} 入册</small>
           </header>
           <div class="cloud-detail-hero__name">
             <p>云中名帖</p>
-            <h1>{{ entry.jianghuName }}</h1>
+            <h1>{{ entry.daoName }}</h1>
             <em>{{ entry.displayTitle }}</em>
           </div>
           <blockquote>{{ entry.motto }}</blockquote>
@@ -121,18 +134,23 @@ async function loadEntryDetail(): Promise<void> {
           </article>
 
           <article class="cloud-detail-panel" data-reveal>
+            <span>江湖名</span>
+            <p>{{ entry.jianghuName }}</p>
+          </article>
+
+          <article class="cloud-detail-panel" data-reveal>
             <span>所在江湖</span>
             <p>{{ entry.regionText }}</p>
           </article>
 
           <article class="cloud-detail-panel" data-reveal>
-            <span>玉佩光效</span>
-            <p>{{ entry.genderLabel }} · {{ entry.genderKey === 'male' ? '青蓝玉光' : entry.genderKey === 'female' ? '粉红玉光' : '清白本色' }}</p>
+            <span>玉佩光色</span>
+            <p>{{ jadeGlowLabel }}</p>
           </article>
 
           <article class="cloud-detail-panel" data-reveal>
             <span>羁绊状态</span>
-            <p>{{ entry.bondLabel }} · {{ entry.bondText }}</p>
+            <p>{{ entry.bondLabel }} 路 {{ entry.bondText }}</p>
           </article>
 
           <article class="cloud-detail-panel" data-reveal>

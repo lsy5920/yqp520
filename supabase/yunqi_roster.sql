@@ -46,6 +46,7 @@ create table if not exists public.yunqi_roster_cards (
   id uuid primary key default gen_random_uuid(),
   public_slug text not null unique,
   jianghu_name text not null,
+  dao_name text not null default '云未名',
   title_name text not null default '云栖同门',
   identity_key text not null,
   gender_key text not null default 'unspecified',
@@ -57,6 +58,7 @@ create table if not exists public.yunqi_roster_cards (
   bond_text text not null default '',
   cover_key text not null default 'mist',
   status text not null default 'pending',
+  entry_generation text not null default '云',
   entry_no integer,
   is_public boolean not null default false,
   is_region_public boolean not null default true,
@@ -71,19 +73,49 @@ create table if not exists public.yunqi_roster_cards (
   approved_at timestamptz,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
+  constraint yunqi_roster_cards_dao_name_check check (left(dao_name, 1) = '云' and char_length(dao_name) between 2 and 3),
   constraint yunqi_roster_cards_identity_check check (identity_key in ('swordsman','healer','strategist','artisan','wanderer','guardian')),
   constraint yunqi_roster_cards_gender_check check (gender_key in ('male','female','unspecified')),
   constraint yunqi_roster_cards_bond_check check (bond_key in ('seeking','companion','mentor','quiet')),
   constraint yunqi_roster_cards_cover_check check (cover_key in ('mist','sword','bamboo','moon','gold','jade')),
   constraint yunqi_roster_cards_status_check check (status in ('pending','approved','deferred','rejected')),
-  constraint yunqi_roster_cards_entry_no_check check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0)),
+  constraint yunqi_roster_cards_entry_generation_check check (length(trim(entry_generation)) > 0),
+  constraint yunqi_roster_cards_entry_no_check check (entry_no is null or entry_no > 0),
   constraint yunqi_roster_cards_heat_check check (heat_value >= 0),
   constraint yunqi_roster_cards_featured_check check (featured_level >= 0 and featured_level <= 9)
 );
 
--- 这里兼容已经存在的新版名帖表；旧版新表如果缺少入册编号字段，就补上。
+-- 这里记录已经执行过的一次性迁移，避免重复执行脚本时覆盖后台手动调整。
+create table if not exists public.yunqi_roster_schema_migrations (
+  migration_key text primary key,
+  applied_at timestamptz not null default timezone('utc', now())
+);
+
+-- 这里兼容已经存在的新版名帖表；旧版新表如果缺少入册编号和辈分字段，就补上。
+alter table public.yunqi_roster_cards add column if not exists dao_name text not null default '云未名';
+alter table public.yunqi_roster_cards add column if not exists entry_generation text not null default '云';
 alter table public.yunqi_roster_cards add column if not exists entry_no integer;
 alter table public.yunqi_roster_cards add column if not exists gender_key text not null default 'unspecified';
+update public.yunqi_roster_cards
+set dao_name = '云未名'
+where dao_name is null
+   or left(trim(dao_name), 1) <> '云'
+   or char_length(trim(dao_name)) < 2
+   or char_length(trim(dao_name)) > 3;
+alter table public.yunqi_roster_cards alter column dao_name set default '云未名';
+alter table public.yunqi_roster_cards alter column dao_name set not null;
+alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_cards_dao_name_check;
+alter table public.yunqi_roster_cards
+add constraint yunqi_roster_cards_dao_name_check
+check (left(dao_name, 1) = '云' and char_length(dao_name) between 2 and 3);
+update public.yunqi_roster_cards
+set entry_generation = '云'
+where entry_generation is null or trim(entry_generation) = '';
+update public.yunqi_roster_cards
+set entry_generation = left(trim(entry_generation), 1)
+where length(trim(entry_generation)) > 1;
+alter table public.yunqi_roster_cards alter column entry_generation set default '云';
+alter table public.yunqi_roster_cards alter column entry_generation set not null;
 update public.yunqi_roster_cards
 set gender_key = 'unspecified'
 where gender_key is null or gender_key not in ('male','female','unspecified');
@@ -91,10 +123,14 @@ alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_car
 alter table public.yunqi_roster_cards
 add constraint yunqi_roster_cards_gender_check
 check (gender_key in ('male','female','unspecified'));
+alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_cards_entry_generation_check;
+alter table public.yunqi_roster_cards
+add constraint yunqi_roster_cards_entry_generation_check
+check (length(trim(entry_generation)) > 0);
 alter table public.yunqi_roster_cards drop constraint if exists yunqi_roster_cards_entry_no_check;
 alter table public.yunqi_roster_cards
 add constraint yunqi_roster_cards_entry_no_check
-check (entry_no is null or (entry_no > 0 and position('4' in entry_no::text) = 0));
+check (entry_no is null or entry_no > 0);
 
 -- 这里补救已入册但未公开的历史名帖，避免前台名册和人数统计漏掉新审核记录。
 update public.yunqi_roster_cards
@@ -108,34 +144,6 @@ set is_public = false
 where is_public is null;
 alter table public.yunqi_roster_cards alter column is_public set default false;
 alter table public.yunqi_roster_cards alter column is_public set not null;
-
--- 这里给历史已入册且公开的名帖补发编号，避免前台和后台一直显示待授编号。
-do $$
-declare
-  card_record record;
-  next_entry_no integer;
-begin
-  select coalesce(max(entry_no), 0) + 1 into next_entry_no from public.yunqi_roster_cards;
-
-  for card_record in
-    select id
-    from public.yunqi_roster_cards
-    where status = 'approved'
-      and entry_no is null
-    order by coalesce(approved_at, created_at), created_at, id
-  loop
-    while position('4' in next_entry_no::text) > 0 loop
-      next_entry_no := next_entry_no + 1;
-    end loop;
-
-    update public.yunqi_roster_cards
-    set entry_no = next_entry_no
-    where id = card_record.id;
-
-    next_entry_no := next_entry_no + 1;
-  end loop;
-end;
-$$;
 
 -- 这里创建审核日志表，记录每次后台保存和状态变化。
 create table if not exists public.yunqi_roster_card_review_logs (
@@ -154,7 +162,7 @@ create table if not exists public.yunqi_roster_card_review_logs (
 create index if not exists idx_yunqi_roster_cards_public on public.yunqi_roster_cards(status, is_public, featured_level, approved_at desc);
 create index if not exists idx_yunqi_roster_cards_identity on public.yunqi_roster_cards(identity_key);
 create index if not exists idx_yunqi_roster_cards_gender on public.yunqi_roster_cards(gender_key);
-create unique index if not exists idx_yunqi_roster_cards_entry_no_unique on public.yunqi_roster_cards(entry_no) where entry_no is not null;
+drop index if exists public.idx_yunqi_roster_cards_entry_no_unique;
 create index if not exists idx_yunqi_roster_cards_created on public.yunqi_roster_cards(created_at desc);
 create index if not exists idx_yunqi_roster_card_logs_card on public.yunqi_roster_card_review_logs(card_id, created_at desc);
 
@@ -259,6 +267,7 @@ begin
     insert into public.yunqi_roster_cards (
       public_slug,
       jianghu_name,
+      dao_name,
       title_name,
       identity_key,
       gender_key,
@@ -270,6 +279,7 @@ begin
       bond_text,
       cover_key,
       status,
+      entry_generation,
       entry_no,
       is_public,
       is_region_public,
@@ -286,6 +296,7 @@ begin
     select
       coalesce(nullif(public_slug, ''), 'legacy-' || id::text),
       coalesce(nullif(daohao, ''), nullif(secular_name, ''), '旧名册同门'),
+      '云未名',
       coalesce(nullif(secular_name, ''), '待补真实姓名'),
       case
         when coalesce(position_key, '') in ('yunsi_wen') then 'strategist'
@@ -310,7 +321,8 @@ begin
       coalesce(nullif(hobbies, ''), '由旧名册迁移，羁绊状态待补充。'),
       'mist',
       case when status in ('pending','approved','deferred','rejected') then status else 'pending' end,
-      case when entry_no is not null and position('4' in entry_no::text) = 0 then entry_no else null end,
+      '云',
+      case when entry_no is not null and entry_no > 0 then entry_no else null end,
       case when status = 'approved' then true else false end,
       true,
       true,
@@ -349,6 +361,90 @@ begin
   end if;
 end;
 $$;
+
+-- 这里给已经登记的名帖按性别补发云字道名，避免把江湖名和道名混在一起。
+do $$
+declare
+  card_record record;
+  male_first text[] := array['霄','岳','川','衡','柏','舟','峥','朔','玄','砚','松','庭','修','凌','昭'];
+  female_first text[] := array['岚','汐','瑶','芷','棠','笙','蘅','霁','绾','梨','婉','玥','晴','棂','姝'];
+  neutral_first text[] := array['和','澄','溪','竹','白','安','知','念','临','望','星','言','归','明','初'];
+  suffix_pool text[] := array['清','澈','宁','安','行','远','明','照','初','然','舟','川','月','岑','微','白','庭','归','知','吟'];
+  first_pool text[];
+  first_index integer;
+  suffix_index integer;
+begin
+  if not exists (
+    select 1
+    from public.yunqi_roster_schema_migrations
+    where migration_key = '20260427_assign_cloud_dao_names_v1'
+  ) then
+    for card_record in
+      select
+        id,
+        gender_key,
+        row_number() over (
+          partition by case when gender_key in ('male','female') then gender_key else 'unspecified' end
+          order by coalesce(approved_at, created_at), created_at, id
+        ) as gender_rank
+      from public.yunqi_roster_cards
+      order by coalesce(approved_at, created_at), created_at, id
+    loop
+      first_pool := case
+        when card_record.gender_key = 'male' then male_first
+        when card_record.gender_key = 'female' then female_first
+        else neutral_first
+      end;
+
+      first_index := ((((card_record.gender_rank - 1)::integer) / array_length(suffix_pool, 1)) % array_length(first_pool, 1)) + 1;
+      suffix_index := (((card_record.gender_rank - 1)::integer) % array_length(suffix_pool, 1)) + 1;
+
+      update public.yunqi_roster_cards
+      set dao_name = '云' || first_pool[first_index] || suffix_pool[suffix_index],
+          entry_generation = '云'
+      where id = card_record.id;
+    end loop;
+
+    insert into public.yunqi_roster_schema_migrations (migration_key)
+    values ('20260427_assign_cloud_dao_names_v1');
+  end if;
+end;
+$$;
+
+-- 这里按现有入册顺序重新排列正式入册编号，重新加回含 4 的数字。
+do $$
+declare
+  card_record record;
+  next_entry_no integer := 1;
+begin
+  if not exists (
+    select 1
+    from public.yunqi_roster_schema_migrations
+    where migration_key = '20260427_resequence_entry_code_v1'
+  ) then
+    for card_record in
+      select id
+      from public.yunqi_roster_cards
+      where status = 'approved'
+      order by coalesce(approved_at, created_at), created_at, id
+    loop
+      update public.yunqi_roster_cards
+      set entry_generation = '云',
+          entry_no = next_entry_no
+      where id = card_record.id;
+
+      next_entry_no := next_entry_no + 1;
+    end loop;
+
+    insert into public.yunqi_roster_schema_migrations (migration_key)
+    values ('20260427_resequence_entry_code_v1');
+  end if;
+end;
+$$;
+
+-- 这里补齐道名和新编号唯一索引，避免后台误把两位同门改成同一个道名或同一个入册号。
+create unique index if not exists idx_yunqi_roster_cards_dao_name_unique on public.yunqi_roster_cards(dao_name);
+create unique index if not exists idx_yunqi_roster_cards_entry_generation_no_unique on public.yunqi_roster_cards(entry_generation, entry_no) where entry_no is not null;
 
 -- 这里给管理员创建语句模板，替换邮箱和用户编号后执行即可。
 -- insert into public.yunqi_roster_admin_profiles (user_id, email, display_name, role, is_active)

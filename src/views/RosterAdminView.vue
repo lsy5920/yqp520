@@ -6,7 +6,7 @@ import { rosterBondOptions, rosterContent, rosterCoverOptions, rosterGenderOptio
 import { getSupabaseConfigErrorText, isSupabaseConfigured } from '@/lib/supabase'
 import { deleteAdminRosterEntry, getAdminRosterEntryBySlug, listAdminRosterEntries, listRosterReviewLogs, saveAdminRosterEntry } from '@/services/roster'
 import type { AdminRosterCardRecord, AdminRosterCardSavePayload, RosterCardStatus, RosterReviewLogRecord } from '@/types/roster'
-import { formatRosterDate, getRosterCoverGradient, getRosterGenderGlowStyle, normalizeRosterSkillTags } from '@/utils/roster'
+import { formatRosterDate, formatRosterEntryTitle, getRosterCoverGradient, getRosterGenderGlowStyle, normalizeRosterSkillTags } from '@/utils/roster'
 import { useRosterAuth } from '@/composables/useRosterAuth'
 
 // 这里保存页面根节点，供后台卡片显现动效使用。
@@ -191,6 +191,7 @@ function buildEditForm(entry: AdminRosterCardRecord): AdminRosterCardSavePayload
   return {
     id: entry.id,
     jianghuName: entry.jianghuName,
+    daoName: entry.daoName,
     titleName: entry.titleName,
     identityKey: entry.identityKey,
     genderKey: entry.genderKey,
@@ -202,6 +203,7 @@ function buildEditForm(entry: AdminRosterCardRecord): AdminRosterCardSavePayload
     bondText: entry.bondText,
     coverKey: entry.coverKey,
     status: entry.status,
+    entryGeneration: entry.entryGeneration || '云',
     entryNo: entry.entryNo,
     isPublic: entry.status === 'approved' ? true : entry.isPublic,
     isRegionPublic: entry.isRegionPublic,
@@ -338,7 +340,7 @@ async function handleLogout(): Promise<void> {
       </header>
 
       <section class="roster-admin-toolbar reveal-on-scroll">
-        <input v-model="keyword" placeholder="搜索江湖名、真实姓名、地域或联系方式" type="search" @keyup.enter="loadEntryList" />
+        <input v-model="keyword" placeholder="搜索道名、江湖名、真实姓名、地域或联系方式" type="search" @keyup.enter="loadEntryList" />
         <select v-model="selectedStatus" @change="loadEntryList">
           <option v-for="item in statusOptions" :key="item.key || 'all'" :value="item.key">{{ item.label }}</option>
         </select>
@@ -358,8 +360,8 @@ async function handleLogout(): Promise<void> {
             :class="{ active: selectedEntry?.id === entry.id }"
             @click="selectEntry(entry)"
           >
-            <strong>{{ entry.jianghuName }}</strong>
-            <span>{{ entry.titleName }} · {{ entry.genderLabel }} · {{ entry.status }} · {{ entry.entryNo ? `编号 ${entry.entryNo}` : '待授编号' }}</span>
+            <strong>{{ entry.daoName }}</strong>
+            <span>{{ entry.jianghuName }} · {{ entry.titleName }} · {{ entry.genderLabel }} · {{ entry.status }} · {{ entry.displayTitle }}</span>
             <small>{{ formatRosterDate(entry.createdAt) }}</small>
           </button>
           <p v-if="!isLoading && entryList.length === 0">暂无符合条件的名帖。</p>
@@ -368,15 +370,17 @@ async function handleLogout(): Promise<void> {
         <section v-if="editForm" class="roster-admin-editor reveal-on-scroll">
           <article class="roster-admin-preview" :style="previewStyle">
             <span>{{ editForm.identityKey }} · {{ rosterGenderOptions.find((item) => item.key === editForm?.genderKey)?.label || '未选择' }}</span>
-            <strong>{{ editForm.jianghuName }}</strong>
-            <em>{{ editForm.entryNo ? `编号 ${editForm.entryNo}` : '待授编号' }}</em>
+            <strong>{{ editForm.daoName }}</strong>
+            <em>{{ formatRosterEntryTitle(editForm.entryNo, editForm.entryGeneration) }}</em>
             <p>{{ editForm.motto }}</p>
           </article>
 
           <div class="roster-admin-form">
             <label><span>江湖名</span><input v-model="editForm.jianghuName" type="text" /></label>
+            <label><span>道名</span><input v-model="editForm.daoName" maxlength="3" placeholder="云开头，2 到 3 个字" type="text" /></label>
             <label><span>真实姓名</span><input v-model="editForm.titleName" type="text" /></label>
-            <label><span>入册编号</span><input v-model.number="editForm.entryNo" min="1" type="number" placeholder="已入册时自动生成，可手动修改" /></label>
+            <label><span>辈分字</span><input v-model="editForm.entryGeneration" maxlength="1" placeholder="云" type="text" /></label>
+            <label><span>入册序号</span><input v-model.number="editForm.entryNo" min="1" type="number" placeholder="已入册时自动生成，可手动修改" /></label>
             <label><span>身份</span><select v-model="editForm.identityKey"><option v-for="item in rosterIdentityOptions" :key="item.key" :value="item.key">{{ item.label }}</option></select></label>
             <label><span>性别</span><select v-model="editForm.genderKey"><option v-for="item in rosterGenderOptions" :key="item.key" :value="item.key">{{ item.label }} · {{ item.glowLabel }}</option></select></label>
             <label><span>地域</span><input v-model="editForm.regionText" type="text" /></label>

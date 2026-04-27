@@ -112,6 +112,8 @@ export interface RosterRegistrationStep {
 export interface RosterCardFormValue {
   /** 用途：江湖名；入参含义：无；返回值含义：无 */
   jianghuName: string
+  /** 用途：道名；入参含义：无；返回值含义：无 */
+  daoName: string
   /** 用途：真实姓名；入参含义：无；返回值含义：无 */
   titleName: string
   /** 用途：门派身份；入参含义：无；返回值含义：无 */
@@ -163,7 +165,11 @@ export interface PublicRosterCard {
   id: string
   publicSlug: string
   jianghuName: string
+  /** 用途：道名；入参含义：无；返回值含义：无 */
+  daoName: string
   displayTitle: string
+  /** 用途：入册辈分字；入参含义：无；返回值含义：无 */
+  entryGeneration: string
   entryNo: number | null
   identityKey: RosterIdentityKey
   identityLabel: string
@@ -210,6 +216,10 @@ export interface AdminRosterCardRecord extends PublicRosterCard {
 export interface AdminRosterCardSavePayload {
   id: string
   jianghuName: string
+  /** 用途：后台可编辑的道名；入参含义：无；返回值含义：无 */
+  daoName: string
+  /** 用途：后台可编辑的入册辈分字；入参含义：无；返回值含义：无 */
+  entryGeneration: string
   entryNo: number | null
   identityKey: RosterIdentityKey
   genderKey: RosterGenderKey

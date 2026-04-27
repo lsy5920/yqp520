@@ -209,7 +209,9 @@ function buildPendingPosterEntry(form: RosterCardFormValue, publicSlug: string):
     id: publicSlug,
     publicSlug,
     jianghuName: form.jianghuName,
+    daoName: form.daoName,
     displayTitle: '待云司审核',
+    entryGeneration: '云',
     entryNo: null,
     identityKey: identity.key,
     identityLabel: identity.label,
@@ -489,6 +491,11 @@ async function handleSubmit(): Promise<void> {
             <small>{{ nameCheckMessage || '最多 12 个字，审核通过后会公开展示。' }}</small>
           </label>
           <label class="roster-field">
+            <span>道名</span>
+            <input v-model="formValue.daoName" maxlength="3" placeholder="例如：云澈、云岚" type="text" />
+            <small>必须以“云”开头，2 到 3 个字，入册玉佩优先展示道名。</small>
+          </label>
+          <label class="roster-field">
             <span>真实姓名</span>
             <input v-model="formValue.titleName" maxlength="14" placeholder="例如：李小云" type="text" />
           </label>
@@ -592,7 +599,8 @@ async function handleSubmit(): Promise<void> {
           <label class="roster-switch"><input v-model="formValue.isStoryPublic" type="checkbox" />公开展示个人故事</label>
           <div class="roster-preview-card" :style="previewCardStyle">
             <span>{{ normalizedForm.titleName }}</span>
-            <strong>{{ normalizedForm.jianghuName || '你的江湖名' }}</strong>
+            <strong>{{ normalizedForm.daoName || '你的道名' }}</strong>
+            <small>{{ normalizedForm.jianghuName || '你的江湖名' }}</small>
             <em>{{ rosterGenderOptions.find((item) => item.key === normalizedForm.genderKey)?.label || '未选择' }}</em>
             <p>{{ normalizedForm.motto || '你的江湖宣言会出现在这里。' }}</p>
           </div>

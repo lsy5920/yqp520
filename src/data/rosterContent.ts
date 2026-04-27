@@ -52,7 +52,7 @@ export const rosterCoverOptions: RosterCoverOption[] = [
 
 // 这里定义登记步骤，手机端卷轴表单按这个顺序展示。
 export const rosterRegistrationSteps: RosterRegistrationStep[] = [
-  { key: 'basic', indexText: '一', title: '写下名帖', description: '先留下你的江湖名、真实姓名、身份和所在地域。' },
+  { key: 'basic', indexText: '一', title: '写下名帖', description: '先留下江湖名、云字道名、真实姓名、身份和所在地域。' },
   { key: 'spirit', indexText: '二', title: '点亮气质', description: '写一句江湖宣言，再补一段让同门记住你的故事。' },
   { key: 'bond', indexText: '三', title: '结下羁绊', description: '选择你的同行状态，写清希望遇见怎样的同门。' },
   { key: 'display', indexText: '四', title: '定制封面', description: '挑选名帖封面，并决定哪些内容公开展示。' },
@@ -137,6 +137,7 @@ export function getRosterCoverOption(key: RosterCoverKey): RosterCoverOption {
 export function createEmptyRosterCardForm(): RosterCardFormValue {
   return {
     jianghuName: '',
+    daoName: '',
     titleName: '',
     identityKey: '',
     genderKey: 'unspecified',
@@ -168,7 +169,9 @@ export function createEmptyPublicRosterCard(): PublicRosterCard {
     id: '',
     publicSlug: '',
     jianghuName: '未署名同门',
+    daoName: '云未名',
     displayTitle: '待授编号',
+    entryGeneration: '云',
     entryNo: null,
     identityKey: identity.key,
     identityLabel: identity.label,

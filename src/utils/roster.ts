@@ -56,6 +56,56 @@ export function normalizeRosterGenderKey(value: string): RosterGenderKey {
 }
 
 /**
+ * 清洗入册辈分字
+ * 用途：后台可编辑辈分字时，只保留第一个有效文字，避免编号格式被撑乱
+ * 入参：value 为后台或数据库里的辈分字
+ * 返回值：返回一个辈分字，空值时默认返回“云”
+ */
+export function normalizeRosterEntryGeneration(value: string): string {
+  return Array.from(normalizeRosterShortText(value, '云'))[0] || '云'
+}
+
+/**
+ * 格式化入册编号
+ * 用途：统一生成“云栖-云-001”这种公开编号文案
+ * 入参：entryNo 为序号，entryGeneration 为辈分字
+ * 返回值：有序号时返回完整编号，没有序号时返回待授编号
+ */
+export function formatRosterEntryTitle(entryNo: number | null, entryGeneration = '云'): string {
+  if (!entryNo || entryNo <= 0) {
+    return '待授编号'
+  }
+
+  const generationText = normalizeRosterEntryGeneration(entryGeneration)
+  return `云栖-${generationText}-${String(entryNo).padStart(3, '0')}`
+}
+
+/**
+ * 校验云字道名
+ * 用途：登记和后台保存前检查道名是否符合云栖名册规则
+ * 入参：value 为用户填写的道名
+ * 返回值：返回错误文案，空字符串表示通过
+ */
+export function validateRosterDaoName(value: string): string {
+  const daoName = normalizeRosterShortText(value)
+  const daoNameLength = Array.from(daoName).length
+
+  if (!daoName) {
+    return '请填写道名'
+  }
+
+  if (!daoName.startsWith('云')) {
+    return '道名需以“云”开头'
+  }
+
+  if (daoNameLength < 2 || daoNameLength > 3) {
+    return '道名需为 2 到 3 个字'
+  }
+
+  return ''
+}
+
+/**
  * 清洗登记表单
  * 用途：提交、保存草稿和后台编辑前统一整理数据
  * 入参：form 为原始登记表单
@@ -64,6 +114,7 @@ export function normalizeRosterGenderKey(value: string): RosterGenderKey {
 export function normalizeRosterCardForm(form: RosterCardFormValue): RosterCardFormValue {
   return {
     jianghuName: normalizeRosterShortText(form.jianghuName),
+    daoName: normalizeRosterShortText(form.daoName),
     titleName: normalizeRosterShortText(form.titleName),
     identityKey: form.identityKey,
     genderKey: normalizeRosterGenderKey(form.genderKey),
@@ -91,11 +142,17 @@ export function validateRosterCardForm(form: RosterCardFormValue): string[] {
   const normalizedForm = normalizeRosterCardForm(form)
   const errors: string[] = []
 
-  // 这里校验江湖名，避免公开名册出现无名卡片。
+  // 这里校验江湖名，江湖名和道名分开保存，避免用户原本名号丢失。
   if (!normalizedForm.jianghuName) {
     errors.push('请填写江湖名')
   } else if (Array.from(normalizedForm.jianghuName).length > 12) {
     errors.push('江湖名最多 12 个字')
+  }
+
+  // 这里校验道名，避免公开玉佩出现不符合云字辈规则的名号。
+  const daoNameError = validateRosterDaoName(normalizedForm.daoName)
+  if (daoNameError) {
+    errors.push(daoNameError)
   }
 
   // 这里校验真实姓名长度，保证手机卡片排版稳定。

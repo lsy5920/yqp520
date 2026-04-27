@@ -405,7 +405,7 @@ function closeScroll(): void {
             class="jade-pendant"
             :class="[`jade-pendant--${card.genderKey}`, { 'jade-pendant--active': glowingCardId === card.id }]"
             :style="resolvePendantStyle(card, index)"
-            :aria-label="`打开${card.jianghuName}的云栖名帖`"
+            :aria-label="`打开${card.daoName}的云栖名帖`"
             @click="openCard(card)"
             @keydown.enter.prevent="openCard(card)"
             @keydown.space.prevent="openCard(card)"
@@ -419,7 +419,7 @@ function closeScroll(): void {
             <span class="jade-pendant__body">
               <i class="jade-pendant__hole" aria-hidden="true"></i>
               <small>{{ card.identityLabel }}</small>
-              <strong>{{ card.jianghuName }}</strong>
+              <strong>{{ card.daoName }}</strong>
               <em>{{ card.displayTitle }}</em>
             </span>
             <span class="jade-pendant__shadow" aria-hidden="true"></span>
@@ -428,7 +428,7 @@ function closeScroll(): void {
       </section>
 
       <Teleport to="body">
-        <section v-if="selectedCard" class="jade-scroll-overlay" role="dialog" aria-modal="true" :aria-label="`${selectedCard.jianghuName}的公开名帖卷轴`" @click.self="closeScroll">
+        <section v-if="selectedCard" class="jade-scroll-overlay" role="dialog" aria-modal="true" :aria-label="`${selectedCard.daoName}的公开名帖卷轴`" @click.self="closeScroll">
           <article ref="scrollDialogRef" class="jade-scroll" :style="getRosterGenderGlowStyle(selectedCard.genderKey)">
             <span class="jade-scroll__glow" aria-hidden="true"></span>
             <span class="jade-scroll__axis jade-scroll__axis--left" aria-hidden="true"></span>
@@ -437,13 +437,17 @@ function closeScroll(): void {
 
             <header class="jade-scroll__head">
               <span>云中名帖</span>
-              <h2>{{ selectedCard.jianghuName }}</h2>
-              <p>{{ selectedCard.displayTitle }} · {{ selectedCard.identityLabel }}</p>
+              <h2>{{ selectedCard.daoName }}</h2>
+              <p>{{ selectedCard.displayTitle }} 路 {{ selectedCard.identityLabel }}</p>
             </header>
 
             <blockquote>{{ selectedCard.motto }}</blockquote>
 
             <div class="jade-scroll__grid">
+              <section class="jade-scroll__panel">
+                <span>江湖名</span>
+                <p>{{ selectedCard.jianghuName }}</p>
+              </section>
               <section class="jade-scroll__panel jade-scroll__panel--wide">
                 <span>公开故事</span>
                 <p>{{ selectedCard.storyText }}</p>
@@ -454,10 +458,10 @@ function closeScroll(): void {
               </section>
               <section class="jade-scroll__panel">
                 <span>羁绊状态</span>
-                <p>{{ selectedCard.bondLabel }} · {{ selectedCard.bondText }}</p>
+                <p>{{ selectedCard.bondLabel }} 路 {{ selectedCard.bondText }}</p>
               </section>
               <section class="jade-scroll__panel">
-                <span>玉佩光效</span>
+                <span>玉佩光色</span>
                 <p>{{ selectedCard.genderKey === 'male' ? '青蓝玉光' : selectedCard.genderKey === 'female' ? '粉红玉光' : '清白本色' }}</p>
               </section>
               <section class="jade-scroll__panel">
